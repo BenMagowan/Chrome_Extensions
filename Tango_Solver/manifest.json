@@ -1,6 +1,6 @@
 {
     "manifest_version": 3,
-    "name": "Tango Auto-Solver",
+    "name": "Tango Puzzle Solver",
     "version": "1.0.0",
     "icons": {
         "16": "images/icon-16.png",
@@ -8,7 +8,7 @@
         "48": "images/icon-48.png",
         "128": "images/icon-128.png"
     },
-    "description": "Automatically parses and solves the LinkedIn Tango game (https://www.linkedin.com/games/tango/).",
+    "description": "Automatically parses and solves the LinkedIn game Tango.",
     "action": {
         "default_popup": "popup.html",
         "default_title": "Solve Tango"
