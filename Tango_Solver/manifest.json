@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "Tango Auto-Solver",
+  "version": "1.0.0",
+  "description": "Automatically parses and solves the LinkedIn Tango game (https://www.linkedin.com/games/tango/).",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Solve Tango"
+  },
+  "permissions": ["scripting"],
+  "host_permissions": ["*://*.linkedin.com/*"]
+}
