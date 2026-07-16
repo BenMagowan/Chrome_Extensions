@@ -1,0 +1,23 @@
+<!--
+  Popup UI for the Tango Auto-Solver. Logic lives in popup.js (no inline scripts, per
+  MV3 CSP). injected.js is loaded first so popup.js can pass runTango to executeScript.
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>Tango Solver</title>
+  </head>
+  <body>
+    <main class="wrap">
+      <h1 class="title">Tango Solver</h1>
+      <p id="status" class="status">Checking for a board…</p>
+      <button id="solve" class="solve-btn" disabled>Solve puzzle</button>
+      <p class="hint">Open the Tango game and start a round first.</p>
+    </main>
+    <script src="injected.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>
