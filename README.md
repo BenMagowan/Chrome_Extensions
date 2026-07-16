@@ -12,7 +12,7 @@ folder and loads as a standalone unpacked extension.
 | [Tango_Solver](Tango_Solver/) | [Tango](https://www.linkedin.com/games/tango/) — fill the grid with Suns and Moons | ✅ Working |
 | [Mini_Sudoku_Solver](Mini_Sudoku_Solver/) | [Mini Sudoku](https://www.linkedin.com/games/mini-sudoku/) — one of each digit per row, column, and region | ✅ Working |
 | Patches_Solver | [Patches](https://www.linkedin.com/games/patches/) | 🚧 Planned |
-| Zip_Solver | [Zip](https://www.linkedin.com/games/zip/) | 🚧 Planned |
+| [Zip_Solver](Zip_Solver/) | [Zip](https://www.linkedin.com/games/zip/) — draw one path through every cell, hitting the numbers in order | ✅ Working |
 
 ## Shared design
 
