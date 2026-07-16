@@ -16,6 +16,13 @@ const statusEl = document.getElementById("status");
 const solveBtn = document.getElementById("solve");
 let pollTimer = null;
 
+// URL of the LinkedIn Queens game, opened when no board is detected.
+const QUEENS_URL = "https://www.linkedin.com/games/queens/";
+
+// Tracks what the button currently does: "solve" when a board is present,
+// "open" when none is detected (clicking opens the game).
+let mode = "open";
+
 async function getActiveTabId() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   return tab ? tab.id : null;
@@ -51,16 +58,26 @@ async function refresh() {
   const results = await runInFrames("detect");
   const board = results.find((r) => r.solvable);
   if (board) {
+    mode = "solve";
     solveBtn.disabled = false;
+    solveBtn.textContent = "Solve puzzle";
     statusEl.textContent = `Board detected (${board.N}×${board.N}). Ready to solve.`;
     stopPolling(); // found it — stop re-checking
   } else {
-    solveBtn.disabled = true;
-    statusEl.textContent = "Waiting for the board to load…";
+    mode = "open";
+    solveBtn.disabled = false;
+    solveBtn.textContent = "Open Queens game";
+    statusEl.textContent = "No board detected. Open the Queens game to get started.";
   }
 }
 
 solveBtn.addEventListener("click", async () => {
+  if (mode === "open") {
+    // No board is present — open the Queens game in a new tab.
+    chrome.tabs.create({ url: QUEENS_URL });
+    window.close();
+    return;
+  }
   solveBtn.disabled = true;
   stopPolling();
   statusEl.textContent = "Solving…";
