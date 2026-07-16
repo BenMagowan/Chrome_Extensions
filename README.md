@@ -11,7 +11,7 @@ folder and loads as a standalone unpacked extension.
 | [Queens_Solver](Queens_Solver/) | [Queens](https://www.linkedin.com/games/queens/) — one crown per row, column, and colour region | ✅ Working |
 | [Tango_Solver](Tango_Solver/) | [Tango](https://www.linkedin.com/games/tango/) — fill the grid with Suns and Moons | ✅ Working |
 | [Mini_Sudoku_Solver](Mini_Sudoku_Solver/) | [Mini Sudoku](https://www.linkedin.com/games/mini-sudoku/) — one of each digit per row, column, and region | ✅ Working |
-| Patches_Solver | [Patches](https://www.linkedin.com/games/patches/) | 🚧 Planned |
+| [Patches_Solver](Patches_Solver/) | [Patches](https://www.linkedin.com/games/patches/) — tile the grid with the clued patches | ⚠️ Rectangle puzzles only |
 | [Zip_Solver](Zip_Solver/) | [Zip](https://www.linkedin.com/games/zip/) — draw one path through every cell, hitting the numbers in order | ✅ Working |
 
 ## Shared design
@@ -27,8 +27,10 @@ game-specific details and verified DOM selectors):
 - **Grid-agnostic parsing** — the board is read off `[data-cell-idx]` and stable
   `aria-label`s, so the same code works for both the guest and signed-in DOMs (whose
   container ids and CSS classes differ / are hashed).
-- **Realistic clicks** — cells are driven with a verified `pointerdown → mousedown →
-  pointerup → mouseup → click` sequence, re-reading state between clicks.
+- **Synthetic input, per game** — each solver drives the board with the input the game
+  actually accepts, verified live: Queens/Tango/Mini Sudoku use a `pointerdown → mousedown
+  → pointerup → mouseup → click` sequence; Zip and Patches use synthetic **keyboard**
+  events (Patches' drag responds only to trusted events, so the keyboard path is used).
 - **Popup UX** — polls to auto-enable **Solve** once a board is detected; otherwise
   the button opens the relevant game.
 
