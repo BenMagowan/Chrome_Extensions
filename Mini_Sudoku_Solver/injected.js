@@ -1,0 +1,229 @@
+/*
+ * injected.js — the whole Mini Sudoku engine as ONE self-contained function.
+ *
+ * Not a content script. The popup injects it on demand into every frame of the
+ * LinkedIn games tab via
+ *   chrome.scripting.executeScript({ target:{tabId, allFrames:true}, world:'MAIN', func: runSudoku, args:[mode] })
+ * (See Queens_Solver for why on-demand MAIN-world injection is used instead of a
+ *  pre-injected content script: no reload-after-install gotcha, immune to when the
+ *  game iframe loaded, and exempt from the page CSP that blocks in-page eval.)
+ *
+ * MUST stay fully self-contained — executeScript serializes it with
+ * Function.prototype.toString, so every helper is nested and nothing outside is
+ * referenced except the `mode` argument.
+ *
+ * MINI SUDOKU RULES (constraint satisfaction):
+ *   - 6×6 grid, digits 1–6.
+ *   - Each digit appears exactly once in every row, column, and region.
+ *   - Regions are the 6 wall-bounded areas (derived from wall classes, so the code
+ *     also handles irregular/jigsaw layouts, not just 2×3 boxes).
+ *   - Some cells are pre-filled (locked) clues. The solution is unique.
+ *
+ * FILL MECHANISM (differs from Queens/Tango's click-cycle): select a cell (it gains
+ * `sudoku-cell-active`), then click the number-pad button `[data-number="V"]` to
+ * write V into it. Prefilled cells are not editable and are skipped.
+ *
+ * @param {'detect'|'solve'} mode
+ * @returns {{solvable:boolean,N:number}} for 'detect',
+ *          {{ok:boolean, placed?:number, error?:string}} for 'solve'
+ */
+async function runSudoku(mode) {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  // --- read a cell's current digit (0 = empty) from `.sudoku-cell-content` ---
+  function valueOf(cellEl) {
+    const c = cellEl.querySelector(".sudoku-cell-content");
+    const t = (c ? c.textContent : "").trim();
+    const n = parseInt(t, 10);
+    return Number.isInteger(n) ? n : 0;
+  }
+
+  // --- which walls a cell has (region boundaries) ---
+  function wallsOf(cellEl) {
+    const cls = cellEl.className || "";
+    const w = new Set();
+    if (/sudoku-cell-wall-top/.test(cls)) w.add("top");
+    if (/sudoku-cell-wall-right/.test(cls)) w.add("right");
+    if (/sudoku-cell-wall-bottom/.test(cls)) w.add("bottom");
+    if (/sudoku-cell-wall-left/.test(cls)) w.add("left");
+    return w;
+  }
+
+  // --- parse the board into {N, cells:[{idx,row,col,value,prefilled,walls,el}], region[]} ---
+  // Grid-agnostic: keys off [data-cell-idx], present in both guest and signed-in DOMs.
+  function parseBoard() {
+    const all = Array.from(document.querySelectorAll("[data-cell-idx]"));
+    if (all.length < 16) return null; // not rendered yet
+    // Keep the largest set of cells sharing one parent (the real grid).
+    const byParent = new Map();
+    for (const el of all) {
+      const p = el.parentElement;
+      if (!p) continue;
+      if (!byParent.has(p)) byParent.set(p, []);
+      byParent.get(p).push(el);
+    }
+    let els = all;
+    let best = 0;
+    for (const [, arr] of byParent) {
+      if (arr.length > best) {
+        best = arr.length;
+        els = arr;
+      }
+    }
+    const N = Math.round(Math.sqrt(els.length));
+    if (N * N !== els.length) return null; // not square -> still loading
+
+    // Sudoku signature: a `.sudoku-cell` / `.sudoku-grid` / `[data-sudoku-grid]` must
+    // be present, so a Queens/Tango board (which also uses [data-cell-idx]) never
+    // mis-parses as Sudoku.
+    const looksSudoku =
+      els.some((el) => /sudoku-cell/.test(el.className || "")) ||
+      !!document.querySelector(".sudoku-grid, [data-sudoku-grid]");
+    if (!looksSudoku) return null;
+
+    const cells = new Array(N * N);
+    for (const el of els) {
+      const idx = parseInt(el.getAttribute("data-cell-idx"), 10);
+      cells[idx] = {
+        idx,
+        row: Math.floor(idx / N),
+        col: idx % N,
+        value: valueOf(el),
+        prefilled: /sudoku-cell-prefilled/.test(el.className || ""),
+        walls: wallsOf(el),
+        el,
+      };
+    }
+    if (cells.some((c) => !c)) return null; // gap in indices -> still loading
+
+    // Derive regions by flood-fill over non-walled adjacencies. Two orthogonally
+    // adjacent cells are in the same region iff no wall separates them.
+    const region = new Array(N * N).fill(-1);
+    let regionCount = 0;
+    for (let start = 0; start < N * N; start++) {
+      if (region[start] !== -1) continue;
+      const id = regionCount++;
+      const stack = [start];
+      region[start] = id;
+      while (stack.length) {
+        const cur = stack.pop();
+        const c = cells[cur];
+        const neighbours = [];
+        if (!c.walls.has("top") && c.row > 0) neighbours.push(cur - N);
+        if (!c.walls.has("bottom") && c.row < N - 1) neighbours.push(cur + N);
+        if (!c.walls.has("left") && c.col > 0) neighbours.push(cur - 1);
+        if (!c.walls.has("right") && c.col < N - 1) neighbours.push(cur + 1);
+        for (const nb of neighbours) {
+          if (region[nb] === -1) {
+            region[nb] = id;
+            stack.push(nb);
+          }
+        }
+      }
+    }
+
+    return { N, cells, region, regionCount };
+  }
+
+  // --- backtracking solver: Latin square (row/col 1..N) + each region 1..N once ---
+  function solve(board) {
+    const { N, cells, region } = board;
+    const value = new Array(N * N).fill(0);
+    const rowUsed = Array.from({ length: N }, () => new Array(N + 1).fill(false));
+    const colUsed = Array.from({ length: N }, () => new Array(N + 1).fill(false));
+    const regUsed = Array.from({ length: N }, () => new Array(N + 1).fill(false));
+
+    // seed prefilled / already-known clues
+    for (const c of cells) {
+      if (c.value >= 1 && c.value <= N) {
+        value[c.idx] = c.value;
+        rowUsed[c.row][c.value] = true;
+        colUsed[c.col][c.value] = true;
+        regUsed[region[c.idx]][c.value] = true;
+      }
+    }
+
+    // order of empty cells to fill
+    const empties = [];
+    for (const c of cells) if (value[c.idx] === 0) empties.push(c);
+
+    function bt(i) {
+      if (i === empties.length) return true;
+      const c = empties[i];
+      const reg = region[c.idx];
+      for (let v = 1; v <= N; v++) {
+        if (rowUsed[c.row][v] || colUsed[c.col][v] || regUsed[reg][v]) continue;
+        value[c.idx] = v;
+        rowUsed[c.row][v] = colUsed[c.col][v] = regUsed[reg][v] = true;
+        if (bt(i + 1)) return true;
+        value[c.idx] = 0;
+        rowUsed[c.row][v] = colUsed[c.col][v] = regUsed[reg][v] = false;
+      }
+      return false;
+    }
+
+    if (!bt(0)) return null;
+    return value; // value[idx] = final digit
+  }
+
+  // --- the click sequence the game accepts (same framework as Queens/Tango) ---
+  function fireOneClick(el) {
+    const r = el.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    const base = {
+      bubbles: true, cancelable: true, composed: true, view: window,
+      clientX: cx, clientY: cy, screenX: cx, screenY: cy,
+      button: 0, isPrimary: true, pointerId: 1, pointerType: "mouse",
+    };
+    el.dispatchEvent(new PointerEvent("pointerdown", { ...base, buttons: 1 }));
+    el.dispatchEvent(new MouseEvent("mousedown", { ...base, buttons: 1 }));
+    el.dispatchEvent(new PointerEvent("pointerup", { ...base, buttons: 0 }));
+    el.dispatchEvent(new MouseEvent("mouseup", { ...base, buttons: 0 }));
+    el.dispatchEvent(new MouseEvent("click", { ...base, buttons: 0 }));
+  }
+
+  // --- dispatch ---
+  const board = parseBoard();
+  const valid =
+    !!board &&
+    board.N >= 4 &&
+    board.cells.length === board.N * board.N &&
+    board.regionCount === board.N;
+
+  if (mode === "detect") return { solvable: valid, N: board ? board.N : 0 };
+
+  // mode === 'solve'
+  if (!valid) return { ok: false, error: "Board not found or still loading." };
+  const solution = solve(board);
+  if (!solution) return { ok: false, error: "No solution exists for this board." };
+
+  // Cache the number pad buttons `[data-number="1..N"]`.
+  const numberBtn = {};
+  for (let v = 1; v <= board.N; v++) {
+    numberBtn[v] = document.querySelector(`[data-number="${v}"]`);
+  }
+  if (Object.values(numberBtn).some((b) => !b)) {
+    return { ok: false, error: "Number pad not found." };
+  }
+
+  // Fill each non-prefilled cell whose current value ≠ target: select the cell,
+  // then click its target number button. Re-read and retry once if it didn't take.
+  // Skip cells already correct → idempotent from any partial state.
+  let placed = 0;
+  for (const c of board.cells) {
+    if (c.prefilled) continue;
+    const target = solution[c.idx];
+    if (valueOf(c.el) === target) continue;
+    let ok = false;
+    for (let attempt = 0; attempt < 2 && !ok; attempt++) {
+      fireOneClick(c.el); // select the cell
+      await sleep(140);
+      fireOneClick(numberBtn[target]); // write the digit
+      await sleep(140);
+      ok = valueOf(c.el) === target;
+    }
+    if (ok) placed++;
+  }
+  return { ok: true, placed };
+}

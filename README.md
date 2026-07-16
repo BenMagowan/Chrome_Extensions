@@ -10,7 +10,7 @@ folder and loads as a standalone unpacked extension.
 | --- | --- | --- |
 | [Queens_Solver](Queens_Solver/) | [Queens](https://www.linkedin.com/games/queens/) — one crown per row, column, and colour region | ✅ Working |
 | [Tango_Solver](Tango_Solver/) | [Tango](https://www.linkedin.com/games/tango/) — fill the grid with Suns and Moons | ✅ Working |
-| Mini_Sudoku_Solver | [Mini Sudoku](https://www.linkedin.com/games/mini-sudoku/) | 🚧 Planned |
+| [Mini_Sudoku_Solver](Mini_Sudoku_Solver/) | [Mini Sudoku](https://www.linkedin.com/games/mini-sudoku/) — one of each digit per row, column, and region | ✅ Working |
 | Patches_Solver | [Patches](https://www.linkedin.com/games/patches/) | 🚧 Planned |
 | Zip_Solver | [Zip](https://www.linkedin.com/games/zip/) | 🚧 Planned |
 
