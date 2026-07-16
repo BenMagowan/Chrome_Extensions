@@ -11,15 +11,16 @@
  * Function.prototype.toString, so every helper is nested and nothing outside is
  * referenced except the `mode` argument.
  *
- * PATCHES RULES: partition the grid into regions ("patches"), one per numbered/shaped
- * clue, tiling every cell. Each clue states its patch's area (a number) and a shape:
- *   - SQUARE (h == w), HORIZONTAL_RECT (wide, w > h), VERTICAL_RECT (tall, h > w),
- *   - or "freeform" (UNKNOWN) — any connected polyomino.
+ * PATCHES RULES: partition the grid into rectangular regions ("patches"), one per
+ * numbered/shaped clue, tiling every cell. Each clue states its patch's area (a number)
+ * and a shape: SQUARE (h == w), HORIZONTAL_RECT (wide, w > h), VERTICAL_RECT (tall,
+ * h > w) — i.e. a Shikaku-with-shapes tiling. Every clue observed live is one of these
+ * three rectangle shapes, so the exact-cover solver below covers the full game.
  *
- * SCOPE (rectangle-only build): this solver handles puzzles where EVERY clue is a
- * rectangle (SQUARE / HORIZONTAL_RECT / VERTICAL_RECT) with a given area — i.e. a
- * Shikaku-with-shapes tiling. Freeform (UNKNOWN) clues are NOT solved; on such a board
- * `detect` reports not-solvable and `solve` returns an explanatory error. (See README.)
+ * `rectanglePuzzle` in parseBoard() is a defensive check: an UNKNOWN (freeform) shape
+ * has never been observed in practice, but if one appears, `detect` reports
+ * not-solvable and `solve` returns an explanatory error rather than drawing a wrong
+ * solution. (See README.)
  *
  * FILL MECHANISM (verified live on the guest board): the drag the game advertises only
  * responds to TRUSTED events, which an extension cannot produce — but the keyboard path

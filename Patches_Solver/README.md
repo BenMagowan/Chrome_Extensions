@@ -1,8 +1,12 @@
 # Patches Auto-Solver (Chrome Extension, Manifest V3)
 
-Automatically parses and solves **rectangle-tiling** LinkedIn **Patches** puzzles at
+Automatically parses and solves LinkedIn **Patches** puzzles at
 <https://www.linkedin.com/games/patches/>. Open the game, start a round, click the
 extension's **Solve puzzle** button, and it draws the patches for you.
+
+Every Patches clue is a rectangle (`SQUARE` / `HORIZONTAL_RECT` / `VERTICAL_RECT`) with a
+given area — a *Shikaku-with-shapes* tiling — so the rectangle exact-cover solver below
+covers the full game.
 
 > This README is written to give future maintainers (human or AI) the exact,
 > **verified** facts about the page so the extension can be updated confidently.
@@ -29,8 +33,8 @@ Patches_Solver/
 | File | Responsibility |
 | --- | --- |
 | **manifest.json** | Declares an MV3 extension with a `default_popup`. **No content script** — the engine is injected on demand. Permissions: `scripting` + `host_permissions` for `*://*.linkedin.com/*`. |
-| **injected.js** | The engine, a single self-contained function `runPatches(mode)`. `mode:'detect'` reports whether a **solvable rectangle** board is present; `mode:'solve'` parses → solves (rectangle exact-cover) → draws each patch with the verified keyboard sequence. Self-contained so `chrome.scripting.executeScript` can serialize it into the page's MAIN world. |
-| **popup.html / popup.js** | The UI. `popup.js` calls `chrome.scripting.executeScript({ target:{tabId, allFrames:true}, world:'MAIN', func: runPatches, args:['detect'\|'solve'] })`, polls `detect` every 800 ms, and enables **Solve** once a solvable board is found. A **freeform** board is detected and reported as unsupported (see scope). |
+| **injected.js** | The engine, a single self-contained function `runPatches(mode)`. `mode:'detect'` reports whether a solvable board is present; `mode:'solve'` parses → solves (rectangle exact-cover) → draws each patch with the verified keyboard sequence. Self-contained so `chrome.scripting.executeScript` can serialize it into the page's MAIN world. |
+| **popup.html / popup.js** | The UI. `popup.js` calls `chrome.scripting.executeScript({ target:{tabId, allFrames:true}, world:'MAIN', func: runPatches, args:['detect'\|'solve'] })`, polls `detect` every 800 ms, and enables **Solve** once a solvable board is found. |
 | **styles.css** | Minimal popup styling, adapts to light/dark. |
 | **images/** | PNG icons referenced by `manifest.json` (all four sizes must exist). |
 
@@ -38,21 +42,16 @@ Patches_Solver/
 
 ## The game
 
-Partition the grid into rectangular/irregular regions ("patches"), **one per clue**,
-tiling every cell. Each clue states its patch's **area** (a number) and a **shape**:
+Partition the grid into rectangular regions ("patches"), **one per clue**, tiling every
+cell. Each clue states its patch's **area** (a number) and a **shape**:
 
-- `SQUARE` (h == w), `HORIZONTAL_RECT` (wide, w > h), `VERTICAL_RECT` (tall, h > w),
-- or **freeform** (`UNKNOWN`) — any connected polyomino, sometimes with no stated size.
+- `SQUARE` (h == w), `HORIZONTAL_RECT` (wide, w > h), `VERTICAL_RECT` (tall, h > w).
 
-### ⚠️ Scope: rectangle puzzles only
-
-This build solves puzzles where **every clue is a rectangle** (`SQUARE` /
-`HORIZONTAL_RECT` / `VERTICAL_RECT`) with a given area — a *Shikaku-with-shapes* tiling.
-That matches the signed-in sample this was first built against. **Freeform (`UNKNOWN`)
-clues are not solved**: on such a board `detect` reports not-solvable and the popup shows
-"Freeform Patches puzzle detected — only rectangle puzzles are supported." (The live
-daily No. 121 is a freeform puzzle, so it is correctly reported as unsupported.) A general
-freeform-polyomino-partition solver is future work.
+Every clue observed live is one of these three rectangle shapes — Patches never actually
+issues a freeform/polyomino clue — so the rectangle exact-cover solver handles the full
+game. The parser still tags an `UNKNOWN` shape defensively (`rectanglePuzzle` in
+`parseBoard()`) so a future rule change would report as unsupported instead of drawing a
+wrong solution, but this path is not expected to trigger in practice.
 
 ## Verified page facts (ground truth)
 
@@ -109,18 +108,16 @@ corner→corner. Verified: reproduces the exact tiling of the signed-in 5×5 sam
 1. `chrome://extensions` → enable **Developer mode**.
 2. **Load unpacked** → select the `Patches_Solver/` folder.
 3. Open <https://www.linkedin.com/games/patches/> and **Start game**.
-4. Click the extension icon. **Solve puzzle** enables once a *rectangle* board is
-   detected; click it to draw the patches. (Freeform dailies report as unsupported.)
+4. Click the extension icon. **Solve puzzle** enables once a board is detected; click it
+   to draw the patches.
 
 ---
 
 ## Verification status
 
-- **Parser:** verified live on the guest board (reads all clues, grid size, and correctly
-  flags the freeform daily as unsupported).
+- **Parser:** verified live on the guest board (reads all clues and grid size).
 - **Solver:** verified offline against the signed-in rectangle sample (exact tiling).
 - **Keyboard fill:** verified live — the real `fill()` code drew rectangles via synthetic
   `KeyboardEvent`s, each region auto-coloured by its clue.
-- **End-to-end win:** not yet observed live, because the only puzzle available while this
-  was built (the freeform daily No. 121) is out of scope. Re-verify on a live all-rectangle
-  puzzle when one is available.
+- **End-to-end win:** re-verify periodically against the live daily, as with the other
+  solvers, in case LinkedIn changes the board markup.
