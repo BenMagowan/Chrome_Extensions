@@ -10,7 +10,7 @@ We are committed to protecting your privacy. The short version is: **this extens
 
 **We do not collect any personal data.**
 
-To function, the extension requires access to the active webpage when you are playing games on the LinkedIn platform (such as Queens, Tango or Mini Sudoku).
+To function, the extension requires access to the active webpage when you are playing games on the LinkedIn platform (such as Queens, Tango, Mini Sudoku, Zip, or Patches).
 
 The extension operates **entirely locally** on your device. When you use the extension:
 
