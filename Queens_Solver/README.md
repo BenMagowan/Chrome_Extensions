@@ -1,0 +1,151 @@
+# Queens Auto-Solver (Chrome Extension, Manifest V3)
+
+Automatically parses and solves the **LinkedIn Queens** game at
+<https://www.linkedin.com/games/queens/>. Open the game, start a round, click the
+extension's **Solve puzzle** button, and it places the queens for you.
+
+> This README is written to give future maintainers (human or AI) the exact,
+> **verified** facts about the page so the extension can be updated confidently.
+> Every selector and behavior below was confirmed against the live DOM, not guessed.
+
+---
+
+## Repo structure
+
+```
+Queens_Solver/
+├── manifest.json   # MV3 config: action popup + scripting/host permissions
+├── injected.js     # The engine (parse → solve → place) as one self-contained func
+├── popup.html      # Popup markup (loads injected.js then popup.js)
+├── popup.js        # Popup logic: inject engine on demand, poll, enable Solve
+├── styles.css      # Popup styling (light/dark aware)
+├── images/         # Toolbar/action icons (16/32/48/128 px)
+└── README.md       # This file
+```
+
+### What each file does
+
+| File | Responsibility |
+| --- | --- |
+| **manifest.json** | Declares an MV3 extension with a `default_popup`. **No content script** — the engine is injected on demand. Permissions: `scripting` (to inject) + `host_permissions` for `*://*.linkedin.com/*` (so injection/polling works without a fresh reload). |
+| **injected.js** | The engine, exported as a single self-contained function `runQueens(mode)`. `mode:'detect'` returns whether a solvable board is present; `mode:'solve'` parses → solves (backtracking CSP) → places queens via the verified DOM event sequence. It references nothing outside itself so `chrome.scripting.executeScript` can serialize it into the page's MAIN world. |
+| **popup.html / popup.js** | The UI. `popup.js` calls `chrome.scripting.executeScript({ target:{tabId, allFrames:true}, world:'MAIN', func: runQueens, args:['detect'\|'solve'] })`. On open it polls `detect` every 800 ms and enables **Solve** only once a board is found (so the user can let the game load; the solver only runs on click). Clicking runs `solve`. |
+| **styles.css** | Minimal popup styling, adapts to light/dark. |
+| **images/** | PNG icons referenced by `manifest.json`. All four sizes must exist or Chrome refuses to load the extension. |
+
+### Why on-demand injection (the v1.1 fix)
+
+v1.0 used a content script + message passing. Content scripts inject only when a
+page/iframe **loads**, so the engine was missing whenever the tab was already open
+at install time, or the game iframe rendered after `document_idle`. The board then
+appeared only after a forced reload — e.g. toggling the DevTools **device toolbar**,
+which reloads the frame. v1.1 removes that timing dependency: the popup injects fresh
+code into the live DOM (all frames) every time, so detection and solving are immune to
+when the game loaded.
+
+---
+
+## Verified page facts (ground truth)
+
+These were confirmed by inspecting the live page. If LinkedIn ships a redesign and
+the extension stops working, re-verify these first.
+
+- **The board is inside a same-origin iframe.**
+  - Outer page: `www.linkedin.com/games/queens/`
+  - Iframe: `<iframe class="game-launch-page__iframe w-full" src="https://www.linkedin.com/games/view/queens/desktop">`
+  - ⇒ Injection uses `allFrames: true`; only the frame that actually has the board
+    returns one, so the popup just picks that frame's result.
+- **⚠️ The DOM differs between guest and signed-in sessions.** The parser must not
+  depend on ids/classes that only exist in one. Two confirmed variants:
+
+  | | Guest | Signed-in |
+  | --- | --- | --- |
+  | Grid container | `div#queens-grid.queens-grid-no-gap` | `[data-testid="interactive-grid"]` inside `<section id="queens-game-board">` |
+  | Cell classes | `.queens-cell-with-border` + `cell-color-N` | fully **hashed** (e.g. `_41b25ea7`); **no `cell-color-N`** |
+  | Cell id | `data-cell-idx` ✓ | `data-cell-idx` (+ `data-testid="cell-N"`) ✓ |
+  | `aria-label` | ✓ (see below) | **identical** ✓ |
+
+- **What is stable across BOTH (parse off these):**
+  - **Cells:** every cell is a `[data-cell-idx]` element with `role="button"`
+    (`data-cell-idx = 0 … N²-1`, row-major → `row = idx / N | 0`, `col = idx % N`).
+  - **`aria-label`** encodes state **and region color**, e.g.
+    `"Empty cell of color Lavender, row 1, column 1"`,
+    `"Cross of color Soft Blue, row 5, column 5"`,
+    `"Queen of color Pastel Green, row 2, column 8"`.
+    → **Region id = the color name parsed from `aria-label`** (primary). The
+    `cell-color-N` class is only a fallback for the guest DOM.
+- **Grid size:** `N = round(sqrt(cellCount))` — never hardcode. Regions = N colors.
+- **Partially-solved starter puzzles** (first couple of games when signed in) come
+  with some queens pre-placed and locked (`aria-disabled="true"`). The solver runs
+  from scratch; since the puzzle is uniquely solvable, its solution already contains
+  those queens, and placement skips any cell that is already a Queen — so locked
+  queens are left untouched and only the missing ones are filled.
+- **Placed marks:** the inner markup differs by DOM (guest: `span.cell-input--queen`
+  › `svg.queens-icon-svg`; signed-in: hashed spans + `svg[data-testid="queen-svg"]`),
+  so **don't rely on it** — read state from the `aria-label` prefix instead:
+  `Empty` / `Cross` / `Queen` (identical in both).
+- **Click cycle:** one click = Cross, two = Queen, three = back to Empty.
+- **Click mechanism (important):** the widget is **not** React (no `__reactFiber`
+  keys) and **ignores pointer-only synthetic events**. The sequence that actually
+  registers, dispatched on the cell, is:
+
+  ```
+  pointerdown → mousedown → pointerup → mouseup → click
+  ```
+
+  using this frame's event constructors with real `clientX/clientY`, `button:0`,
+  `pointerId:1`, `pointerType:"mouse"` (`buttons:1` on down, `0` on up/click). The
+  **MouseEvents are essential** — pointer events alone do nothing. `isTrusted:false`
+  is accepted. **State updates asynchronously**, so re-read `aria-label` after a
+  short delay rather than synchronously.
+
+---
+
+## The solver
+
+Backtracking constraint-satisfaction solver in `injected.js` (`solve()`), placing
+exactly one queen per row (which enforces the row rule and prunes hard). For each
+candidate cell it checks:
+
+1. **Column** not already used.
+2. **Region** (color) not already used.
+3. **Adjacency** — not touching any placed queen, including diagonally. With one
+   queen per row/column, only the previous row can conflict, so it checks
+   `|col − prevRowCol| ≤ 1`.
+
+Returns an array of `{row, col}` or `null` if unsolvable.
+
+---
+
+## Install / run
+
+1. `chrome://extensions` → enable **Developer mode**.
+2. **Load unpacked** → select the `Queens_Solver/` folder.
+3. Open <https://www.linkedin.com/games/queens/> and **Start game**.
+4. Click the extension icon. The **Solve puzzle** button enables once the board is
+   detected. Click it — queens are placed and the game registers a win.
+
+---
+
+## Handling DOM drift (edge cases)
+
+The code is written to degrade gracefully if LinkedIn changes the markup:
+
+- **Grid lookup is id/class-agnostic:** `parseBoard()` collects all
+  `[data-cell-idx]` elements and keeps the largest group sharing one parent, so it
+  works whether the container is `#queens-grid` (guest) or `[data-testid=
+  "interactive-grid"]` (signed-in), and survives class-hash churn.
+- **Region id source:** primarily the color name in `aria-label` (present in both
+  DOMs); falls back to a `cell-color-N` class only if the label ever lacks a color.
+- **Board not ready:** `detect` only reports solvable for a complete N×N grid with N
+  regions, and the popup keeps polling, so the button enables itself the moment the
+  game finishes rendering.
+- **Stray marks:** the header **Clear** button opens a confirmation modal (verified
+  live), so the extension deliberately avoids it. Instead it resets precisely —
+  any cell holding a Queen that isn't part of the solution is cycled back to empty
+  before the solution is placed. Crosses are harmless annotations and are left as-is.
+- **Dropped rapid events:** ~200 ms delay between cells plus per-cell re-verification.
+
+If the click sequence ever stops working, re-inspect which events the widget
+listens for (open DevTools on the iframe, add capturing listeners) and update
+`fireOneClick()` in `injected.js`.
