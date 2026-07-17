@@ -65,14 +65,13 @@ async function refresh() {
     stopPolling(); // found it — stop re-checking
     return;
   }
-  // A freeform Patches board is present but not supported by this rectangle-only build.
-  const unsupported = results.find((r) => r.present && r.unsupported);
-  if (unsupported) {
+  // A board is on screen but no tiling was found — don't claim there's no board.
+  const stuck = results.find((r) => r.present);
+  if (stuck) {
     mode = "open";
     solveBtn.disabled = true;
     solveBtn.textContent = "Solve puzzle";
-    statusEl.textContent =
-      "Freeform Patches puzzle detected — only rectangle puzzles are supported.";
+    statusEl.textContent = "Board detected, but no solution was found for it.";
     return;
   }
   mode = "open";

@@ -11,16 +11,18 @@
  * Function.prototype.toString, so every helper is nested and nothing outside is
  * referenced except the `mode` argument.
  *
- * PATCHES RULES: partition the grid into rectangular regions ("patches"), one per
- * numbered/shaped clue, tiling every cell. Each clue states its patch's area (a number)
- * and a shape: SQUARE (h == w), HORIZONTAL_RECT (wide, w > h), VERTICAL_RECT (tall,
- * h > w) — i.e. a Shikaku-with-shapes tiling. Every clue observed live is one of these
- * three rectangle shapes, so the exact-cover solver below covers the full game.
- *
- * `rectanglePuzzle` in parseBoard() is a defensive check: an UNKNOWN (freeform) shape
- * has never been observed in practice, but if one appears, `detect` reports
- * not-solvable and `solve` returns an explanatory error rather than drawing a wrong
- * solution. (See README.)
+ * PATCHES RULES: partition the grid into rectangular regions ("patches"), one per clue,
+ * tiling every cell — i.e. a Shikaku tiling. EVERY patch is a rectangle; a clue merely
+ * constrains it, and BOTH constraints are optional (per the in-game legend: "Complete
+ * each shape to fill the grid — Square / Tall rectangle / Wide rectangle / Any of the
+ * above. If a shape has a number, it must be that size."):
+ *   - shape: SQUARE (h == w), HORIZONTAL_RECT (wide, w > h), VERTICAL_RECT (tall, h > w),
+ *     or ANY — the game's `PatchesShapeConstraint_UNKNOWN`, labelled "freeform clue" in
+ *     aria text and "Any of the above" in the legend. ANY is *not* a freeform polyomino:
+ *     the patch is still a rectangle, just unconstrained in shape.
+ *   - area: the clue's number, or null when the clue shows no number (any size).
+ * Harder boards lean on both — No. 122 (HARD) was 10/12 clues ANY, two with no number —
+ * so neither may be treated as a parse failure or an unsupported board. (See README.)
  *
  * FILL MECHANISM (verified live on the guest board): the drag the game advertises only
  * responds to TRUSTED events, which an extension cannot produce — but the keyboard path
@@ -38,7 +40,7 @@
 async function runPatches(mode) {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-  // --- parse the board into {rows, cols, clues, rectanglePuzzle, boardEl} ---
+  // --- parse the board into {rows, cols, clues, boardEl} ---
   // Grid-agnostic: keys off [data-cell-idx]; rows/cols come from the "Row R, column C"
   // aria text (stable in both guest and signed-in DOMs).
   function parseBoard() {
@@ -85,6 +87,8 @@ async function runPatches(mode) {
     if (rows < 2 || cols < 2 || rows * cols !== els.length) return null;
 
     // Clues: any cell carrying a [data-shape] marker (or an "…clue…" aria-label).
+    // Both constraints are optional; absent means unconstrained, never unsupported:
+    // an unrecognised shape falls back to "ANY", an unreadable number to null.
     const clues = [];
     for (const el of els) {
       const idx = parseInt(el.getAttribute("data-cell-idx"), 10);
@@ -92,19 +96,13 @@ async function runPatches(mode) {
       const aria = el.getAttribute("aria-label") || "";
       if (!shapeEl && !/clue/i.test(aria)) continue;
       const rawShape = shapeEl ? shapeEl.getAttribute("data-shape") || "" : "";
-      let shape = /SQUARE/.test(rawShape)
+      const shape = /SQUARE/.test(rawShape) || /square clue/i.test(aria)
         ? "SQUARE"
-        : /HORIZONTAL_RECT/.test(rawShape)
+        : /HORIZONTAL_RECT/.test(rawShape) || /wide rectangle/i.test(aria)
         ? "HORIZONTAL_RECT"
-        : /VERTICAL_RECT/.test(rawShape)
+        : /VERTICAL_RECT/.test(rawShape) || /tall rectangle/i.test(aria)
         ? "VERTICAL_RECT"
-        : /square/i.test(aria)
-        ? "SQUARE"
-        : /wide rectangle/i.test(aria)
-        ? "HORIZONTAL_RECT"
-        : /tall rectangle/i.test(aria)
-        ? "VERTICAL_RECT"
-        : "UNKNOWN";
+        : "ANY";
       const numEl = el.querySelector('[data-testid^="patches-clue-number"]');
       let area = numEl ? parseInt(numEl.textContent.trim(), 10) : NaN;
       if (!Number.isInteger(area)) {
@@ -115,34 +113,40 @@ async function runPatches(mode) {
     }
     if (clues.length < 2) return null;
 
-    // Rectangle puzzle iff every clue is a rectangle shape with a known area.
-    const rectanglePuzzle = clues.every(
-      (c) => c.area >= 1 && (c.shape === "SQUARE" || c.shape === "HORIZONTAL_RECT" || c.shape === "VERTICAL_RECT")
-    );
-
-    return { rows, cols, clues, rectanglePuzzle, boardEl };
+    return { rows, cols, clues, boardEl };
   }
 
-  // --- rectangle exact-cover solver (Shikaku with shape constraints) ---
+  // --- rectangle exact-cover solver (Shikaku with optional shape/area constraints) ---
   // Returns an array (one per clue) of {tl, br, cells}, or null if unsolvable.
   function solve(board) {
     const { rows, cols, clues } = board;
     const total = rows * cols;
-    let sum = 0;
-    for (const c of clues) sum += c.area;
-    if (sum !== total) return null; // patches must tile the whole grid
+
+    // Cheap arithmetic guard. Clues with no number contribute an unknown area of >= 1,
+    // so only an all-numbered board can be checked for an exact fit.
+    let known = 0,
+      unnumbered = 0;
+    for (const c of clues) {
+      if (c.area == null) unnumbered++;
+      else known += c.area;
+    }
+    if (unnumbered === 0 ? known !== total : known + unnumbered > total) return null;
 
     const clueAt = new Array(total).fill(-1);
     clues.forEach((c, i) => (clueAt[c.idx] = i));
 
-    function factorPairs(A, shape) {
+    // The h×w rectangles a clue permits. A null area allows every size, so this walks
+    // the dimension grid rather than factorising, and shape 'ANY' filters nothing.
+    function dimensions(area, shape) {
       const out = [];
-      for (let h = 1; h <= A; h++) {
-        if (A % h) continue;
-        const w = A / h;
-        if (shape === "SQUARE" && h === w) out.push([h, w]);
-        else if (shape === "HORIZONTAL_RECT" && w > h) out.push([h, w]);
-        else if (shape === "VERTICAL_RECT" && h > w) out.push([h, w]);
+      for (let h = 1; h <= rows; h++) {
+        for (let w = 1; w <= cols; w++) {
+          if (area != null && h * w !== area) continue;
+          if (shape === "SQUARE" && h !== w) continue;
+          if (shape === "HORIZONTAL_RECT" && w <= h) continue;
+          if (shape === "VERTICAL_RECT" && h <= w) continue;
+          out.push([h, w]);
+        }
       }
       return out;
     }
@@ -152,8 +156,7 @@ async function runPatches(mode) {
       const r = Math.floor(cl.idx / cols),
         c = cl.idx % cols;
       const list = [];
-      for (const [h, w] of factorPairs(cl.area, cl.shape)) {
-        if (h > rows || w > cols) continue;
+      for (const [h, w] of dimensions(cl.area, cl.shape)) {
         for (let r0 = Math.max(0, r - h + 1); r0 <= Math.min(rows - h, r); r0++) {
           for (let c0 = Math.max(0, c - w + 1); c0 <= Math.min(cols - w, c); c0++) {
             const cells = [];
@@ -180,21 +183,31 @@ async function runPatches(mode) {
     });
     if (candidates.some((l) => l.length === 0)) return null;
 
-    // exact cover: pick one candidate per clue, non-overlapping, covering every cell.
-    // Fewest-candidates-first ordering prunes hard.
-    const order = clues.map((_, i) => i).sort((a, b) => candidates[a].length - candidates[b].length);
+    // Exact cover: pick one candidate per clue, non-overlapping, covering every cell —
+    // which is what pins down the unconstrained clues. A fixed fewest-first order is too
+    // weak once a clue can be any size (~48 candidates on a 7×7), so pick the most
+    // constrained clue afresh at each step and fail early when one runs out.
     const occupied = new Array(total).fill(false);
     const chosen = new Array(clues.length).fill(null);
-    function bt(k) {
-      if (k === order.length) return occupied.every(Boolean);
-      const ci = order[k];
-      for (const cand of candidates[ci]) {
-        if (cand.cells.some((id) => occupied[id])) continue;
+    function bt(placed) {
+      if (placed === clues.length) return occupied.every(Boolean);
+      let bi = -1,
+        bestFits = null;
+      for (let i = 0; i < clues.length; i++) {
+        if (chosen[i]) continue;
+        const fits = candidates[i].filter((cand) => !cand.cells.some((id) => occupied[id]));
+        if (fits.length === 0) return false;
+        if (!bestFits || fits.length < bestFits.length) {
+          bestFits = fits;
+          bi = i;
+        }
+      }
+      for (const cand of bestFits) {
         cand.cells.forEach((id) => (occupied[id] = true));
-        chosen[ci] = cand;
-        if (bt(k + 1)) return true;
+        chosen[bi] = cand;
+        if (bt(placed + 1)) return true;
         cand.cells.forEach((id) => (occupied[id] = false));
-        chosen[ci] = null;
+        chosen[bi] = null;
       }
       return false;
     }
@@ -271,15 +284,11 @@ async function runPatches(mode) {
   const board = parseBoard();
   if (mode === "detect") {
     if (!board) return { solvable: false, present: false, N: 0 };
-    if (!board.rectanglePuzzle)
-      return { solvable: false, present: true, unsupported: true, N: board.cols };
     return { solvable: !!solve(board), present: true, N: board.cols };
   }
 
   // mode === 'solve'
   if (!board) return { ok: false, error: "Board not found or still loading." };
-  if (!board.rectanglePuzzle)
-    return { ok: false, error: "Freeform Patches puzzles aren't supported (rectangle puzzles only)." };
   const solution = solve(board);
   if (!solution) return { ok: false, error: "No rectangle tiling found for this board." };
   return await fill(board, solution);
