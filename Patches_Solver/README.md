@@ -93,8 +93,26 @@ redesign breaks the extension.
   `aria-haspopup="dialog"`), not a selector. A board that fails as a guest fails the
   same way signed in.
 - **Filled cells (fill/verify signal):** an assigned cell's **aria-label** gains
-  "…, in region with clue at row R, column C" — which also names the owning clue. Empty
-  cells read just "Row r, column c".
+  "…, in region with clue at row R, column C" — which also names the owning clue. A
+  *clue* cell inside a drawn patch instead gains "…, in drawn region". Empty cells read
+  just "Row r, column c".
+- **⚠️ Those phrases contain the word "clue", so strip them before testing whether a
+  cell *is* a clue.** A bare `/clue/i` test on the raw label promotes every drawn cell
+  into a phantom unnumbered clue: on a part-drawn 7×7 the 10 real clues read as 15, no
+  clue could be assigned a candidate rectangle, and the board surfaced to the user as
+  "no board / no solution". This is why a wrongly part-drawn board used to look
+  undetectable.
+- **Erasing:** `Backspace` with the cursor on a drawn cell removes that cell's **entire
+  patch** in one press (9 → 6 → 2 → 0 drawn cells in three presses). This is required
+  before filling, because the game refuses to draw a rectangle across cells that already
+  belong to a patch — you cannot paint over a wrong patch. The header **Undo** button
+  (rendered once play starts) is *not* used: it unwinds history step-by-step, can't
+  target a patch, and may not reach patches drawn before a resumed session.
+- **⚠️ Dangling anchors.** "Anchor placed, awaiting commit" is a live mode that isn't
+  readable from the DOM, and a refused draw leaves one behind. With an anchor live the
+  next keypress commits a rectangle instead of doing what was asked — an erase pass
+  entered this way *added* a drawn cell (8 → 9). `Escape` drops grid mode and the anchor
+  with it, so the fill always re-enters grid mode via Escape first.
 - **⚠️ Fill mechanism — keyboard, not drag.** The click-and-drag the game advertises
   responds **only to trusted events**; every synthetic pointer/mouse drag (including an
   exact replay of a real drag's event stream) was ignored — and an extension can only emit

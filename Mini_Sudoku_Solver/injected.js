@@ -133,8 +133,18 @@ async function runSudoku(mode) {
     const colUsed = Array.from({ length: N }, () => new Array(N + 1).fill(false));
     const regUsed = Array.from({ length: N }, () => new Array(N + 1).fill(false));
 
-    // seed prefilled / already-known clues
+    // Seed ONLY the puzzle's own prefilled clues.
+    //
+    // Deliberately *not* every digit currently on the board: anything the player
+    // typed is a guess, and treating a wrong guess as an immovable clue poisons the
+    // search. A single misplaced digit makes the real puzzle look unsolvable
+    // ("No solution exists for this board"), and a wrong guess that happens to stay
+    // consistent gets baked into the answer — the cell is then skipped at fill time
+    // (its "target" is the mistake itself) and the error survives on the finished
+    // board. Solving from the clues alone means every player-entered cell is treated
+    // as empty and gets overwritten below, mistakes included.
     for (const c of cells) {
+      if (!c.prefilled) continue;
       if (c.value >= 1 && c.value <= N) {
         value[c.idx] = c.value;
         rowUsed[c.row][c.value] = true;
@@ -195,6 +205,13 @@ async function runSudoku(mode) {
 
   // mode === 'solve'
   if (!valid) return { ok: false, error: "Board not found or still loading." };
+  // Every Mini Sudoku ships with clues, so finding none means `sudoku-cell-prefilled`
+  // has stopped identifying them. Bail out loudly: solving on from here would treat
+  // the real clues as editable, produce a grid that contradicts them, and then fail
+  // to write it (clue cells aren't editable), leaving the board mangled.
+  if (!board.cells.some((c) => c.prefilled)) {
+    return { ok: false, error: "Couldn't tell clues from guesses on this board." };
+  }
   const solution = solve(board);
   if (!solution) return { ok: false, error: "No solution exists for this board." };
 

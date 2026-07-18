@@ -86,9 +86,15 @@ these first.
 
 Backtracking constraint-satisfaction solver in `injected.js` (`solve()`). Regions are
 derived from the wall classes by flood-fill, so it handles irregular layouts, not just
-2×3 boxes. It seeds the prefilled clues, then fills each empty cell with the first digit
-`1..N` not already used in that cell's **row**, **column**, or **region**, backtracking
-on dead ends. Returns the full grid (`value[idx]`) or `null` if unsolvable.
+2×3 boxes. It seeds **only** the prefilled clues, then fills every other cell with the
+first digit `1..N` not already used in that cell's **row**, **column**, or **region**,
+backtracking on dead ends. Returns the full grid (`value[idx]`) or `null` if unsolvable.
+
+Seeding from clues alone is deliberate: digits the *player* entered are guesses, not
+facts. Seeding those too (as an earlier version did) meant a single wrong guess made the
+puzzle look unsolvable, and a wrong-but-consistent guess got baked into the answer and
+then skipped at fill time — leaving the mistake on the finished board. Treating every
+player-entered cell as empty means all of them, mistakes included, get overwritten.
 
 ---
 

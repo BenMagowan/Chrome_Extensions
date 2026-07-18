@@ -89,11 +89,25 @@ async function runPatches(mode) {
     // Clues: any cell carrying a [data-shape] marker (or an "…clue…" aria-label).
     // Both constraints are optional; absent means unconstrained, never unsupported:
     // an unrecognised shape falls back to "ANY", an unreadable number to null.
+    //
+    // The membership phrases are stripped BEFORE the "…clue…" test, and that is not a
+    // nicety. Drawing a patch rewrites its cells' labels to "Row 1, column 1, in region
+    // with clue at row 2, column 2" — which contains the word "clue", so a bare
+    // /clue/i test promotes every filled cell into a phantom unnumbered clue. On a
+    // part-drawn board that inflates the clue list (verified live: 10 real clues read
+    // as 13), the arithmetic guard in solve() then rejects the board, and the whole
+    // thing surfaces as "no board / no solution" — see README.
+    const drawnPhrase = /,?\s*in region with clue at[^,]*,[^,]*/i;
+    const drawnSelf = /,?\s*in drawn region/i;
     const clues = [];
     for (const el of els) {
       const idx = parseInt(el.getAttribute("data-cell-idx"), 10);
       const shapeEl = el.querySelector("[data-shape]");
-      const aria = el.getAttribute("aria-label") || "";
+      // `aria` describes the cell itself; membership in someone's patch is not part of
+      // that, so it goes before any of the shape/area/clue reads below.
+      const aria = (el.getAttribute("aria-label") || "")
+        .replace(drawnPhrase, "")
+        .replace(drawnSelf, "");
       if (!shapeEl && !/clue/i.test(aria)) continue;
       const rawShape = shapeEl ? shapeEl.getAttribute("data-shape") || "" : "";
       const shape = /SQUARE/.test(rawShape) || /square clue/i.test(aria)
@@ -216,6 +230,15 @@ async function runPatches(mode) {
   }
 
   // --- keyboard fill ---
+  // A cell that belongs to a drawn patch says so in its aria-label: an ordinary cell
+  // reads "…, in region with clue at row R, column C", and a *clue* cell inside a
+  // patch reads "…, in drawn region". Either means "already drawn".
+  const DRAWN = /in region with clue at|in drawn region/i;
+  function drawnIdxs(board) {
+    return Array.from(board.boardEl.querySelectorAll("[data-cell-idx]"))
+      .filter((el) => DRAWN.test(el.getAttribute("aria-label") || ""))
+      .map((el) => parseInt(el.getAttribute("data-cell-idx"), 10));
+  }
   function cursorIdx() {
     const a = document.activeElement;
     return a && a.getAttribute && a.hasAttribute("data-cell-idx")
@@ -239,8 +262,19 @@ async function runPatches(mode) {
       const el = a && a.hasAttribute && a.hasAttribute("data-cell-idx") ? a : boardEl;
       pressKeyOn(el, key, kc);
     };
-    // enter grid mode (a cursor cell gains focus)
+    // Enter grid mode (a cursor cell gains focus) from a known-clean state.
+    //
+    // The Escape first is load-bearing. "Anchor placed, not yet committed" is a live
+    // mode we can't read from the DOM, and it is easy to arrive in: the game refuses
+    // to draw across cells that already belong to a patch, so a player whose draw was
+    // rejected — or who simply pressed Enter and wandered off — leaves an anchor
+    // dangling. With one live, our next keypress commits a rectangle instead of doing
+    // what we asked, which is how an erase pass ends up *adding* a drawn cell
+    // (observed: 8 drawn cells became 9). Escape drops grid mode and the anchor with
+    // it; re-entering then gives a cursor with nothing pending.
     async function ensureGrid() {
+      press("Escape", 27);
+      await sleep(200);
       for (let t = 0; t < 4; t++) {
         if (cursorIdx() != null) return true;
         boardEl.focus();
@@ -267,6 +301,37 @@ async function runPatches(mode) {
     }
 
     if (!(await ensureGrid())) return { ok: false, error: "Could not focus the gameboard." };
+
+    // Erase whatever is already on the board before drawing the solution.
+    //
+    // This is mandatory, not tidiness: the game will not draw a rectangle across cells
+    // that already belong to a patch, so a single stray patch left in place blocks
+    // every solution rectangle that overlaps it.
+    //
+    // The erase is **Backspace with the cursor on a drawn cell**, which removes that
+    // cell's whole patch in one press (verified live: a 2×2 patch went from 4 drawn
+    // cells to 0; a messier board went 9 -> 6 -> 2 -> 0 in three presses). So each pass
+    // targets any still-drawn cell and clears its entire region — bounded by the clue
+    // count, not the cell count.
+    //
+    // A header "Undo" button does exist (it renders once play starts), but it unwinds
+    // move history step by step: the depth needed is unknown, it can't target a
+    // specific patch, and on a resumed game the history may not reach back to the
+    // patches already on the board. Backspace addresses a region directly, so it works
+    // regardless of how the board got into its current state.
+    let cleared = 0;
+    for (let guard = 0; guard <= rows * cols; guard++) {
+      const drawn = drawnIdxs(board);
+      if (drawn.length === 0) break;
+      if (!(await goto(drawn[0]))) return { ok: false, error: "Cursor navigation failed." };
+      press("Backspace", 8);
+      await sleep(180);
+      // Stop rather than spin if a press stops removing anything — better to attempt
+      // the fill and report honestly than to loop on an unerasable board.
+      if (drawnIdxs(board).length >= drawn.length) break;
+      cleared++;
+    }
+
     let placed = 0;
     for (const rect of solution) {
       if (!(await goto(rect.tl))) return { ok: false, error: "Cursor navigation failed." };
@@ -277,7 +342,7 @@ async function runPatches(mode) {
       await sleep(150);
       placed++;
     }
-    return { ok: true, placed };
+    return { ok: true, placed, cleared };
   }
 
   // --- dispatch ---
