@@ -1,23 +1,58 @@
-/* Popup styling for the Mini Sudoku Auto-Solver. Adapts to light/dark. */
+/*
+ * Popup styling for the Mini Sudoku Solver. Adapts to light/dark.
+ *
+ * Shared across all five LinkedIn Games solvers: only the accent block below
+ * differs. --accent is sampled from this extension's own images/icon-128.png
+ * and is spent on one thing — the button that actually solves — so the primary
+ * action is unmistakable. --brand is LinkedIn blue in every solver: they are one
+ * family, so navigation and focus look the same throughout, and each member is
+ * told apart by its icon and accent. Success/danger stay conventional green/red:
+ * they must read instantly and are deliberately not part of the palette.
+ *
+ * Every visual difference between UI states hangs off [data-state] on <body>.
+ * popup.js sets that attribute and the copy; it never touches styles.
+ */
 
 :root {
   color-scheme: light dark;
-  --bg: #ffffff;
-  --fg: #1d2226;
-  --muted: #56687a;
-  --accent: #0a66c2; /* LinkedIn blue */
-  --accent-hover: #004182;
-  --border: #d0d7de;
+
+  /* Shared family colour */
+  --brand: #0072b1;
+
+  /* Accent — sampled from this extension's icon */
+  --accent: #338041;
+  --accent-hi: #3f9c50;
+  --accent-lo: #26632f;
+  --on-accent: #ffffff;
+
+  /* Semantic */
+  --ok: #1a9e63;
+  --err: #d1372f;
+
+  /* Surfaces */
+  --surface: #ffffff;
+  --surface-sunk: #f3f7fa;
+  --line: #dde6ee;
+  --text: #10243a;
+  --text-muted: #5c748c;
+
+  --ring: color-mix(in srgb, var(--brand) 45%, transparent);
+  --shadow: 0 1px 2px rgb(16 36 58 / 0.06), 0 4px 12px rgb(16 36 58 / 0.05);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1b1f23;
-    --fg: #e8e8e8;
-    --muted: #9aa7b3;
-    --accent: #4aa3ff;
-    --accent-hover: #7bbcff;
-    --border: #3a4249;
+    --brand: #2b9fdb;
+    --ok: #3ecf8e;
+    --err: #ff7a70;
+
+    --surface: #0f1b26;
+    --surface-sunk: #0a141d;
+    --line: #21323f;
+    --text: #e6edf3;
+    --text-muted: #8ea3b5;
+
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 12px rgb(0 0 0 / 0.25);
   }
 }
 
@@ -27,86 +62,418 @@
 
 body {
   margin: 0;
-  width: 260px;
+  width: 300px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: var(--bg);
-  color: var(--fg);
+  background: var(--surface);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
 }
 
-.wrap {
+/* ---------- brand header ---------- */
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 16px;
+  background: var(--surface-sunk);
+  border-bottom: 1px solid var(--line);
+}
+
+/* The extension's own icon, so the popup matches the toolbar button exactly.
+   The art is already a rounded tile, so it needs no backdrop of its own. */
+.brand__icon {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.brand__text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  /* Takes the slack so the cog is pushed to the far right. */
+  flex: 1;
+}
+
+.brand__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.brand__sub {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ---------- panel ---------- */
+
+.panel {
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  text-align: center;
 }
 
-.title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-}
+/* ---------- status ---------- */
 
 .status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
-  font-size: 13px;
-  color: var(--muted);
-  min-height: 18px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-sunk);
+  font-size: 12.5px;
+  font-weight: 550;
+  min-height: 34px;
 }
 
-.solve-btn {
+.status__dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: background 0.2s ease;
+}
+
+.status__text {
+  min-width: 0;
+}
+
+/* Dot colour + halo per state. */
+body[data-state="checking"] .status__dot,
+body[data-state="solving"] .status__dot {
+  background: var(--brand);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+body[data-state="ready"] .status__dot {
+  background: var(--accent-lo);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+/* `solved` (we did it) and `done` (it was already finished) share the success
+   treatment — but only `solved` earns the icon flourish below. */
+body:is([data-state="solved"], [data-state="done"]) .status__dot {
+  background: var(--ok);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent);
+}
+
+body:is([data-state="solved"], [data-state="done"]) .status__text {
+  color: var(--ok);
+}
+
+body:is([data-state="error"], [data-state="stuck"]) .status__dot {
+  background: var(--err);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--err) 20%, transparent);
+}
+
+body:is([data-state="error"], [data-state="stuck"]) .status {
+  border-color: color-mix(in srgb, var(--err) 35%, var(--line));
+}
+
+body:is([data-state="error"], [data-state="stuck"]) .status__text {
+  color: var(--err);
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand) 40%, transparent);
+  }
+  50% {
+    opacity: 0.65;
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 0%, transparent);
+  }
+}
+
+/* A quiet nod to the win: the icon lifts once when WE solved the board.
+   Deliberately not applied to `done` — that win wasn't ours to celebrate. */
+body[data-state="solved"] .brand__icon {
+  animation: icon-pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+@keyframes icon-pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.18) translateY(-1.5px);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ---------- action button ---------- */
+
+.action {
   appearance: none;
-  border: none;
-  border-radius: 999px;
-  padding: 10px 16px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #fff;
-  background: var(--accent);
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.solve-btn:hover:not(:disabled) {
-  background: var(--accent-hover);
-}
-
-.solve-btn:disabled {
-  background: var(--border);
-  color: var(--muted);
-  cursor: not-allowed;
-}
-
-.hint {
-  margin: 0;
-  font-size: 11px;
-  color: var(--muted);
-}
-
-.coffee-link {
+  border: 1px solid transparent;
+  border-radius: 9px;
+  padding: 0 14px;
+  height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  margin-top: 4px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--fg);
-  text-decoration: none;
+  gap: 8px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  color: var(--on-accent);
+  background: var(--accent);
+  box-shadow: var(--shadow);
+  transition: background 0.15s ease, transform 0.08s ease, box-shadow 0.15s ease,
+    color 0.15s ease;
+}
+
+.action:hover:not(:disabled) {
+  background: var(--accent-hi);
+}
+
+.action:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.action:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.action:disabled {
+  cursor: default;
+  box-shadow: none;
+}
+
+/* No board yet: the button navigates rather than solves, so it drops to brand
+   blue — the accent stays reserved for actually solving. */
+body[data-state="idle"] .action {
+  background: var(--brand);
+  color: #fff;
+}
+
+body[data-state="idle"] .action:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--brand) 85%, #000);
+}
+
+body[data-state="checking"] .action:disabled,
+body[data-state="stuck"] .action:disabled {
+  background: var(--surface-sunk);
+  border-color: var(--line);
+  color: var(--text-muted);
+}
+
+/* Fading the real accent pairing (rather than mixing the background toward the
+   surface) keeps the label legible whether --on-accent is dark or white. */
+body[data-state="solving"] .action:disabled {
+  opacity: 0.6;
+}
+
+body:is([data-state="solved"], [data-state="done"]) .action:disabled {
   background: transparent;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  border-color: color-mix(in srgb, var(--ok) 40%, var(--line));
+  color: var(--ok);
 }
 
-.coffee-link:hover {
-  background: var(--border);
-  border-color: var(--accent);
+/* ---------- spinner (solving only) ---------- */
+
+.action__spinner {
+  display: none;
+  width: 13px;
+  height: 13px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--on-accent) 25%, transparent);
+  border-top-color: var(--on-accent);
+  animation: spin 0.7s linear infinite;
 }
 
-.coffee-icon {
-  width: 16px;
-  height: 16px;
+body[data-state="solving"] .action__spinner {
+  display: block;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- hint ---------- */
+
+.hint {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  text-align: center;
+  text-wrap: balance;
+  min-height: 17px;
+}
+
+/* ---------- settings menu ---------- */
+
+/* Positioning context for the dropdown, which is anchored to the cog. */
+.menu-wrap {
+  position: relative;
+  flex: none;
+}
+
+.cog {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.cog svg {
+  width: 17px;
+  height: 17px;
+  fill: currentColor;
+  transition: transform 0.25s ease;
+}
+
+.cog:hover,
+.cog[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--text-muted) 14%, transparent);
+  color: var(--text);
+}
+
+/* Small affordance that the cog is what opened the menu. */
+.cog[aria-expanded="true"] svg {
+  transform: rotate(45deg);
+}
+
+/* Hover gives the gear a quick half-turn: 180° in 0.2s, a flick rather than a
+   spin. The teeth are laid out symmetrically about (12,12) and the svg box is
+   square, so the default 50% 50% origin is the true centre — an off-centre gear
+   would visibly wobble here. Hover wins over the 45° tilt while hovering (an
+   animation beats a static transform), so the open cog still flicks. */
+.cog:hover svg {
+  animation: cog-spin 0.2s linear 1;
+}
+
+@keyframes cog-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(180deg);
+  }
+}
+
+.cog:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 10;
+  min-width: 172px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 6px 20px rgb(16 36 58 / 0.14), 0 2px 6px rgb(16 36 58 / 0.08);
+  animation: menu-in 0.13s ease-out;
+}
+
+/* [hidden] must beat the display used above. */
+.menu[hidden] {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .menu {
+    box-shadow: 0 6px 20px rgb(0 0 0 / 0.45), 0 2px 6px rgb(0 0 0 / 0.3);
+  }
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.menu__item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 9px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--text);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.menu__item:hover,
+.menu__item:focus-visible {
+  outline: none;
+  background: var(--surface-sunk);
+}
+
+.menu__item:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--ring);
+}
+
+.menu__icon {
+  width: 15px;
+  height: 15px;
+  flex: none;
   object-fit: contain;
+  border-radius: 3px;
+}
+
+/* First thing in the menu, so it carries no top border of its own. */
+.menu__label {
+  margin: 1px 0 2px;
+  padding: 3px 9px 0;
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Divides the solver list from the coffee link below it. */
+.menu__sep {
+  height: 1px;
+  margin: 5px 4px;
+  background: var(--line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }

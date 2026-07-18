@@ -33,6 +33,17 @@ game-specific details and verified DOM selectors):
   events (Patches' drag responds only to trusted events, so the keyboard path is used).
 - **Popup UX** — polls to auto-enable **Solve** once a board is detected; otherwise
   the button opens the relevant game.
+- **Shared popup design** — all five popups use one stylesheet and one state machine
+  (`checking → idle | ready → solving → solved | error`, plus `stuck` in Patches for a
+  board with no valid tiling, and `done` in Queens for an already-finished board).
+  `styles.css` is byte-identical between solvers apart from a palette block at the top:
+  `--accent` is sampled from that extension's own `images/icon-128.png` and is spent on
+  the one button that solves, while `--brand` stays LinkedIn blue everywhere, since these
+  are one family and each member is told apart by its icon and accent. `setState()` writes
+  `data-state` on `<body>` and the CSS reacts to it; the JS never touches styles. Each
+  header shows the extension's own icon (via `chrome.runtime.getURL`, 128 → 48 → 32 → 16)
+  and a cog menu linking the other four solvers.
+  Queens additionally draws a live board preview in place of its status line.
 
 ## Install (any solver)
 
