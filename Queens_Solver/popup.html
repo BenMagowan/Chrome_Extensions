@@ -2,6 +2,9 @@
   Popup UI for the Queens Auto-Solver.
   The <head>/<body> wrapper is real here (unlike Artifacts) — this is a normal
   extension popup document. Logic lives in popup.js (no inline scripts, per MV3 CSP).
+
+  The single source of truth for what the user sees is data-state on <body>:
+  popup.js sets it, styles.css reacts to it. See the STATES table in popup.js.
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -11,22 +14,176 @@
     <link rel="stylesheet" href="styles.css" />
     <title>Queens Solver</title>
   </head>
-  <body>
-    <main class="wrap">
-      <h1 class="title">Queens Solver</h1>
-      <p id="status" class="status">Checking for a board…</p>
-      <button id="solve" class="solve-btn" disabled>Solve puzzle</button>
-      <p class="hint">Start a round of the Queens game, then solve it.</p>
-      <a
-        class="coffee-link"
-        href="https://buymeacoffee.com/benmagowan"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <img src="images/coffee.png" alt="" class="coffee-icon" />
-        Buy me a coffee
-      </a>
+  <body data-state="checking">
+    <header class="brand">
+      <!-- src is set by popup.js via chrome.runtime.getURL, largest first,
+           falling back down the icon sizes if one is missing. -->
+      <img id="brand-icon" class="brand__icon" src="" alt="" width="32" height="32" />
+
+      <span class="brand__text">
+        <h1 class="brand__title">Queens Solver</h1>
+        <p class="brand__sub">LinkedIn Games</p>
+      </span>
+
+      <!-- Menu anchor. .menu-wrap is the positioning context for the dropdown. -->
+      <div class="menu-wrap">
+        <button
+          id="menu-btn"
+          class="cog"
+          type="button"
+          aria-label="Settings and more"
+          aria-haspopup="menu"
+          aria-expanded="false"
+          aria-controls="menu"
+        >
+          <!--
+            Built from primitives that are symmetric about (12,12) by
+            construction: 8 identical teeth rotated around that point, and a
+            ring whose outer and inner circles are both centred there. A
+            hand-plotted gear path drifted off-centre, which showed up as the
+            hole sitting left of centre and a wobble when the cog spins.
+          -->
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <g class="cog__gear">
+              <rect x="10.4" y="1.9" width="3.2" height="4.6" rx="1.1" />
+              <rect
+                x="10.4"
+                y="1.9"
+                width="3.2"
+                height="4.6"
+                rx="1.1"
+                transform="rotate(45 12 12)"
+              />
+              <rect
+                x="10.4"
+                y="1.9"
+                width="3.2"
+                height="4.6"
+                rx="1.1"
+                transform="rotate(90 12 12)"
+              />
+              <rect
+                x="10.4"
+                y="1.9"
+                width="3.2"
+                height="4.6"
+                rx="1.1"
+                transform="rotate(135 12 12)"
+              />
+              <rect
+                x="10.4"
+                y="1.9"
+                width="3.2"
+                height="4.6"
+                rx="1.1"
+                transform="rotate(180 12 12)"
+              />
+              <rect
+                x="10.4"
+                y="1.9"
+                width="3.2"
+                height="4.6"
+                rx="1.1"
+                transform="rotate(225 12 12)"
+              />
+              <rect
+                x="10.4"
+                y="1.9"
+                width="3.2"
+                height="4.6"
+                rx="1.1"
+                transform="rotate(270 12 12)"
+              />
+              <rect
+                x="10.4"
+                y="1.9"
+                width="3.2"
+                height="4.6"
+                rx="1.1"
+                transform="rotate(315 12 12)"
+              />
+              <!-- Ring: outer r=7, hole r=2.6, both centred on (12,12). The
+                   subpaths wind in opposite directions so the hole knocks out. -->
+              <path
+                d="M12 5a7 7 0 1 0 0 14 7 7 0 0 0 0-14zm0 4.4a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 0 1 0-5.2z"
+              />
+            </g>
+          </svg>
+        </button>
+
+        <div id="menu" class="menu" role="menu" aria-label="Settings and more" hidden>
+          <!-- role="presentation": a bare <p> isn't a valid child of role="menu".
+               It still names the group below via aria-labelledby. -->
+          <p class="menu__label" id="more-solvers-label" role="presentation">
+            More solvers
+          </p>
+          <!-- role="group" keeps the heading associated with the links below it. -->
+          <div role="group" aria-labelledby="more-solvers-label">
+            <a
+              class="menu__item"
+              role="menuitem"
+              href="https://chromewebstore.google.com/detail/mini-sudoku-puzzle-solver/ihloniejebknegobhngghljipalnblpb"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Mini Sudoku</a
+            >
+            <a
+              class="menu__item"
+              role="menuitem"
+              href="https://chromewebstore.google.com/detail/zip-puzzle-solver/ffhagcpnmojjoicapfbjknifcpdpdkko"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Zip</a
+            >
+            <a
+              class="menu__item"
+              role="menuitem"
+              href="https://chromewebstore.google.com/detail/patches-puzzle-solver/akfafdkbjjahmodbahceoifkamldcadc"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Patches</a
+            >
+            <a
+              class="menu__item"
+              role="menuitem"
+              href="https://chromewebstore.google.com/detail/tango-puzzle-solver/lieoeccecmpfiahfdoiengmldenljdle"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Tango</a
+            >
+          </div>
+
+          <!-- role="separator" is a valid child of role="menu", unlike a bare <hr>. -->
+          <div class="menu__sep" role="separator"></div>
+
+          <a
+            class="menu__item"
+            role="menuitem"
+            href="https://buymeacoffee.com/benmagowan"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <img src="images/coffee.png" alt="" class="menu__icon" />
+            Buy me a coffee
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main class="panel">
+      <p class="status" id="status" role="status" aria-live="polite">
+        <span class="status__dot" aria-hidden="true"></span>
+        <span class="status__text" id="status-text">Looking for a board…</span>
+      </p>
+
+      <button id="action" class="action" type="button" disabled>
+        <span class="action__spinner" aria-hidden="true"></span>
+        <span class="action__label" id="action-label">Solve puzzle</span>
+      </button>
+
+      <p class="hint" id="hint">Open a round of Queens to get started.</p>
     </main>
+
     <script src="injected.js"></script>
     <script src="popup.js"></script>
   </body>

@@ -17,8 +17,8 @@ Queens_Solver/
 ├── manifest.json   # MV3 config: action popup + scripting/host permissions
 ├── injected.js     # The engine (parse → solve → place) as one self-contained func
 ├── popup.html      # Popup markup (loads injected.js then popup.js)
-├── popup.js        # Popup logic: inject engine on demand, poll, enable Solve
-├── styles.css      # Popup styling (light/dark aware)
+├── popup.js        # Popup logic: inject engine on demand, poll, enable Solve, settings menu
+├── styles.css      # Popup styling: state-driven, light/dark aware
 ├── images/         # Toolbar/action icons (16/32/48/128 px)
 └── README.md       # This file
 ```
@@ -28,9 +28,10 @@ Queens_Solver/
 | File | Responsibility |
 | --- | --- |
 | **manifest.json** | Declares an MV3 extension with a `default_popup`. **No content script** — the engine is injected on demand. Permissions: `scripting` (to inject) + `host_permissions` for `*://*.linkedin.com/*` (so injection/polling works without a fresh reload). |
-| **injected.js** | The engine, exported as a single self-contained function `runQueens(mode)`. `mode:'detect'` returns whether a solvable board is present; `mode:'solve'` parses → solves (backtracking CSP) → places queens via the verified DOM event sequence. It references nothing outside itself so `chrome.scripting.executeScript` can serialize it into the page's MAIN world. |
-| **popup.html / popup.js** | The UI. `popup.js` calls `chrome.scripting.executeScript({ target:{tabId, allFrames:true}, world:'MAIN', func: runQueens, args:['detect'\|'solve'] })`. On open it polls `detect` every 800 ms and enables **Solve** only once a board is found (so the user can let the game load; the solver only runs on click). Clicking runs `solve`. |
-| **styles.css** | Minimal popup styling, adapts to light/dark. |
+| **injected.js** | The engine, exported as a single self-contained function `runQueens(mode)`. `mode:'detect'` returns `{solvable, N, solved}` — whether a board is present, its size, and whether it is **already finished**; `mode:'solve'` parses → solves (backtracking CSP) → places queens via the verified DOM event sequence, and short-circuits with `{ok:true, placed:0, alreadySolved:true}` if the board is already won (so a completed board is never clicked back out of its win state). It references nothing outside itself so `chrome.scripting.executeScript` can serialize it into the page's MAIN world. |
+| **popup.html / popup.js** | The UI. `popup.js` calls `chrome.scripting.executeScript({ target:{tabId, allFrames:true}, world:'MAIN', func: runQueens, args:['detect'\|'solve'] })`. On open it polls `detect` every 800 ms and enables **Solve** only once a board is found (so the user can let the game load; the solver only runs on click). Clicking runs `solve`. The popup is a small state machine: `checking → idle \| ready \| done → solving → solved \| error`. `done` means the board was already finished when we looked, and is kept distinct from `solved` (we did it) so the popup never claims credit it hasn't earned. The `STATES` table is the only place a state's copy and behavior are defined; `setState()` writes `data-state` on `<body>` and the CSS reacts to it, so the JS never touches styles. |
+| **styles.css** | Popup styling, light/dark aware. Palette is sampled from `images/icon-128.png` (`#0072b1` field, `#ffbb00` crown): blue carries the brand and the *open game* action, gold is reserved for the one action that places crowns. Green/red are semantic only. Every per-state visual hangs off `body[data-state="…"]`. |
+| **Header & menu** | The header shows the extension's own icon (loaded via `chrome.runtime.getURL`, trying 128 → 48 → 32 → 16 and hiding the `<img>` if none resolve, so a missing file never leaves a broken image) plus a cog button on the right. The cog opens a dropdown anchored to it holding a **More solvers** group (the other four solvers on the Web Store) above a separator and **Buy me a coffee**, each link `target="_blank"` + `rel="noopener noreferrer"`. On hover the cog turns once — a single full 360° rotation over 0.5s, then it settles (360° lands where it started, so there's no jump); it holds a 45° tilt while the menu is open. its gear is built from 8 teeth rotated about (12,12) plus a concentric ring, so it is symmetric by construction — a hand-plotted path drifted ~1.5 units off-centre, which showed as a lopsided hole and a wobble when spinning. The menu closes on outside pointerdown (capture phase), <kbd>Esc</kbd>, <kbd>Tab</kbd> and item activation; <kbd>Esc</kbd>/toggle return focus to the cog, while outside-click deliberately does not steal it. <kbd>↑</kbd>/<kbd>↓</kbd> rove through the items and wrap. |
 | **images/** | PNG icons referenced by `manifest.json`. All four sizes must exist or Chrome refuses to load the extension. |
 
 ### Why on-demand injection (the v1.1 fix)
@@ -136,14 +137,20 @@ The code is written to degrade gracefully if LinkedIn changes the markup:
   works whether the container is `#queens-grid` (guest) or `[data-testid=
   "interactive-grid"]` (signed-in), and survives class-hash churn.
 - **Region id source:** primarily the color name in `aria-label` (present in both
-  DOMs); falls back to a `cell-color-N` class only if the label ever lacks a color.
+  DOMs); falls back to a `cell-color-N` class, then to the cell's rendered
+  background color. That last fallback matters because a cell's *label text*
+  changes as it is filled (`Empty cell of color X` → `Queen of color X`) while its
+  background does not — so a part-filled board can't read as more regions than
+  there are rows, which used to surface as a bogus "board not found".
 - **Board not ready:** `detect` only reports solvable for a complete N×N grid with N
   regions, and the popup keeps polling, so the button enables itself the moment the
   game finishes rendering.
 - **Stray marks:** the header **Clear** button opens a confirmation modal (verified
-  live), so the extension deliberately avoids it. Instead it resets precisely —
-  any cell holding a Queen that isn't part of the solution is cycled back to empty
-  before the solution is placed. Crosses are harmless annotations and are left as-is.
+  live), so the extension deliberately avoids it. Instead it resets cell-by-cell:
+  every mark not part of the solution — wrong Queens *and* Crosses — is cycled back
+  to empty before the solution is placed, so a half-finished wrong attempt doesn't
+  end up layered underneath the answer. Locked starter queens (`aria-disabled`)
+  are skipped, since clicking them does nothing and they're in the solution anyway.
 - **Dropped rapid events:** ~200 ms delay between cells plus per-cell re-verification.
 
 If the click sequence ever stops working, re-inspect which events the widget

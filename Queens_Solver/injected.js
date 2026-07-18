@@ -20,25 +20,35 @@
  * nothing from the popup's scope. Only the `mode` argument is passed in.
  *
  * @param {'detect'|'solve'} mode
- * @returns {{solvable:boolean,N:number}} for 'detect',
- *          {{ok:boolean, placed?:number, error?:string}} for 'solve'
+ * @returns {{solvable:boolean,N:number,solved:boolean}} for 'detect',
+ *          {{ok:boolean, placed?:number, alreadySolved?:boolean, error?:string}} for 'solve'
  */
 async function runQueens(mode) {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   // --- region id for a cell ---
-  // The color region is read PRIMARILY from the aria-label ("... of color
-  // Lavender, ...") because that text is identical across BOTH known DOMs:
-  //   - guest:     #queens-grid + .queens-cell-with-border + cell-color-N classes
-  //   - signed-in: [data-testid="interactive-grid"] with fully hashed classes and
-  //                NO cell-color-N (color lives only in the aria-label)
-  // The cell-color-N class is a fallback for older/guest markup.
+  // Three independent sources, tried in order, because no single one survives every
+  // DOM *and* every fill state:
+  //   1. aria-label ("... of color Lavender, ...") — same wording in both known DOMs
+  //      (guest #queens-grid, and signed-in [data-testid="interactive-grid"]), and it
+  //      is the only source that gives a human-readable name. The colour phrase may
+  //      end the label rather than be followed by a comma, hence the `(?:,|$)`.
+  //   2. the cell-color-N class, present in the guest/older markup.
+  //   3. the rendered background colour.
+  // (3) is the important one: a cell's *label text* changes as it is filled in
+  // ("Empty cell of color X" -> "Queen of color X" -> and, in some markup, a form
+  // that drops the colour entirely), but its background colour does not. Without
+  // this fallback a part-filled board could yield more distinct "regions" than
+  // there are rows, which read downstream as "no board" — the board was found, we
+  // just couldn't colour it.
   function regionOf(el, idx) {
     const label = el.getAttribute("aria-label") || "";
-    const cm = /of color ([^,]+?),/i.exec(label);
+    const cm = /of colou?r ([^,]+?)(?:,|$)/i.exec(label);
     if (cm) return cm[1].trim(); // e.g. "Lavender", "Peach Orange"
     const m = /cell-color-(\d+)/.exec(el.className || "");
     if (m) return "c" + m[1];
+    const bg = getComputedStyle(el).backgroundColor;
+    if (bg && bg !== "transparent" && !/rgba\(0, 0, 0, 0\)/.test(bg)) return "bg:" + bg;
     return "idx-" + idx; // last resort: unique per cell (board will read as invalid)
   }
 
@@ -133,6 +143,38 @@ async function runQueens(mode) {
     const l = el.getAttribute("aria-label") || "";
     return l.startsWith("Queen") ? "queen" : l.startsWith("Cross") ? "cross" : "empty";
   };
+
+  // --- is the board ALREADY finished? ---
+  // Tests the game's win condition against the queens currently on the board,
+  // rather than comparing to solve()'s output: that keeps this honest even if the
+  // puzzle admits more than one solution, and it still answers correctly when the
+  // solver itself can't find one. Crosses are annotations and are ignored.
+  function isSolved(board) {
+    const queens = board.cells.filter((c) => cellState(c.el) === "queen");
+    if (queens.length !== board.N) return false;
+    const rows = new Set();
+    const cols = new Set();
+    const regions = new Set();
+    for (const q of queens) {
+      rows.add(q.row);
+      cols.add(q.col);
+      regions.add(q.region);
+    }
+    // One queen per row, column and colour region.
+    if (rows.size !== board.N || cols.size !== board.N || regions.size !== board.N) {
+      return false;
+    }
+    // ...and no two touching, including diagonally.
+    for (let i = 0; i < queens.length; i++) {
+      for (let j = i + 1; j < queens.length; j++) {
+        const a = queens[i];
+        const b = queens[j];
+        if (Math.abs(a.row - b.row) <= 1 && Math.abs(a.col - b.col) <= 1) return false;
+      }
+    }
+    return true;
+  }
+
   // Cycle a cell (empty->cross->queen->empty) to the target state; state updates
   // asynchronously, so re-verify after each click. Max 3 clicks reaches any state.
   async function clickUntil(el, target) {
@@ -151,20 +193,58 @@ async function runQueens(mode) {
     board.cells.length === board.N * board.N &&
     board.regionCount === board.N;
 
-  if (mode === "detect") return { solvable: valid, N: board ? board.N : 0 };
+  if (mode === "detect") {
+    return {
+      solvable: valid,
+      N: board ? board.N : 0,
+      solved: valid ? isSolved(board) : false,
+    };
+  }
 
   // mode === 'solve'
-  if (!valid) return { ok: false, error: "Board not found or still loading." };
+  // Split the failure: "there is no grid here" (the usual case — this frame simply
+  // isn't the game) reads very differently from "there is a grid but its colours
+  // didn't add up", which means the markup moved and is worth reporting as such
+  // instead of hiding behind a generic not-found.
+  if (!valid) {
+    if (board && board.N >= 4 && board.regionCount !== board.N) {
+      return {
+        ok: false,
+        error: `Read ${board.regionCount} colours on a ${board.N}×${board.N} board.`,
+      };
+    }
+    return { ok: false, error: "Board not found or still loading." };
+  }
+  // Already finished (e.g. solved between the popup's last poll and the click) —
+  // report it instead of clicking a completed board back out of its win state.
+  if (isSolved(board)) return { ok: true, placed: 0, alreadySolved: true, N: board.N };
   const solution = solve(board);
   if (!solution) return { ok: false, error: "No solution exists for this board." };
 
-  // Reset stray queens not in our solution (the header "Clear" opens a confirm
-  // modal, so we avoid it). Crosses are harmless annotations and are left as-is.
+  // Wipe the board back to the solution before drawing it.
+  //
+  // Everything the player left behind that isn't part of the solution goes: wrong
+  // queens obviously, but crosses too. A cross is only ever a note-to-self about a
+  // cell the player had ruled out, and once the real answer is on the board those
+  // notes are at best noise and at worst visibly contradict it (a cross sitting
+  // where a crown belongs). Clearing them leaves the finished board looking like
+  // the solution rather than the solution overlaid on an abandoned attempt.
+  //
+  // We do this cell-by-cell rather than via the header's "Clear" button because
+  // that button opens a confirmation modal we'd then have to drive.
   const solutionKeys = new Set(solution.map((s) => s.row + "," + s.col));
+  const locked = (el) => el.getAttribute("aria-disabled") === "true";
+  let cleared = 0;
   for (const c of board.cells) {
+    // Solution cells are left alone here — the placement pass below cycles them to
+    // "queen" from whatever they are now, so clearing them first only costs clicks.
     if (solutionKeys.has(c.row + "," + c.col)) continue;
-    if (cellState(c.el) === "queen") {
+    // Starter puzzles ship with pre-placed queens locked; clicking those does
+    // nothing, so skip rather than burn three clicks and 600ms finding that out.
+    if (locked(c.el)) continue;
+    if (cellState(c.el) !== "empty") {
       await clickUntil(c.el, "empty");
+      cleared++;
       await sleep(200);
     }
   }
@@ -177,5 +257,5 @@ async function runQueens(mode) {
     await clickUntil(el, "queen");
     await sleep(200); // human-like spacing; avoids dropped rapid events
   }
-  return { ok: true, placed: solution.length };
+  return { ok: true, placed: solution.length, cleared };
 }
