@@ -175,6 +175,34 @@ async function runQueens(mode) {
     return true;
   }
 
+  // --- the cell's rendered swatch colour, for the popup's board preview ---
+  // Read off the live computed style rather than mapping the aria-label's colour
+  // NAME to a hex value: the names are LinkedIn's own ("Lavender", "Soft Blue")
+  // and a hardcoded map would silently drift the moment they retune the palette,
+  // whereas the rendered pixel is by definition what the player sees. The walk
+  // upward covers markup where the fill sits on a wrapper rather than the cell.
+  function swatchOf(el) {
+    let node = el;
+    for (let i = 0; i < 3 && node; i++) {
+      const bg = getComputedStyle(node).backgroundColor;
+      if (bg && bg !== "transparent" && !/rgba\(0,\s*0,\s*0,\s*0\)/.test(bg)) return bg;
+      node = node.parentElement;
+    }
+    return null; // popup falls back to a palette keyed by region id
+  }
+
+  // A serialisable picture of the board for the popup to draw. Deliberately
+  // plain data — executeScript has to structured-clone this back, so no elements.
+  function snapshot(board) {
+    return board.cells.map((c) => ({
+      row: c.row,
+      col: c.col,
+      region: c.region,
+      color: swatchOf(c.el),
+      state: cellState(c.el),
+    }));
+  }
+
   // Cycle a cell (empty->cross->queen->empty) to the target state; state updates
   // asynchronously, so re-verify after each click. Max 3 clicks reaches any state.
   async function clickUntil(el, target) {
@@ -198,6 +226,9 @@ async function runQueens(mode) {
       solvable: valid,
       N: board ? board.N : 0,
       solved: valid ? isSolved(board) : false,
+      // Only snapshot a valid board: for the ~N frames that aren't the game this
+      // stays null, so the popup never tries to draw a half-parsed grid.
+      cells: valid ? snapshot(board) : null,
     };
   }
 

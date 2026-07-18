@@ -21,6 +21,7 @@ const actionBtn = document.getElementById("action");
 const actionLabel = document.getElementById("action-label");
 const hintEl = document.getElementById("hint");
 const brandIcon = document.getElementById("brand-icon");
+const boardEl = document.getElementById("board");
 const menuBtn = document.getElementById("menu-btn");
 const menuEl = document.getElementById("menu");
 
@@ -106,6 +107,72 @@ function setState(next, data = {}) {
   hintEl.textContent = resolve(spec.hint, data);
   actionBtn.disabled = spec.act === null;
   actionBtn.setAttribute("aria-busy", String(next === "solving"));
+}
+
+/* -------------------------------------------------------------- board preview */
+
+/**
+ * Fallback region colours, used only if the page didn't give us usable swatches
+ * (see swatchOf in injected.js). Hues are evenly spaced so adjacent regions stay
+ * distinguishable whatever N is, rather than being a fixed list that runs out.
+ */
+function fallbackColor(regionIndex, regionCount) {
+  const hue = Math.round((360 / Math.max(regionCount, 1)) * regionIndex);
+  return `hsl(${hue} 62% 78%)`;
+}
+
+const QUEEN_PATH =
+  "M4.4 16.6 3.6 9.1l4.6 3.2L12 6.2l3.8 6.1 4.6-3.2-.8 7.5z M4.2 18.3h15.6v3.1H4.2z";
+
+function queenSvg() {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+  const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  p.setAttribute("d", QUEEN_PATH);
+  svg.appendChild(p);
+  return svg;
+}
+
+/**
+ * Draw the detect snapshot. Replaces the "Board detected · N×N" line — the grid
+ * itself communicates size, regions and progress far better than the sentence.
+ */
+function renderBoard(cells, N) {
+  if (!Array.isArray(cells) || !cells.length) return;
+
+  // Only trust the page's own colours if they actually distinguish the regions;
+  // a board whose swatches all resolve the same (or missing) would otherwise
+  // render as one flat block. Falling back keeps the preview readable.
+  const regions = [...new Set(cells.map((c) => c.region))];
+  const distinct = new Set(cells.map((c) => c.color).filter(Boolean));
+  const usePageColors = distinct.size >= regions.length && regions.length > 1;
+
+  boardEl.style.setProperty("--n", N);
+
+  // Sort into row-major order: the DOM order is whatever the page had, but CSS
+  // grid places children sequentially, so the preview must be explicitly ordered.
+  const ordered = [...cells].sort((a, b) => a.row - b.row || a.col - b.col);
+
+  const frag = document.createDocumentFragment();
+  for (const c of ordered) {
+    const cell = document.createElement("div");
+    cell.className = "board__cell";
+    if (c.state === "queen") cell.classList.add("board__cell--queen");
+    if (c.state === "cross") cell.classList.add("board__cell--cross");
+    cell.style.background = usePageColors
+      ? c.color
+      : fallbackColor(regions.indexOf(c.region), regions.length);
+    if (c.state === "queen") cell.appendChild(queenSvg());
+    frag.appendChild(cell);
+  }
+  boardEl.replaceChildren(frag);
+
+  const queens = cells.filter((c) => c.state === "queen").length;
+  boardEl.setAttribute(
+    "aria-label",
+    `Board preview, ${N} by ${N}, ${queens} of ${N} crowns placed.`
+  );
 }
 
 /* ---------------------------------------------------------------- brand icon */
@@ -253,6 +320,9 @@ async function refresh() {
   const board = results.find((r) => r.solvable);
 
   if (board) {
+    // Draw before switching state: the board element is revealed by the state
+    // change, so filling it first avoids a frame of empty grid.
+    renderBoard(board.cells, board.N);
     setState(board.solved ? "done" : "ready", { N: board.N });
     stopPolling(); // found it — stop re-checking
   } else if (state === "checking" && Date.now() - openedAt < GRACE_MS) {
@@ -286,6 +356,11 @@ actionBtn.addEventListener("click", async () => {
       cleared: ok.cleared,
       N: ok.N,
     });
+    // Re-read the board so the preview shows the finished position rather than
+    // the pre-solve one. Drawn after setState so the newly inserted crowns are
+    // created under [data-state="solved"] and play their entrance animation.
+    const after = (await runInFrames("detect")).find((r) => r.solvable);
+    if (after) renderBoard(after.cells, after.N);
     return;
   }
   const err = results.find((r) => r.error);
