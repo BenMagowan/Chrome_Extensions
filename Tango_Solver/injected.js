@@ -20,8 +20,8 @@
  *   - Some cells are pre-filled (locked) clues. The solution is unique.
  *
  * @param {'detect'|'solve'} mode
- * @returns {{solvable:boolean,N:number}} for 'detect',
- *          {{ok:boolean, placed?:number, error?:string}} for 'solve'
+ * @returns {{solvable:boolean,N:number,solved:boolean,cells:object[]|null}} for 'detect',
+ *          {{ok:boolean, placed?:number, alreadySolved?:boolean, error?:string}} for 'solve'
  */
 async function runTango(mode) {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -189,6 +189,55 @@ async function runTango(mode) {
     return target;
   }
 
+  // --- is the board ALREADY finished? ---
+  // Tests the game's win condition against the symbols currently on the board,
+  // rather than comparing to solve()'s output: that keeps the answer honest even
+  // if a board somehow admits more than one solution, and it still works when the
+  // solver itself can't crack it.
+  function isSolved(board) {
+    const { N, cells, edges } = board;
+    const HALF = N / 2;
+    const g = new Array(N * N).fill(null);
+    for (const c of cells) {
+      if (c.symbol === "Empty") return false; // an unfilled cell is never a win
+      g[c.idx] = c.symbol;
+    }
+    const at = (r, c) => g[r * N + c];
+    for (let i = 0; i < N; i++) {
+      let rowSuns = 0;
+      let colSuns = 0;
+      for (let j = 0; j < N; j++) {
+        if (at(i, j) === "Sun") rowSuns++;
+        if (at(j, i) === "Sun") colSuns++;
+        // No 3 identical consecutively, along the row and down the column.
+        if (j >= 2 && at(i, j) === at(i, j - 1) && at(i, j) === at(i, j - 2)) return false;
+        if (j >= 2 && at(j, i) === at(j - 1, i) && at(j, i) === at(j - 2, i)) return false;
+      }
+      if (rowSuns !== HALF || colSuns !== HALF) return false; // equal Suns and Moons
+    }
+    for (const e of edges) {
+      const same = g[e.a] === g[e.b];
+      if (e.eq !== same) return false; // "=" wants a match, "×" wants opposites
+    }
+    return true;
+  }
+
+  // A serialisable picture of the board for the popup to draw. Deliberately plain
+  // data — executeScript has to structured-clone this back, so no elements.
+  //
+  // The symbols shown are the SOLUTION's, not the player's current attempt: the
+  // preview exists to show what the solver will do, so a part-filled grid would be
+  // the wrong thing to draw. `target` null means we couldn't solve it (or the board
+  // is already finished) — fall back to what's on screen.
+  function snapshot(board, target) {
+    return board.cells.map((c) => ({
+      row: c.row,
+      col: c.col,
+      locked: c.locked,
+      symbol: target ? target[c.idx] : c.symbol,
+    }));
+  }
+
   // --- the click sequence the game accepts (same framework as Queens) ---
   function fireOneClick(el) {
     const r = el.getBoundingClientRect();
@@ -217,10 +266,25 @@ async function runTango(mode) {
 
   // --- dispatch ---
   const board = parseBoard();
-  if (mode === "detect") return { solvable: !!board, N: board ? board.N : 0 };
+
+  if (mode === "detect") {
+    if (!board) return { solvable: false, N: 0, solved: false, cells: null };
+    // An already-finished board is its own answer; keep the player's symbols so the
+    // preview matches what's on screen.
+    const done = isSolved(board);
+    return {
+      solvable: true,
+      N: board.N,
+      solved: done,
+      cells: snapshot(board, done ? null : solve(board)),
+    };
+  }
 
   // mode === 'solve'
   if (!board) return { ok: false, error: "Board not found or still loading." };
+  // Already finished (e.g. completed between the popup's last poll and the click) —
+  // report it instead of clicking a won board back out of its win state.
+  if (isSolved(board)) return { ok: true, placed: 0, alreadySolved: true, N: board.N };
   const solution = solve(board);
   if (!solution) return { ok: false, error: "No solution exists for this board." };
 
@@ -233,5 +297,5 @@ async function runTango(mode) {
     placed++;
     await sleep(200); // human-like spacing; avoids dropped rapid events
   }
-  return { ok: true, placed };
+  return { ok: true, placed, N: board.N };
 }

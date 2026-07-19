@@ -21,6 +21,7 @@ const actionBtn = document.getElementById("action");
 const actionLabel = document.getElementById("action-label");
 const hintEl = document.getElementById("hint");
 const brandIcon = document.getElementById("brand-icon");
+const boardEl = document.getElementById("board");
 const menuBtn = document.getElementById("menu-btn");
 const menuEl = document.getElementById("menu");
 
@@ -70,6 +71,14 @@ const STATES = {
     hint: "Enjoy the win — then try the next one unaided.",
     act: null,
   },
+  // The board was already finished when we looked — distinct from `solved`, which
+  // means we did it. Nothing to claim credit for, so no entrance flourish either.
+  done: {
+    status: (d) => `Already solved · ${d.N}×${d.N}`,
+    label: "Nothing to solve",
+    hint: "This board is complete. Nice one.",
+    act: null,
+  },
   error: {
     status: (d) => d.message,
     label: "Try again",
@@ -93,6 +102,70 @@ function setState(next, data = {}) {
   hintEl.textContent = resolve(spec.hint, data);
   actionBtn.disabled = spec.act === null;
   actionBtn.setAttribute("aria-busy", String(next === "solving"));
+}
+
+/* -------------------------------------------------------------- board preview */
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+function svgEl(name, attrs) {
+  const el = document.createElementNS(SVG_NS, name);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+
+/**
+ * Sun and moon, drawn rather than fetched: the popup can't reuse the game's own
+ * sprites, and inline SVG takes its colour from the stylesheet so both symbols
+ * theme with the rest of the popup.
+ */
+function symbolSvg(symbol) {
+  const svg = svgEl("svg", { viewBox: "0 0 24 24", "aria-hidden": "true" });
+  if (symbol === "Moon") {
+    // Crescent: one disc with a second bitten out of it.
+    svg.appendChild(svgEl("path", { d: "M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" }));
+    return svg;
+  }
+  svg.appendChild(svgEl("circle", { cx: 12, cy: 12, r: 5 }));
+  for (let i = 0; i < 8; i++) {
+    svg.appendChild(
+      svgEl("rect", {
+        x: 11.25, y: 0.8, width: 1.5, height: 3, rx: 0.75,
+        transform: `rotate(${i * 45} 12 12)`,
+      })
+    );
+  }
+  return svg;
+}
+
+/**
+ * Draw the detect snapshot — the grid with the SOLUTION's symbols on it (see
+ * snapshot in injected.js). Replaces the "Board detected · N×N" line: the grid
+ * says the same thing and shows the answer besides.
+ */
+function renderBoard(cells, N) {
+  if (!Array.isArray(cells) || !cells.length) return;
+
+  boardEl.style.setProperty("--n", N);
+
+  // Sort into row-major order: the DOM order is whatever the page had, but CSS
+  // grid places children sequentially, so the preview must be explicitly ordered.
+  const ordered = [...cells].sort((a, b) => a.row - b.row || a.col - b.col);
+
+  const frag = document.createDocumentFragment();
+  for (const c of ordered) {
+    const cell = document.createElement("div");
+    cell.className = "board__cell";
+    if (c.locked) cell.classList.add("board__cell--locked");
+    if (c.symbol === "Sun" || c.symbol === "Moon") {
+      cell.classList.add(`board__cell--${c.symbol.toLowerCase()}`);
+      cell.appendChild(symbolSvg(c.symbol));
+    }
+    frag.appendChild(cell);
+  }
+  boardEl.replaceChildren(frag);
+
+  boardEl.setAttribute("aria-label", `Solution preview, ${N} by ${N}.`);
 }
 
 /* ---------------------------------------------------------------- brand icon */
@@ -240,7 +313,10 @@ async function refresh() {
   const board = results.find((r) => r.solvable);
 
   if (board) {
-    setState("ready", { N: board.N });
+    // Draw before switching state: the board element is revealed by the state
+    // change, so filling it first avoids a frame of empty grid.
+    renderBoard(board.cells, board.N);
+    setState(board.solved ? "done" : "ready", { N: board.N });
     stopPolling(); // found it — stop re-checking
     return;
   }
@@ -269,7 +345,9 @@ actionBtn.addEventListener("click", async () => {
   const ok = results.find((r) => r.ok);
 
   if (ok) {
-    setState("solved", { placed: ok.placed });
+    // The engine reports alreadySolved if the board was completed between our last
+    // poll and this click — don't take the credit for it.
+    setState(ok.alreadySolved ? "done" : "solved", { placed: ok.placed, N: ok.N });
     return;
   }
   const err = results.find((r) => r.error);

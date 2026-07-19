@@ -477,3 +477,85 @@ body[data-state="solving"] .action__spinner {
     transition: none !important;
   }
 }
+
+/* ---------- board preview ---------- */
+
+/* States that have a real board to show. In these the preview stands in for the
+   status line, which is the whole point: the grid says "6×6 board detected"
+   better than the sentence did. */
+.board {
+  display: none;
+  /* Rows pinned to 1fr too — without it, auto row sizing lets a symbol's SVG
+     (66% of .board__cell) make that row taller than an empty one. */
+  grid-template-columns: repeat(var(--n, 6), 1fr);
+  grid-template-rows: repeat(var(--n, 6), 1fr);
+  gap: 1px;
+  width: 100%;
+  max-width: 216px;
+  margin: 0 auto;
+  aspect-ratio: 1;
+  padding: 1px;
+  border-radius: 8px;
+  overflow: hidden;
+  /* Shows through the gaps as hairline grid lines. */
+  background: color-mix(in srgb, var(--text) 22%, transparent);
+}
+
+body:is([data-state="ready"], [data-state="solving"], [data-state="solved"], [data-state="done"])
+  .board {
+  display: grid;
+}
+
+/* The status text is replaced *visually only* — it stays in the a11y tree so the
+   live region still announces "Board detected", "Solved", and so on. */
+body:is([data-state="ready"], [data-state="solving"], [data-state="solved"], [data-state="done"])
+  .status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.board__cell {
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+}
+
+/* The puzzle's given clues. Tinting them separates what the board started with
+   from what the solver worked out — the one distinction the preview can draw
+   that the finished grid itself cannot. */
+.board__cell--locked {
+  background: var(--surface-sunk);
+}
+
+.board__cell svg {
+  width: 66%;
+  height: 66%;
+}
+
+.board__cell--sun svg {
+  fill: var(--accent-lo);
+}
+
+.board__cell--moon svg {
+  fill: var(--brand);
+}
+
+/* Symbols the solver just placed get a one-off pop, so you can see its work.
+   The givens sat there all along, so they don't join in. */
+body[data-state="solved"] .board__cell:not(.board__cell--locked) svg {
+  animation: symbol-in 0.32s cubic-bezier(0.2, 1.5, 0.4, 1) backwards;
+}
+
+@keyframes symbol-in {
+  from {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+}
