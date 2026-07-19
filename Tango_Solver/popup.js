@@ -123,8 +123,8 @@ function svgEl(name, attrs) {
 const SYMBOL_R = 9;
 // How much of that disc survives the bite, measured across the crescent's waist.
 const MOON_WAIST = 8;
-// The bite comes out of the bottom left, as it does in the game.
-const MOON_ANGLE = -45;
+// The bite comes out of the top left, as it does in the game.
+const MOON_ANGLE = 45;
 
 /**
  * Crescent = disc1 minus disc2, both radius R, disc2's centre shifted `waist` to
