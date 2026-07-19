@@ -119,27 +119,41 @@ function svgEl(name, attrs) {
  * sprites, and inline SVG takes its colour from the stylesheet so both symbols
  * theme with the rest of the popup.
  */
-const SYMBOL_R = 6.5; // shared radius so the sun disc and moon crescent read as the same size
+// Both pieces are the same disc, so the Sun and the Moon read as the same size.
+const SYMBOL_R = 9;
+// How much of that disc survives the bite, measured across the crescent's waist.
+const MOON_WAIST = 8;
+// The bite comes out of the upper right, as it does in the game.
+const MOON_ANGLE = -45;
 
 /**
- * Crescent = disc1 minus disc2, both radius R, disc2's centre shifted `d` to the
- * right of disc1's. The two arcs below trace exactly that boundary — disc1's far
- * (left) edge out to disc2's near (left) edge and back — so the whole thing is one
- * simple closed path, not an overlap that needs evenodd to resolve. Small `d`
- * (relative to R) is a thin sliver; d approaching 2R is a nearly full disc.
+ * Crescent = disc1 minus disc2, both radius R, disc2's centre shifted `waist` to
+ * the right of disc1's. The two arcs below trace exactly that boundary — around
+ * disc1's far edge, then back along disc2's near edge — so it's one simple closed
+ * path rather than an overlap needing a fill rule to resolve. The offset IS the
+ * crescent's thickness at its waist: small is a sliver, approaching 2R is a disc.
  */
-function moonPath(cx, cy, R, d) {
-  const h = Math.sqrt(R * R - (d / 2) ** 2);
-  const xMid = cx + d / 2;
+function moonPath(cx, cy, R, waist) {
+  const h = Math.sqrt(R * R - (waist / 2) ** 2); // half the chord where the discs cross
+  const xMid = cx + waist / 2; // the discs cross on this vertical line
   const top = `${xMid} ${cy - h}`;
   const bottom = `${xMid} ${cy + h}`;
-  return `M${top}A${R} ${R} 0 1 1 ${bottom}A${R} ${R} 0 0 0 ${top}Z`;
+  // Flags matter and are easy to get backwards — each arc has two candidate
+  // centres and two directions, and picking wrong silently traces the *other*
+  // disc. Down the left: disc1's major arc (large-arc 1), anticlockwise on screen
+  // (sweep 0). Back up: disc2's minor arc (0) bulging left, clockwise (1).
+  return `M${top}A${R} ${R} 0 1 0 ${bottom}A${R} ${R} 0 0 1 ${top}Z`;
 }
 
 function symbolSvg(symbol) {
   const svg = svgEl("svg", { viewBox: "0 0 24 24", "aria-hidden": "true" });
   if (symbol === "Moon") {
-    svg.appendChild(svgEl("path", { d: moonPath(12, 12, SYMBOL_R, 3.5) }));
+    svg.appendChild(
+      svgEl("path", {
+        d: moonPath(12, 12, SYMBOL_R, MOON_WAIST),
+        transform: `rotate(${MOON_ANGLE} 12 12)`,
+      })
+    );
     return svg;
   }
   svg.appendChild(svgEl("circle", { cx: 12, cy: 12, r: SYMBOL_R }));

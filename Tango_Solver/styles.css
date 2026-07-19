@@ -29,6 +29,14 @@
   --ok: #1a9e63;
   --err: #d1372f;
 
+  /* Board pieces — the game's own Sun and Moon, not part of the popup palette.
+     Fixed across light and dark: they're a picture of the board, and the board
+     looks the same either way. */
+  --sun: #f2b544;
+  --sun-line: #c4712c;
+  --moon: #4c7fd0;
+  --moon-line: #2b529d;
+
   /* Surfaces */
   --surface: #ffffff;
   --surface-sunk: #f3f7fa;
@@ -534,17 +542,27 @@ body:is([data-state="ready"], [data-state="solving"], [data-state="solved"], [da
   background: var(--surface-sunk);
 }
 
+/* Sun and Moon are drawn as the game draws them: a filled disc with a darker
+   outline of the same hue, in the game's own two colours. They deliberately sit
+   outside the popup's palette — these are a picture of the board, not UI, so
+   they should look like the pieces the player is staring at, not like the
+   button. The outline is what stops a pale Sun disappearing into a light cell. */
 .board__cell svg {
-  width: 66%;
-  height: 66%;
+  width: 78%;
+  height: 78%;
+  stroke-width: 1.4;
+  /* The crescent's horns are cusps; mitre would spike them into needles. */
+  stroke-linejoin: round;
 }
 
 .board__cell--sun svg {
-  fill: var(--accent-lo);
+  fill: var(--sun);
+  stroke: var(--sun-line);
 }
 
 .board__cell--moon svg {
-  fill: var(--brand);
+  fill: var(--moon);
+  stroke: var(--moon-line);
 }
 
 /* Symbols the solver just placed get a one-off pop, so you can see its work.
