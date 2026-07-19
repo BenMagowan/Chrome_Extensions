@@ -548,8 +548,8 @@ body:is([data-state="ready"], [data-state="solving"], [data-state="solved"], [da
    they should look like the pieces the player is staring at, not like the
    button. The outline is what stops a pale Sun disappearing into a light cell. */
 .board__cell svg {
-  width: 78%;
-  height: 78%;
+  width: 70%;
+  height: 70%;
   stroke-width: 1.4;
   /* The crescent's horns are cusps; mitre would spike them into needles. */
   stroke-linejoin: round;
