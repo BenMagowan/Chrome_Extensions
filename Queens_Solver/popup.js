@@ -135,8 +135,9 @@ function queenSvg() {
 }
 
 /**
- * Draw the detect snapshot. Replaces the "Board detected · N×N" line — the grid
- * itself communicates size, regions and progress far better than the sentence.
+ * Draw the detect snapshot — the board's regions with the SOLUTION's crowns on
+ * it (see snapshot in injected.js). Replaces the "Board detected · N×N" line:
+ * the grid says the same thing and shows the answer besides.
  */
 function renderBoard(cells, N) {
   if (!Array.isArray(cells) || !cells.length) return;
@@ -168,11 +169,7 @@ function renderBoard(cells, N) {
   }
   boardEl.replaceChildren(frag);
 
-  const queens = cells.filter((c) => c.state === "queen").length;
-  boardEl.setAttribute(
-    "aria-label",
-    `Board preview, ${N} by ${N}, ${queens} of ${N} crowns placed.`
-  );
+  boardEl.setAttribute("aria-label", `Solution preview, ${N} by ${N}.`);
 }
 
 /* ---------------------------------------------------------------- brand icon */
@@ -356,11 +353,6 @@ actionBtn.addEventListener("click", async () => {
       cleared: ok.cleared,
       N: ok.N,
     });
-    // Re-read the board so the preview shows the finished position rather than
-    // the pre-solve one. Drawn after setState so the newly inserted crowns are
-    // created under [data-state="solved"] and play their entrance animation.
-    const after = (await runInFrames("detect")).find((r) => r.solvable);
-    if (after) renderBoard(after.cells, after.N);
     return;
   }
   const err = results.find((r) => r.error);

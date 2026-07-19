@@ -193,13 +193,22 @@ async function runQueens(mode) {
 
   // A serialisable picture of the board for the popup to draw. Deliberately
   // plain data — executeScript has to structured-clone this back, so no elements.
-  function snapshot(board) {
+  //
+  // The crowns shown are the SOLUTION's, not the player's current attempt: the
+  // preview is there to show what the solver will do, so a half-finished board
+  // (or one full of wrong guesses and crosses) would be the wrong thing to draw.
+  // `queenKeys` null means we couldn't solve it — fall back to the live board.
+  function snapshot(board, queenKeys) {
     return board.cells.map((c) => ({
       row: c.row,
       col: c.col,
       region: c.region,
       color: swatchOf(c.el),
-      state: cellState(c.el),
+      state: queenKeys
+        ? queenKeys.has(c.row + "," + c.col)
+          ? "queen"
+          : "empty"
+        : cellState(c.el),
     }));
   }
 
@@ -221,14 +230,20 @@ async function runQueens(mode) {
     board.cells.length === board.N * board.N &&
     board.regionCount === board.N;
 
+  const keysOf = (placements) =>
+    new Set(placements.map((p) => p.row + "," + p.col));
+
   if (mode === "detect") {
+    if (!valid) return { solvable: false, N: board ? board.N : 0, solved: false, cells: null };
+    // An already-finished board is its own answer; keep the player's queens so the
+    // preview matches what's on screen rather than an equally valid alternative.
+    const done = isSolved(board);
+    const solution = done ? null : solve(board);
     return {
-      solvable: valid,
-      N: board ? board.N : 0,
-      solved: valid ? isSolved(board) : false,
-      // Only snapshot a valid board: for the ~N frames that aren't the game this
-      // stays null, so the popup never tries to draw a half-parsed grid.
-      cells: valid ? snapshot(board) : null,
+      solvable: true,
+      N: board.N,
+      solved: done,
+      cells: snapshot(board, solution ? keysOf(solution) : null),
     };
   }
 
@@ -263,7 +278,7 @@ async function runQueens(mode) {
   //
   // We do this cell-by-cell rather than via the header's "Clear" button because
   // that button opens a confirmation modal we'd then have to drive.
-  const solutionKeys = new Set(solution.map((s) => s.row + "," + s.col));
+  const solutionKeys = keysOf(solution);
   const locked = (el) => el.getAttribute("aria-disabled") === "true";
   let cleared = 0;
   for (const c of board.cells) {
