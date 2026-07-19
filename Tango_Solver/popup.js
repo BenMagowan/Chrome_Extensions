@@ -119,14 +119,30 @@ function svgEl(name, attrs) {
  * sprites, and inline SVG takes its colour from the stylesheet so both symbols
  * theme with the rest of the popup.
  */
+const SYMBOL_R = 6.5; // shared radius so the sun disc and moon crescent read as the same size
+
+/**
+ * Crescent = disc1 minus disc2, both radius R, disc2's centre shifted `d` to the
+ * right of disc1's. The two arcs below trace exactly that boundary — disc1's far
+ * (left) edge out to disc2's near (left) edge and back — so the whole thing is one
+ * simple closed path, not an overlap that needs evenodd to resolve. Small `d`
+ * (relative to R) is a thin sliver; d approaching 2R is a nearly full disc.
+ */
+function moonPath(cx, cy, R, d) {
+  const h = Math.sqrt(R * R - (d / 2) ** 2);
+  const xMid = cx + d / 2;
+  const top = `${xMid} ${cy - h}`;
+  const bottom = `${xMid} ${cy + h}`;
+  return `M${top}A${R} ${R} 0 1 1 ${bottom}A${R} ${R} 0 0 0 ${top}Z`;
+}
+
 function symbolSvg(symbol) {
   const svg = svgEl("svg", { viewBox: "0 0 24 24", "aria-hidden": "true" });
   if (symbol === "Moon") {
-    // Crescent: one disc with a second bitten out of it, facing the other way.
-    svg.appendChild(svgEl("path", { d: "M3 12.8A9 9 0 1 0 12.8 3a7 7 0 0 1-9.8 9.8z" }));
+    svg.appendChild(svgEl("path", { d: moonPath(12, 12, SYMBOL_R, 3.5) }));
     return svg;
   }
-  svg.appendChild(svgEl("circle", { cx: 12, cy: 12, r: 6.5 }));
+  svg.appendChild(svgEl("circle", { cx: 12, cy: 12, r: SYMBOL_R }));
   return svg;
 }
 
