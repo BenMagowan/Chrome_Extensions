@@ -122,19 +122,11 @@ function svgEl(name, attrs) {
 function symbolSvg(symbol) {
   const svg = svgEl("svg", { viewBox: "0 0 24 24", "aria-hidden": "true" });
   if (symbol === "Moon") {
-    // Crescent: one disc with a second bitten out of it.
-    svg.appendChild(svgEl("path", { d: "M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" }));
+    // Crescent: one disc with a second bitten out of it, facing the other way.
+    svg.appendChild(svgEl("path", { d: "M3 12.8A9 9 0 1 0 12.8 3a7 7 0 0 1-9.8 9.8z" }));
     return svg;
   }
-  svg.appendChild(svgEl("circle", { cx: 12, cy: 12, r: 5 }));
-  for (let i = 0; i < 8; i++) {
-    svg.appendChild(
-      svgEl("rect", {
-        x: 11.25, y: 0.8, width: 1.5, height: 3, rx: 0.75,
-        transform: `rotate(${i * 45} 12 12)`,
-      })
-    );
-  }
+  svg.appendChild(svgEl("circle", { cx: 12, cy: 12, r: 6.5 }));
   return svg;
 }
 
