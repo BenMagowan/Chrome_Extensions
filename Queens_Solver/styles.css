@@ -150,29 +150,8 @@ body {
   min-width: 0;
 }
 
-/* Dot colour + halo per state. */
-body[data-state="checking"] .status__dot,
-body[data-state="solving"] .status__dot {
-  background: var(--brand);
-  animation: pulse 1.4s ease-in-out infinite;
-}
-
-body[data-state="ready"] .status__dot {
-  background: var(--accent-lo);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);
-}
-
-/* `solved` (we did it) and `done` (it was already finished) share the success
-   treatment — but only `solved` earns the icon flourish below. */
-body:is([data-state="solved"], [data-state="done"]) .status__dot {
-  background: var(--ok);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent);
-}
-
-body:is([data-state="solved"], [data-state="done"]) .status__text {
-  color: var(--ok);
-}
-
+/* Dot colour + halo. Only the error states style these: everywhere else the
+   board stands in for the status line and this whole row is visually hidden. */
 body:is([data-state="error"], [data-state="stuck"]) .status__dot {
   background: var(--err);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--err) 20%, transparent);
@@ -186,15 +165,10 @@ body:is([data-state="error"], [data-state="stuck"]) .status__text {
   color: var(--err);
 }
 
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand) 40%, transparent);
-  }
+/* The empty board breathing while we look for a real one. */
+@keyframes board-breathe {
   50% {
-    opacity: 0.65;
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 0%, transparent);
+    opacity: 0.5;
   }
 }
 
@@ -480,11 +454,14 @@ body[data-state="solving"] .action__spinner {
 
 /* ---------- board preview (Queens only) ---------- */
 
-/* States that have a real board to show. In these the preview stands in for the
-   status line, which is the whole point: the grid says "9×9 board detected"
-   better than the sentence did. */
+/* The board is on screen in every state — an empty grid until one is found, the
+   solution once there is. It stands in for the status line, which is the whole
+   point: the grid says "9×9 board detected" better than the sentence did, and an
+   empty one says "no board yet" better than "No board found" did. Keeping it in
+   every state also holds the popup at one size, so nothing jumps around as the
+   game loads. */
 .board {
-  display: none;
+  display: grid;
   /* Rows must be pinned to 1fr too — without it, auto row sizing lets a queen's
      SVG (66% of .board__cell) make that row taller than an empty one. */
   grid-template-columns: repeat(var(--n, 8), 1fr);
@@ -501,15 +478,12 @@ body[data-state="solving"] .action__spinner {
   background: color-mix(in srgb, var(--text) 22%, transparent);
 }
 
-body:is([data-state="ready"], [data-state="solving"], [data-state="solved"], [data-state="done"])
-  .board {
-  display: grid;
-}
-
-/* The status text is replaced *visually only* — it stays in the a11y tree so the
-   live region still announces "Board detected", "Solved", and so on. */
-body:is([data-state="ready"], [data-state="solving"], [data-state="solved"], [data-state="done"])
-  .status {
+/* The board says everything the status line used to, so the line is replaced
+   *visually only* — it stays in the a11y tree, where the live region goes on
+   announcing "Looking for a board", "Board detected", "Solved" and the rest.
+   An error is the exception: that message has no equivalent in the grid, so it
+   is the one state that still shows its text. */
+body:not([data-state="error"]) .status {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -519,6 +493,16 @@ body:is([data-state="ready"], [data-state="solving"], [data-state="solved"], [da
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+/* Waiting on a board: an empty grid, breathing while we look, then settling to
+   something quieter once we've concluded there's nothing there. */
+body[data-state="checking"] .board {
+  animation: board-breathe 1.4s ease-in-out infinite;
+}
+
+body[data-state="idle"] .board {
+  opacity: 0.55;
 }
 
 .board__cell {
