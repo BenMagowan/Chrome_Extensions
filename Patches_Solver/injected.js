@@ -434,6 +434,7 @@ async function runPatches(mode) {
   if (isSolved(board)) {
     return { ok: true, placed: board.clues.length, alreadySolved: true, rows: board.rows, cols: board.cols };
   }
+  const solution = solve(board);
   if (!solution) return { ok: false, error: "No rectangle tiling found for this board." };
   const filled = await fill(board, solution);
   return filled.ok ? { ...filled, rows: board.rows, cols: board.cols } : filled;
