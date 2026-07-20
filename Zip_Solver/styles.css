@@ -559,7 +559,7 @@ body[data-state="idle"] .board {
 .board__path {
   fill: none;
   stroke: var(--board-path);
-  stroke-width: 0.25;
+  stroke-width: 0.34;
   stroke-linejoin: round;
   stroke-linecap: round;
   opacity: 0.9;
