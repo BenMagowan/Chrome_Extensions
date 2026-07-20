@@ -29,6 +29,13 @@
   --ok: #1a9e63;
   --err: #d1372f;
 
+  /* Board preview: hairlines between cells, the puzzle's walls, and the path.
+     The path is the extension's accent — it's the answer, so it gets the colour
+     that means "this is ours". */
+  --board-line: color-mix(in srgb, var(--text) 16%, transparent);
+  --board-wall: color-mix(in srgb, var(--text) 55%, transparent);
+  --board-path: var(--accent);
+
   /* Surfaces */
   --surface: #ffffff;
   --surface-sunk: #f3f7fa;
@@ -150,29 +157,8 @@ body {
   min-width: 0;
 }
 
-/* Dot colour + halo per state. */
-body[data-state="checking"] .status__dot,
-body[data-state="solving"] .status__dot {
-  background: var(--brand);
-  animation: pulse 1.4s ease-in-out infinite;
-}
-
-body[data-state="ready"] .status__dot {
-  background: var(--accent-lo);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);
-}
-
-/* `solved` (we did it) and `done` (it was already finished) share the success
-   treatment — but only `solved` earns the icon flourish below. */
-body:is([data-state="solved"], [data-state="done"]) .status__dot {
-  background: var(--ok);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent);
-}
-
-body:is([data-state="solved"], [data-state="done"]) .status__text {
-  color: var(--ok);
-}
-
+/* Dot colour + halo. Only the error states style these: everywhere else the
+   board stands in for the status line and this whole row is visually hidden. */
 body:is([data-state="error"], [data-state="stuck"]) .status__dot {
   background: var(--err);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--err) 20%, transparent);
@@ -186,15 +172,10 @@ body:is([data-state="error"], [data-state="stuck"]) .status__text {
   color: var(--err);
 }
 
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand) 40%, transparent);
-  }
+/* The empty board breathing while we look for a real one. */
+@keyframes board-breathe {
   50% {
-    opacity: 0.65;
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 0%, transparent);
+    opacity: 0.5;
   }
 }
 
@@ -475,5 +456,124 @@ body[data-state="solving"] .action__spinner {
   *::after {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* ---------- board preview ---------- */
+
+/* The board is on screen in every state — an empty grid until one is found, the
+   solved path once there is. It stands in for the status line, which is the
+   whole point: the grid says "6×6 board detected" better than the sentence did,
+   and an empty one says "no board yet" better than "No board found" did. Keeping
+   it in every state also holds the popup at one size, so nothing jumps around as
+   the game loads. */
+.board {
+  display: grid;
+  grid-template-columns: repeat(var(--n, 6), 1fr);
+  grid-template-rows: repeat(var(--n, 6), 1fr);
+  /* No gap, deliberately: the path overlay maps one SVG unit to one cell, which
+     only lines up if the cells divide the box evenly. The hairlines below stand
+     in for the gaps. */
+  gap: 0;
+  position: relative;
+  width: 100%;
+  max-width: 216px;
+  margin: 0 auto;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--board-line);
+}
+
+/* The status line's replacement — see the note in the Queens/Tango stylesheets.
+   Errors are the exception: that message has no equivalent in the grid. */
+body:not([data-state="error"]) .status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Waiting on a board: an empty grid, breathing while we look, then settling to
+   something quieter once we've concluded there's nothing there. */
+body[data-state="checking"] .board {
+  animation: board-breathe 1.4s ease-in-out infinite;
+}
+
+body[data-state="idle"] .board {
+  opacity: 0.55;
+}
+
+/* The hairlines the missing gap would have given us. Drawn on the right and
+   bottom of every cell; the last row and column land exactly on the board's own
+   1px frame, so they coincide rather than doubling up. */
+.board__cell {
+  display: grid;
+  place-items: center;
+  box-shadow: inset -1px -1px 0 0 var(--board-line);
+}
+
+/* The numbered dots, as the game draws them: a filled disc the path runs under. */
+.board__num {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 76%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--text);
+  color: var(--surface);
+  /* Scales with N so the dots keep their proportions whatever size the grid is. */
+  font-size: calc(74px / var(--n, 6));
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* Walls and path share one overlay stretched across the whole grid. */
+.board__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Stroke widths are in user units — fractions of a cell — NOT pixels, and
+   deliberately not vector-effect: non-scaling-stroke. Non-scaling strokes
+   resolve stroke-dasharray in screen pixels while getTotalLength() reports user
+   units, so the two disagree and the drawn-on path below renders as a dashed
+   line. Keeping everything in user units also means the board scales cleanly. */
+.board__wall {
+  stroke: var(--board-wall);
+  stroke-width: 0.08;
+  stroke-linecap: square;
+}
+
+.board__path {
+  fill: none;
+  stroke: var(--board-path);
+  stroke-width: 0.25;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: 0.9;
+}
+
+/* The path the solver just drew gets traced on, so you can see its route.
+   --len is the polyline's own length, measured in popup.js. */
+body[data-state="solved"] .board__path {
+  stroke-dasharray: var(--len);
+  animation: path-draw 1s ease-out backwards;
+}
+
+@keyframes path-draw {
+  from {
+    stroke-dashoffset: var(--len);
   }
 }

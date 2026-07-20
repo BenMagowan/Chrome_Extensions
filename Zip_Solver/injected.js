@@ -25,8 +25,9 @@
  * path as a sequence of Arrow keydowns. (Plain clicks do NOT draw the path — verified.)
  *
  * @param {'detect'|'solve'} mode
- * @returns {{solvable:boolean,N:number}} for 'detect',
- *          {{ok:boolean, placed?:number, error?:string}} for 'solve'
+ * @returns {{solvable:boolean,N:number,solved:boolean,cells:object[]|null,path:number[]|null}}
+ *          for 'detect',
+ *          {{ok:boolean, placed?:number, alreadySolved?:boolean, error?:string}} for 'solve'
  */
 async function runZip(mode) {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -266,12 +267,58 @@ async function runZip(mode) {
   }
   const filledCount = (board) => board.elByIdx.filter(isFilled).length;
 
+  // --- is the board ALREADY finished? ---
+  // Every cell drawn is the win condition. We don't re-derive the path's order from
+  // the DOM because the filled cells don't expose one — but we don't need to: the
+  // game only accepts legal moves (adjacent, unvisited, no wall, numbers in
+  // ascending order), so a board that is entirely filled was filled legally.
+  function isSolved(board) {
+    return filledCount(board) === board.N * board.N;
+  }
+
+  // A serialisable picture of the board for the popup to draw. Deliberately plain
+  // data — executeScript has to structured-clone this back, so no elements or Sets.
+  // The walls come along because they're the puzzle's constraints: a path drawn
+  // without them looks arbitrary, since you can't see what it had to route around.
+  function snapshot(board) {
+    const { N, number, walls } = board;
+    return number.map((n, idx) => ({
+      row: Math.floor(idx / N),
+      col: idx % N,
+      number: n,
+      walls: {
+        up: walls[idx].has("up"),
+        down: walls[idx].has("down"),
+        left: walls[idx].has("left"),
+        right: walls[idx].has("right"),
+      },
+    }));
+  }
+
   // --- dispatch ---
   const board = parseBoard();
-  if (mode === "detect") return { solvable: !!board, N: board ? board.N : 0 };
+
+  if (mode === "detect") {
+    if (!board) return { solvable: false, N: 0, solved: false, cells: null, path: null };
+    // A finished board is its own answer — the player's path is already on screen,
+    // so don't overlay a solved route that may differ from the one they drew.
+    const done = isSolved(board);
+    return {
+      solvable: true,
+      N: board.N,
+      solved: done,
+      cells: snapshot(board),
+      path: done ? null : solve(board),
+    };
+  }
 
   // mode === 'solve'
   if (!board) return { ok: false, error: "Board not found or still loading." };
+  // Already finished (e.g. completed between the popup's last poll and the click) —
+  // report it instead of undoing a won board just to redraw the same route.
+  if (isSolved(board)) {
+    return { ok: true, placed: board.N * board.N, alreadySolved: true, N: board.N };
+  }
   const path = solve(board);
   if (!path) return { ok: false, error: "No path exists for this board." };
 
@@ -309,5 +356,5 @@ async function runZip(mode) {
     }
     if (ok) placed++;
   }
-  return { ok: true, placed };
+  return { ok: true, placed, N: board.N };
 }
