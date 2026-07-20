@@ -32,7 +32,7 @@
   /* Board preview: the region walls, and the digits the solver worked out (the
      puzzle's own clues just use --text). The fill colour is the extension's
      accent, stepped lighter in dark mode so it stays legible on a dark cell. */
-  --board-wall: color-mix(in srgb, var(--text) 62%, transparent);
+  --board-wall: color-mix(in srgb, var(--text) 40%, transparent);
   --digit-fill: var(--accent-lo);
 
   /* Surfaces */
@@ -538,17 +538,18 @@ body[data-state="idle"] .board {
 /* Region walls. Sudoku regions are wall-bounded and can be irregular, so these
    borders are what make the layout readable — without them a jigsaw board would
    render as a featureless grid. */
-.board__cell--wall-top {
-  border-top: 2px solid var(--board-wall);
-}
+/* Only ever drawn on the upper/left cell of a boundary (see markWalls in
+   popup.js), so there's exactly one border per wall, never two. The negative
+   margin pulls that border out over the 1px hairline gap so it fully covers
+   it — without this the hairline shows through right next to the wall border,
+   reading as a thin line drawn over the thick one. */
 .board__cell--wall-right {
-  border-right: 2px solid var(--board-wall);
+  margin-right: -1px;
+  border-right: 1.5px solid var(--board-wall);
 }
 .board__cell--wall-bottom {
-  border-bottom: 2px solid var(--board-wall);
-}
-.board__cell--wall-left {
-  border-left: 2px solid var(--board-wall);
+  margin-bottom: -1px;
+  border-bottom: 1.5px solid var(--board-wall);
 }
 
 /* Digits the solver just placed get a one-off pop, so you can see its work.
