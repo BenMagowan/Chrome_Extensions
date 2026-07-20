@@ -21,6 +21,7 @@ const actionBtn = document.getElementById("action");
 const actionLabel = document.getElementById("action-label");
 const hintEl = document.getElementById("hint");
 const brandIcon = document.getElementById("brand-icon");
+const boardEl = document.getElementById("board");
 const menuBtn = document.getElementById("menu-btn");
 const menuEl = document.getElementById("menu");
 
@@ -42,8 +43,11 @@ const GRACE_MS = 1600;
 const STATES = {
   checking: {
     status: "Looking for a board…",
-    label: "Solve puzzle",
-    hint: "Open a round of Mini Sudoku to get started.",
+    label: "Looking for puzzle…",
+    // The hint is the only prose on screen now that the board has taken the
+    // status line's place, so it says what's happening rather than jumping
+    // ahead to advice we may be about to make redundant.
+    hint: "Checking this tab for a round of Mini Sudoku…",
     act: null,
   },
   idle: {
@@ -70,6 +74,14 @@ const STATES = {
     hint: "Enjoy the win — then try the next one unaided.",
     act: null,
   },
+  // The board was already finished when we looked — distinct from `solved`, which
+  // means we did it. Nothing to claim credit for, so no entrance flourish either.
+  done: {
+    status: (d) => `Already solved · ${d.N}×${d.N}`,
+    label: "Nothing to solve",
+    hint: "This board is complete. Nice one.",
+    act: null,
+  },
   error: {
     status: (d) => d.message,
     label: "Try again",
@@ -93,6 +105,66 @@ function setState(next, data = {}) {
   hintEl.textContent = resolve(spec.hint, data);
   actionBtn.disabled = spec.act === null;
   actionBtn.setAttribute("aria-busy", String(next === "solving"));
+}
+
+/* -------------------------------------------------------------- board preview */
+
+// Every Mini Sudoku is 6×6, so the empty grid can be drawn at the real size and
+// the popup never resizes when an actual board turns up.
+const DEFAULT_N = 6;
+
+const WALL_SIDES = ["top", "right", "bottom", "left"];
+
+/**
+ * The empty grid shown until a board is found — it says "no board yet" in the
+ * shape of the thing we're waiting for, which the old "No board found" line
+ * couldn't. Purely decorative: the status line is still there for screen
+ * readers, so this would only be noise in the a11y tree. No region walls, since
+ * we don't know the layout until we've seen a board.
+ */
+function renderPlaceholder() {
+  boardEl.style.setProperty("--n", DEFAULT_N);
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < DEFAULT_N * DEFAULT_N; i++) {
+    const cell = document.createElement("div");
+    cell.className = "board__cell";
+    frag.appendChild(cell);
+  }
+  boardEl.replaceChildren(frag);
+  boardEl.setAttribute("aria-hidden", "true");
+}
+
+/**
+ * Draw the detect snapshot — the grid with the SOLUTION's digits on it (see
+ * snapshot in injected.js). Replaces the "Board detected · N×N" line: the grid
+ * says the same thing and shows the answer besides.
+ */
+function renderBoard(cells, N) {
+  if (!Array.isArray(cells) || !cells.length) return;
+
+  boardEl.style.setProperty("--n", N);
+
+  // Sort into row-major order: the DOM order is whatever the page had, but CSS
+  // grid places children sequentially, so the preview must be explicitly ordered.
+  const ordered = [...cells].sort((a, b) => a.row - b.row || a.col - b.col);
+
+  const frag = document.createDocumentFragment();
+  for (const c of ordered) {
+    const cell = document.createElement("div");
+    cell.className = "board__cell";
+    // The puzzle's own clues, so you can tell them from the solver's digits.
+    if (c.given) cell.classList.add("board__cell--given");
+    for (const side of WALL_SIDES) {
+      if (c.walls && c.walls[side]) cell.classList.add(`board__cell--wall-${side}`);
+    }
+    if (c.value) cell.textContent = String(c.value);
+    frag.appendChild(cell);
+  }
+  boardEl.replaceChildren(frag);
+
+  // A real board is worth describing, unlike the placeholder it replaces.
+  boardEl.removeAttribute("aria-hidden");
+  boardEl.setAttribute("aria-label", `Solution preview, ${N} by ${N}.`);
 }
 
 /* ---------------------------------------------------------------- brand icon */
@@ -240,7 +312,10 @@ async function refresh() {
   const board = results.find((r) => r.solvable);
 
   if (board) {
-    setState("ready", { N: board.N });
+    // Draw before switching state: the board element is revealed by the state
+    // change, so filling it first avoids a frame of empty grid.
+    renderBoard(board.cells, board.N);
+    setState(board.solved ? "done" : "ready", { N: board.N });
     stopPolling(); // found it — stop re-checking
     return;
   }
@@ -269,7 +344,9 @@ actionBtn.addEventListener("click", async () => {
   const ok = results.find((r) => r.ok);
 
   if (ok) {
-    setState("solved", { placed: ok.placed });
+    // The engine reports alreadySolved if the board was completed between our last
+    // poll and this click — don't take the credit for it.
+    setState(ok.alreadySolved ? "done" : "solved", { placed: ok.placed, N: ok.N });
     return;
   }
   const err = results.find((r) => r.error);
@@ -283,6 +360,9 @@ actionBtn.addEventListener("click", async () => {
 // Detect immediately, then keep polling so the button auto-enables the moment the
 // game finishes loading — no need to close/reopen the popup.
 loadBrandIcon();
+// Draw the empty grid before the first paint so the popup opens as a board
+// rather than snapping into one a moment later.
+renderPlaceholder();
 setState("checking");
 refresh();
 pollTimer = setInterval(refresh, POLL_MS);

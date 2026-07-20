@@ -24,8 +24,8 @@
  * write V into it. Prefilled cells are not editable and are skipped.
  *
  * @param {'detect'|'solve'} mode
- * @returns {{solvable:boolean,N:number}} for 'detect',
- *          {{ok:boolean, placed?:number, error?:string}} for 'solve'
+ * @returns {{solvable:boolean,N:number,solved:boolean,cells:object[]|null}} for 'detect',
+ *          {{ok:boolean, placed?:number, alreadySolved?:boolean, error?:string}} for 'solve'
  */
 async function runSudoku(mode) {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -176,6 +176,52 @@ async function runSudoku(mode) {
     return value; // value[idx] = final digit
   }
 
+  // --- is the board ALREADY finished? ---
+  // Tests the game's win condition against the digits currently on the board,
+  // rather than comparing to solve()'s output: that keeps the answer honest even
+  // if a board somehow admits more than one solution, and it still works when the
+  // solver itself can't crack it.
+  function isSolved(board) {
+    const { N, cells, region } = board;
+    const rows = Array.from({ length: N }, () => new Set());
+    const cols = Array.from({ length: N }, () => new Set());
+    const regs = Array.from({ length: N }, () => new Set());
+    for (const c of cells) {
+      if (c.value < 1 || c.value > N) return false; // blank cell — never a win
+      rows[c.row].add(c.value);
+      cols[c.col].add(c.value);
+      regs[region[c.idx]].add(c.value);
+    }
+    // Every digit exactly once per row, column and region. N cells and N distinct
+    // values in each line is enough — no digit can repeat without one going missing.
+    const full = (s) => s.size === N;
+    return rows.every(full) && cols.every(full) && regs.every(full);
+  }
+
+  // A serialisable picture of the board for the popup to draw. Deliberately plain
+  // data — executeScript has to structured-clone this back, so no elements or Sets.
+  //
+  // The digits shown are the SOLUTION's, not the player's current attempt: the
+  // preview exists to show what the solver will do, so a part-filled grid (or one
+  // with a wrong guess in it) would be the wrong thing to draw. `solution` null
+  // means we couldn't or shouldn't solve it — fall back to what's on screen.
+  // The walls come along so the popup can draw the region borders; without them a
+  // jigsaw layout would render as a featureless 6×6 grid.
+  function snapshot(board, solution) {
+    return board.cells.map((c) => ({
+      row: c.row,
+      col: c.col,
+      value: solution ? solution[c.idx] : c.value,
+      given: c.prefilled,
+      walls: {
+        top: c.walls.has("top"),
+        right: c.walls.has("right"),
+        bottom: c.walls.has("bottom"),
+        left: c.walls.has("left"),
+      },
+    }));
+  }
+
   // --- the click sequence the game accepts (same framework as Queens/Tango) ---
   function fireOneClick(el) {
     const r = el.getBoundingClientRect();
@@ -201,15 +247,30 @@ async function runSudoku(mode) {
     board.cells.length === board.N * board.N &&
     board.regionCount === board.N;
 
-  if (mode === "detect") return { solvable: valid, N: board ? board.N : 0 };
+  // Every Mini Sudoku ships with clues. Without them we can't tell a given from a
+  // guess, which both modes below depend on — see the bail-out in 'solve'.
+  const hasClues = !!board && board.cells.some((c) => c.prefilled);
+
+  if (mode === "detect") {
+    if (!valid) return { solvable: false, N: board ? board.N : 0, solved: false, cells: null };
+    // A finished board is its own answer, and a board whose clues we can't identify
+    // would only yield a "solution" built on the player's guesses. Either way, show
+    // what's actually on screen rather than something invented.
+    const done = isSolved(board);
+    const solution = done || !hasClues ? null : solve(board);
+    return { solvable: true, N: board.N, solved: done, cells: snapshot(board, solution) };
+  }
 
   // mode === 'solve'
   if (!valid) return { ok: false, error: "Board not found or still loading." };
+  // Already finished (e.g. completed between the popup's last poll and the click) —
+  // report it instead of clicking at a won board.
+  if (isSolved(board)) return { ok: true, placed: 0, alreadySolved: true, N: board.N };
   // Every Mini Sudoku ships with clues, so finding none means `sudoku-cell-prefilled`
   // has stopped identifying them. Bail out loudly: solving on from here would treat
   // the real clues as editable, produce a grid that contradicts them, and then fail
   // to write it (clue cells aren't editable), leaving the board mangled.
-  if (!board.cells.some((c) => c.prefilled)) {
+  if (!hasClues) {
     return { ok: false, error: "Couldn't tell clues from guesses on this board." };
   }
   const solution = solve(board);
@@ -242,5 +303,5 @@ async function runSudoku(mode) {
     }
     if (ok) placed++;
   }
-  return { ok: true, placed };
+  return { ok: true, placed, N: board.N };
 }

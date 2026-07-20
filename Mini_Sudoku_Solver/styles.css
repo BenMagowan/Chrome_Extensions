@@ -29,6 +29,12 @@
   --ok: #1a9e63;
   --err: #d1372f;
 
+  /* Board preview: the region walls, and the digits the solver worked out (the
+     puzzle's own clues just use --text). The fill colour is the extension's
+     accent, stepped lighter in dark mode so it stays legible on a dark cell. */
+  --board-wall: color-mix(in srgb, var(--text) 62%, transparent);
+  --digit-fill: var(--accent-lo);
+
   /* Surfaces */
   --surface: #ffffff;
   --surface-sunk: #f3f7fa;
@@ -53,6 +59,10 @@
     --text-muted: #8ea3b5;
 
     --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 12px rgb(0 0 0 / 0.25);
+
+    /* The dark green accent all but vanishes on a dark cell — step up to the
+       light variant so the solver's digits stay readable. */
+    --digit-fill: var(--accent-hi);
   }
 }
 
@@ -150,29 +160,8 @@ body {
   min-width: 0;
 }
 
-/* Dot colour + halo per state. */
-body[data-state="checking"] .status__dot,
-body[data-state="solving"] .status__dot {
-  background: var(--brand);
-  animation: pulse 1.4s ease-in-out infinite;
-}
-
-body[data-state="ready"] .status__dot {
-  background: var(--accent-lo);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);
-}
-
-/* `solved` (we did it) and `done` (it was already finished) share the success
-   treatment — but only `solved` earns the icon flourish below. */
-body:is([data-state="solved"], [data-state="done"]) .status__dot {
-  background: var(--ok);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent);
-}
-
-body:is([data-state="solved"], [data-state="done"]) .status__text {
-  color: var(--ok);
-}
-
+/* Dot colour + halo. Only the error states style these: everywhere else the
+   board stands in for the status line and this whole row is visually hidden. */
 body:is([data-state="error"], [data-state="stuck"]) .status__dot {
   background: var(--err);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--err) 20%, transparent);
@@ -186,15 +175,10 @@ body:is([data-state="error"], [data-state="stuck"]) .status__text {
   color: var(--err);
 }
 
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand) 40%, transparent);
-  }
+/* The empty board breathing while we look for a real one. */
+@keyframes board-breathe {
   50% {
-    opacity: 0.65;
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 0%, transparent);
+    opacity: 0.5;
   }
 }
 
@@ -475,5 +459,107 @@ body[data-state="solving"] .action__spinner {
   *::after {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* ---------- board preview ---------- */
+
+/* The board is on screen in every state — an empty grid until one is found, the
+   solution once there is. It stands in for the status line, which is the whole
+   point: the grid says "6×6 board detected" better than the sentence did, and an
+   empty one says "no board yet" better than "No board found" did. Keeping it in
+   every state also holds the popup at one size, so nothing jumps around as the
+   game loads. */
+.board {
+  display: grid;
+  /* Rows pinned to 1fr too — without it, auto row sizing lets a row with taller
+     glyphs come out deeper than one without. */
+  grid-template-columns: repeat(var(--n, 6), 1fr);
+  grid-template-rows: repeat(var(--n, 6), 1fr);
+  gap: 1px;
+  width: 100%;
+  max-width: 216px;
+  margin: 0 auto;
+  aspect-ratio: 1;
+  padding: 1px;
+  border-radius: 8px;
+  overflow: hidden;
+  /* Shows through the gaps as hairline grid lines. */
+  background: color-mix(in srgb, var(--text) 22%, transparent);
+}
+
+/* The board says everything the status line used to, so the line is replaced
+   *visually only* — it stays in the a11y tree, where the live region goes on
+   announcing "Looking for a board", "Board detected", "Solved" and the rest.
+   An error is the exception: that message has no equivalent in the grid, so it
+   is the one state that still shows its text. */
+body:not([data-state="error"]) .status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Waiting on a board: an empty grid, breathing while we look, then settling to
+   something quieter once we've concluded there's nothing there. */
+body[data-state="checking"] .board {
+  animation: board-breathe 1.4s ease-in-out infinite;
+}
+
+body[data-state="idle"] .board {
+  opacity: 0.55;
+}
+
+.board__cell {
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  /* Scales with N so the digits keep their proportions whatever size the grid is. */
+  font-size: calc(90px / var(--n, 6));
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--digit-fill);
+}
+
+/* The puzzle's given clues. Tinting the cell and using the plain text colour
+   separates what the board started with from what the solver worked out — the
+   one distinction the preview can draw that the finished grid cannot. */
+.board__cell--given {
+  background: var(--surface-sunk);
+  color: var(--text);
+}
+
+/* Region walls. Sudoku regions are wall-bounded and can be irregular, so these
+   borders are what make the layout readable — without them a jigsaw board would
+   render as a featureless grid. */
+.board__cell--wall-top {
+  border-top: 2px solid var(--board-wall);
+}
+.board__cell--wall-right {
+  border-right: 2px solid var(--board-wall);
+}
+.board__cell--wall-bottom {
+  border-bottom: 2px solid var(--board-wall);
+}
+.board__cell--wall-left {
+  border-left: 2px solid var(--board-wall);
+}
+
+/* Digits the solver just placed get a one-off pop, so you can see its work.
+   The givens sat there all along, so they don't join in. */
+body[data-state="solved"] .board__cell:not(.board__cell--given) {
+  animation: digit-in 0.32s cubic-bezier(0.2, 1.5, 0.4, 1) backwards;
+}
+
+@keyframes digit-in {
+  from {
+    transform: scale(0.2);
+    opacity: 0;
   }
 }
