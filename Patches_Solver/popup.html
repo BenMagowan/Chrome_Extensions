@@ -120,10 +120,18 @@
     </header>
 
     <main class="panel">
+      <!-- Stays in the DOM in every state. Once a board is on screen the preview
+           below takes its place visually, but this is only *visually* hidden, so
+           the live region keeps announcing state changes to screen readers. -->
       <p class="status" id="status" role="status" aria-live="polite">
         <span class="status__dot" aria-hidden="true"></span>
         <span class="status__text" id="status-text">Looking for a board…</span>
       </p>
+
+      <!-- Board preview: the grid tiled into the solution's patches, with the
+           clues on top. Filled in by popup.js from the detect snapshot and shown
+           instead of the status line whenever there's a board. -->
+      <div id="board" class="board" role="img" aria-label="Board preview"></div>
 
       <button id="action" class="action" type="button" disabled>
         <span class="action__spinner" aria-hidden="true"></span>

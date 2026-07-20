@@ -21,6 +21,7 @@ const actionBtn = document.getElementById("action");
 const actionLabel = document.getElementById("action-label");
 const hintEl = document.getElementById("hint");
 const brandIcon = document.getElementById("brand-icon");
+const boardEl = document.getElementById("board");
 const menuBtn = document.getElementById("menu-btn");
 const menuEl = document.getElementById("menu");
 
@@ -42,8 +43,11 @@ const GRACE_MS = 1600;
 const STATES = {
   checking: {
     status: "Looking for a board…",
-    label: "Solve puzzle",
-    hint: "Open a round of Patches to get started.",
+    label: "Looking for puzzle…",
+    // The hint is the only prose on screen now that the board has taken the
+    // status line's place, so it says what's happening rather than jumping
+    // ahead to advice we may be about to make redundant.
+    hint: "Checking this tab for a round of Patches…",
     act: null,
   },
   idle: {
@@ -53,7 +57,8 @@ const STATES = {
     act: "open",
   },
   ready: {
-    status: (d) => `Board detected · ${d.N}×${d.N}`,
+    // Patches boards aren't always square, so both dimensions are reported.
+    status: (d) => `Board detected · ${d.rows}×${d.cols}`,
     label: "Solve puzzle",
     hint: "Tile the grid with the clued patches.",
     act: "solve",
@@ -68,6 +73,14 @@ const STATES = {
     status: (d) => `Solved · ${d.placed} patches placed`,
     label: "Solved",
     hint: "Enjoy the win — then try the next one unaided.",
+    act: null,
+  },
+  // The board was already tiled when we looked — distinct from `solved`, which
+  // means we did it. Nothing to claim credit for, so no entrance flourish either.
+  done: {
+    status: (d) => `Already solved · ${d.rows}×${d.cols}`,
+    label: "Nothing to solve",
+    hint: "This board is complete. Nice one.",
     act: null,
   },
   // Patches only: detect can find a real board that has no valid tiling. That
@@ -102,6 +115,91 @@ function setState(next, data = {}) {
   hintEl.textContent = resolve(spec.hint, data);
   actionBtn.disabled = spec.act === null;
   actionBtn.setAttribute("aria-busy", String(next === "solving"));
+}
+
+/* -------------------------------------------------------------- board preview */
+
+// Patches boards vary in size and aren't always square. The empty grid just uses
+// a common shape; renderBoard resizes to the real one the moment we know it.
+const DEFAULT_ROWS = 7;
+const DEFAULT_COLS = 7;
+
+/**
+ * A patch's fill. Stepping the hue by the golden angle rather than dividing the
+ * wheel evenly: clues come out roughly in reading order, so patches that sit
+ * next to each other tend to have consecutive indices — and an even division
+ * hands consecutive indices neighbouring hues, which is exactly when two
+ * touching patches blur into one. A ~137° step puts them across the wheel from
+ * each other instead, for any number of patches.
+ *
+ * Only the hue is set here; saturation and lightness live in the stylesheet, so
+ * the same patch reads as a pastel in light mode and a deep tone in dark.
+ */
+const GOLDEN_ANGLE = 137.508;
+
+function patchHue(patchIndex) {
+  return Math.round((patchIndex * GOLDEN_ANGLE) % 360);
+}
+
+/** Lay out the grid itself, sized to the board. */
+function buildGrid(rows, cols) {
+  boardEl.style.setProperty("--rows", rows);
+  boardEl.style.setProperty("--cols", cols);
+  const frag = document.createDocumentFragment();
+  const cellEls = [];
+  for (let i = 0; i < rows * cols; i++) {
+    const cell = document.createElement("div");
+    cell.className = "board__cell";
+    cellEls.push(cell);
+    frag.appendChild(cell);
+  }
+  return { frag, cellEls };
+}
+
+/**
+ * The empty grid shown until a board is found — it says "no board yet" in the
+ * shape of the thing we're waiting for, which the old "No board found" line
+ * couldn't. Purely decorative: the status line is still there for screen
+ * readers, so this would only be noise in the a11y tree.
+ */
+function renderPlaceholder() {
+  const { frag } = buildGrid(DEFAULT_ROWS, DEFAULT_COLS);
+  boardEl.replaceChildren(frag);
+  boardEl.setAttribute("aria-hidden", "true");
+}
+
+/**
+ * Draw the detect snapshot — the grid tiled into the SOLUTION's patches with the
+ * clues on top (see snapshot in injected.js). Replaces the "Board detected"
+ * line: the grid says the same thing and shows the answer besides.
+ *
+ * Cells with no patch (`patch === -1`) keep the bare surface. That happens on a
+ * board we found but couldn't tile, where a bare grid carrying just the clues is
+ * the honest picture — better than inventing a tiling to have something to show.
+ */
+function renderBoard(cells, rows, cols) {
+  if (!Array.isArray(cells) || !cells.length) return;
+
+  const { frag, cellEls } = buildGrid(rows, cols);
+  for (const c of cells) {
+    const cell = cellEls[c.row * cols + c.col];
+    if (c.patch >= 0) {
+      cell.classList.add("board__cell--patch");
+      cell.style.setProperty("--hue", patchHue(c.patch));
+    }
+    if (!c.clue) continue;
+    // The clue markers ride on top of their patch, as they do in the game. An
+    // unnumbered clue still gets its disc — it's a clue, it just isn't sized.
+    const dot = document.createElement("span");
+    dot.className = "board__clue";
+    if (c.clue.area != null) dot.textContent = String(c.clue.area);
+    cell.appendChild(dot);
+  }
+  boardEl.replaceChildren(frag);
+
+  // A real board is worth describing, unlike the placeholder it replaces.
+  boardEl.removeAttribute("aria-hidden");
+  boardEl.setAttribute("aria-label", `Solution preview, ${rows} by ${cols}.`);
 }
 
 /* ---------------------------------------------------------------- brand icon */
@@ -249,7 +347,10 @@ async function refresh() {
   const board = results.find((r) => r.solvable);
 
   if (board) {
-    setState("ready", { N: board.N });
+    // Draw before switching state: the board element is revealed by the state
+    // change, so filling it first avoids a frame of empty grid.
+    renderBoard(board.cells, board.rows, board.cols);
+    setState(board.solved ? "done" : "ready", { rows: board.rows, cols: board.cols });
     stopPolling(); // found it — stop re-checking
     return;
   }
@@ -257,6 +358,9 @@ async function refresh() {
   // A board is on screen but no tiling was found — don't claim there's no board.
   const present = results.find((r) => r.present);
   if (present) {
+    // Still worth drawing: the clues on a bare grid show what we were looking at
+    // when we gave up, which reads far better than an empty placeholder.
+    renderBoard(present.cells, present.rows, present.cols);
     setState("stuck");
     stopPolling();
     return;
@@ -286,7 +390,13 @@ actionBtn.addEventListener("click", async () => {
   const ok = results.find((r) => r.ok);
 
   if (ok) {
-    setState("solved", { placed: ok.placed });
+    // The engine reports alreadySolved if the board was completed between our last
+    // poll and this click — don't take the credit for it.
+    setState(ok.alreadySolved ? "done" : "solved", {
+      placed: ok.placed,
+      rows: ok.rows,
+      cols: ok.cols,
+    });
     return;
   }
   const err = results.find((r) => r.error);
@@ -300,6 +410,9 @@ actionBtn.addEventListener("click", async () => {
 // Detect immediately, then keep polling so the button auto-enables the moment the
 // game finishes loading — no need to close/reopen the popup.
 loadBrandIcon();
+// Draw the empty grid before the first paint so the popup opens as a board
+// rather than snapping into one a moment later.
+renderPlaceholder();
 setState("checking");
 refresh();
 pollTimer = setInterval(refresh, POLL_MS);

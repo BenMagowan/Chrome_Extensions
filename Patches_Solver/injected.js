@@ -34,8 +34,9 @@
  * So the solver computes each patch's rectangle and draws it corner→corner with keys.
  *
  * @param {'detect'|'solve'} mode
- * @returns {{solvable:boolean,N:number}} for 'detect',
- *          {{ok:boolean, placed?:number, error?:string}} for 'solve'
+ * @returns {{solvable:boolean,present:boolean,rows:number,cols:number,solved:boolean,
+ *            cells:object[]|null}} for 'detect',
+ *          {{ok:boolean, placed?:number, alreadySolved?:boolean, error?:string}} for 'solve'
  */
 async function runPatches(mode) {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -345,16 +346,95 @@ async function runPatches(mode) {
     return { ok: true, placed, cleared };
   }
 
+  // --- is the board ALREADY finished? ---
+  // Every cell belonging to some drawn patch is the win condition: the game only
+  // draws rectangles, and refuses to draw one across cells that already belong to
+  // a patch, so a fully covered board is a valid tiling.
+  function isSolved(board) {
+    return drawnIdxs(board).length === board.rows * board.cols;
+  }
+
+  /** Map cell index -> clue index, for the patches the PLAYER has already drawn. */
+  // Read back out of the same aria text the erase pass keys off: an ordinary cell
+  // in a patch names its owning clue's row/column, and a clue cell sitting inside
+  // its own patch just says "in drawn region".
+  function drawnPatchOf(board) {
+    const { rows, cols, clues } = board;
+    const clueIndexAt = new Map(clues.map((c, i) => [c.idx, i]));
+    const patchOf = new Array(rows * cols).fill(-1);
+    for (const el of board.boardEl.querySelectorAll("[data-cell-idx]")) {
+      const idx = parseInt(el.getAttribute("data-cell-idx"), 10);
+      const aria = el.getAttribute("aria-label") || "";
+      const m = /in region with clue at row\s+(\d+),\s*column\s+(\d+)/i.exec(aria);
+      if (m) {
+        const owner = (parseInt(m[1], 10) - 1) * cols + (parseInt(m[2], 10) - 1);
+        if (clueIndexAt.has(owner)) patchOf[idx] = clueIndexAt.get(owner);
+      } else if (/in drawn region/i.test(aria) && clueIndexAt.has(idx)) {
+        patchOf[idx] = clueIndexAt.get(idx);
+      }
+    }
+    return patchOf;
+  }
+
+  /** Map cell index -> clue index, for a tiling solve() came up with. */
+  function solutionPatchOf(board, solution) {
+    const patchOf = new Array(board.rows * board.cols).fill(-1);
+    solution.forEach((rect, i) => rect.cells.forEach((id) => (patchOf[id] = i)));
+    return patchOf;
+  }
+
+  // A serialisable picture of the board for the popup to draw. Deliberately plain
+  // data — executeScript has to structured-clone this back, so no elements.
+  // `patchOf` may be all -1 (a board we couldn't tile), in which case the popup
+  // draws the clues on a bare grid, which is the honest picture of that case.
+  function snapshot(board, patchOf) {
+    const { rows, cols, clues } = board;
+    const clueAt = new Map(clues.map((c) => [c.idx, c]));
+    const cells = [];
+    for (let idx = 0; idx < rows * cols; idx++) {
+      const cl = clueAt.get(idx);
+      cells.push({
+        row: Math.floor(idx / cols),
+        col: idx % cols,
+        patch: patchOf[idx],
+        clue: cl ? { area: cl.area, shape: cl.shape } : null,
+      });
+    }
+    return cells;
+  }
+
   // --- dispatch ---
   const board = parseBoard();
   if (mode === "detect") {
-    if (!board) return { solvable: false, present: false, N: 0 };
-    return { solvable: !!solve(board), present: true, N: board.cols };
+    if (!board) {
+      return { solvable: false, present: false, rows: 0, cols: 0, solved: false, cells: null };
+    }
+    // A finished board is its own answer, so show the player's own tiling rather
+    // than an equally valid alternative we'd have gone and computed.
+    const done = isSolved(board);
+    const solution = done ? null : solve(board);
+    const patchOf = done ? drawnPatchOf(board) : solution ? solutionPatchOf(board, solution) : [];
+    const cells = snapshot(board, patchOf.length ? patchOf : new Array(board.rows * board.cols).fill(-1));
+    return {
+      // A solved board counts as solvable even though we skipped solving it —
+      // otherwise the popup would read "no tiling exists" for a finished puzzle.
+      solvable: done || !!solution,
+      present: true,
+      rows: board.rows,
+      cols: board.cols,
+      solved: done,
+      cells,
+    };
   }
 
   // mode === 'solve'
   if (!board) return { ok: false, error: "Board not found or still loading." };
-  const solution = solve(board);
+  // Already finished (e.g. completed between the popup's last poll and the click) —
+  // report it instead of erasing a won board just to redraw it.
+  if (isSolved(board)) {
+    return { ok: true, placed: board.clues.length, alreadySolved: true, rows: board.rows, cols: board.cols };
+  }
   if (!solution) return { ok: false, error: "No rectangle tiling found for this board." };
-  return await fill(board, solution);
+  const filled = await fill(board, solution);
+  return filled.ok ? { ...filled, rows: board.rows, cols: board.cols } : filled;
 }

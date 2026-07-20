@@ -29,6 +29,13 @@
   --ok: #1a9e63;
   --err: #d1372f;
 
+  /* Board preview. Each patch gets its own hue (set per cell in popup.js); these
+     two decide how those hues are rendered, so the same patch reads as a pastel
+     here and as a deep tone against the dark surface below. */
+  --patch-sat: 62%;
+  --patch-light: 79%;
+  --board-line: color-mix(in srgb, var(--text) 22%, transparent);
+
   /* Surfaces */
   --surface: #ffffff;
   --surface-sunk: #f3f7fa;
@@ -53,6 +60,10 @@
     --text-muted: #8ea3b5;
 
     --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 12px rgb(0 0 0 / 0.25);
+
+    /* Pastel patches would glare against the dark surface — same hues, deepened. */
+    --patch-sat: 40%;
+    --patch-light: 34%;
   }
 }
 
@@ -150,29 +161,8 @@ body {
   min-width: 0;
 }
 
-/* Dot colour + halo per state. */
-body[data-state="checking"] .status__dot,
-body[data-state="solving"] .status__dot {
-  background: var(--brand);
-  animation: pulse 1.4s ease-in-out infinite;
-}
-
-body[data-state="ready"] .status__dot {
-  background: var(--accent-lo);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);
-}
-
-/* `solved` (we did it) and `done` (it was already finished) share the success
-   treatment — but only `solved` earns the icon flourish below. */
-body:is([data-state="solved"], [data-state="done"]) .status__dot {
-  background: var(--ok);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent);
-}
-
-body:is([data-state="solved"], [data-state="done"]) .status__text {
-  color: var(--ok);
-}
-
+/* Dot colour + halo. Only the error/stuck states style these: everywhere else
+   the board stands in for the status line and this whole row is hidden. */
 body:is([data-state="error"], [data-state="stuck"]) .status__dot {
   background: var(--err);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--err) 20%, transparent);
@@ -186,15 +176,10 @@ body:is([data-state="error"], [data-state="stuck"]) .status__text {
   color: var(--err);
 }
 
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand) 40%, transparent);
-  }
+/* The empty board breathing while we look for a real one. */
+@keyframes board-breathe {
   50% {
-    opacity: 0.65;
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 0%, transparent);
+    opacity: 0.5;
   }
 }
 
@@ -475,5 +460,99 @@ body[data-state="solving"] .action__spinner {
   *::after {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* ---------- board preview ---------- */
+
+/* The board is on screen in every state — an empty grid until one is found, the
+   tiling once there is. It stands in for the status line, which is the whole
+   point: the grid says "7×7 board detected" better than the sentence did, and an
+   empty one says "no board yet" better than "No board found" did. Keeping it in
+   every state also holds the popup at one size, so nothing jumps around as the
+   game loads. */
+.board {
+  display: grid;
+  /* Patches boards are not always square, so both dimensions drive the layout
+     and the aspect ratio — a 5×8 board must preview as 5×8, not as a squashed
+     square. */
+  grid-template-columns: repeat(var(--cols, 7), 1fr);
+  grid-template-rows: repeat(var(--rows, 7), 1fr);
+  aspect-ratio: var(--cols, 7) / var(--rows, 7);
+  gap: 1px;
+  width: 100%;
+  max-width: 216px;
+  margin: 0 auto;
+  padding: 1px;
+  border-radius: 8px;
+  overflow: hidden;
+  /* Shows through the gaps as hairline grid lines. */
+  background: var(--board-line);
+}
+
+/* The board says everything the status line used to, so the line is replaced
+   *visually only* — it stays in the a11y tree, where the live region goes on
+   announcing every state. Errors and `stuck` are the exceptions: "no tiling
+   exists for this board" has no equivalent in the grid, so those keep their
+   text. */
+body:not([data-state="error"]):not([data-state="stuck"]) .status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Waiting on a board: an empty grid, breathing while we look, then settling to
+   something quieter once we've concluded there's nothing there. */
+body[data-state="checking"] .board {
+  animation: board-breathe 1.4s ease-in-out infinite;
+}
+
+body[data-state="idle"] .board {
+  opacity: 0.55;
+}
+
+.board__cell {
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+}
+
+/* A cell belonging to one of the solution's patches. --hue is set per cell in
+   popup.js; the other two components come from the theme. */
+.board__cell--patch {
+  background: hsl(var(--hue) var(--patch-sat) var(--patch-light));
+}
+
+/* The clue markers, as the game draws them: a disc sitting on its patch. An
+   unnumbered clue gets an empty one — it's still a clue, just not sized. */
+.board__clue {
+  display: grid;
+  place-items: center;
+  width: 74%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  /* Scales with the grid so the discs keep their proportions at any board size. */
+  font-size: calc(72px / var(--cols, 7));
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* Patches the solver just placed fade up, so you can see its work. */
+body[data-state="solved"] .board__cell--patch {
+  animation: patch-in 0.36s ease-out backwards;
+}
+
+@keyframes patch-in {
+  from {
+    opacity: 0;
   }
 }
