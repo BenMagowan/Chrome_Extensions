@@ -44,7 +44,10 @@ const STATES = {
   checking: {
     status: "Looking for a board…",
     label: "Solve puzzle",
-    hint: "Open a round of Tango to get started.",
+    // The hint is the only prose on screen now that the board has taken the
+    // status line's place, so it says what's happening rather than jumping
+    // ahead to advice we may be about to make redundant.
+    hint: "Checking this tab for a round of Tango…",
     act: null,
   },
   idle: {
@@ -160,6 +163,28 @@ function symbolSvg(symbol) {
   return svg;
 }
 
+// Every Tango board is 6×6, so the empty grid can be drawn at the real size and
+// the popup never resizes when an actual board turns up.
+const DEFAULT_N = 6;
+
+/**
+ * The empty grid shown until a board is found — it says "no board yet" in the
+ * shape of the thing we're waiting for, which the old "No board found" line
+ * couldn't. Purely decorative: the status line is still there for screen
+ * readers, so this would only be noise in the a11y tree.
+ */
+function renderPlaceholder() {
+  boardEl.style.setProperty("--n", DEFAULT_N);
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < DEFAULT_N * DEFAULT_N; i++) {
+    const cell = document.createElement("div");
+    cell.className = "board__cell";
+    frag.appendChild(cell);
+  }
+  boardEl.replaceChildren(frag);
+  boardEl.setAttribute("aria-hidden", "true");
+}
+
 /**
  * Draw the detect snapshot — the grid with the SOLUTION's symbols on it (see
  * snapshot in injected.js). Replaces the "Board detected · N×N" line: the grid
@@ -187,6 +212,8 @@ function renderBoard(cells, N) {
   }
   boardEl.replaceChildren(frag);
 
+  // A real board is worth describing, unlike the placeholder it replaces.
+  boardEl.removeAttribute("aria-hidden");
   boardEl.setAttribute("aria-label", `Solution preview, ${N} by ${N}.`);
 }
 
@@ -383,6 +410,9 @@ actionBtn.addEventListener("click", async () => {
 // Detect immediately, then keep polling so the button auto-enables the moment the
 // game finishes loading — no need to close/reopen the popup.
 loadBrandIcon();
+// Draw the empty grid before the first paint so the popup opens as a board
+// rather than snapping into one a moment later.
+renderPlaceholder();
 setState("checking");
 refresh();
 pollTimer = setInterval(refresh, POLL_MS);
