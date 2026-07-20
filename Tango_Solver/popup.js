@@ -43,7 +43,7 @@ const GRACE_MS = 1600;
 const STATES = {
   checking: {
     status: "Looking for a board…",
-    label: "Solve puzzle",
+    label: "Looking for puzzle…",
     // The hint is the only prose on screen now that the board has taken the
     // status line's place, so it says what's happening rather than jumping
     // ahead to advice we may be about to make redundant.
