@@ -45,12 +45,24 @@ async function runZip(mode) {
   }
 
   // --- the wall directions of a cell ---
-  // Guest marks walls with semantic classes `trail-cell-wall--{right,left,down,up}`
-  // (and corner joins `--down-left` / `--down-right`, which are decorative and must be
-  // ignored — hence the end-anchored single-direction match). A wall is drawn on the
-  // owning cell(s); horizontal walls appear on both neighbours, vertical ones on the
-  // top cell, so `connected()` checks both sides.
+  // Two builds render walls differently, so detection is layered:
+  //
+  //  1. Guest build marks walls with semantic classes
+  //     `trail-cell-wall--{right,left,down,up}` (and corner joins `--down-left` /
+  //     `--down-right`, which are decorative and must be ignored — hence the
+  //     end-anchored single-direction match).
+  //
+  //  2. Signed-in build ships CSS-module *hashed* class names (e.g. `_9e5e2e24`),
+  //     so the semantic regex matches nothing. But in BOTH builds a wall is drawn
+  //     the same way visually: a cell-spanning overlay whose `::after` (or the
+  //     element itself) carries a thick border on exactly the wall's side
+  //     (border-bottom → down, border-right → right, etc.). Reading that rendered
+  //     border is class-name-agnostic, so it survives future re-hashing.
+  //
+  // A wall is drawn on the owning cell(s); horizontal walls appear on both
+  // neighbours, vertical ones on the top cell, so `connected()` checks both sides.
   function wallDirs(el) {
+    // Strategy 1: semantic class names (guest build).
     const dirs = new Set();
     const scan = (cls) => {
       if (typeof cls !== "string") return;
@@ -66,6 +78,37 @@ async function runZip(mode) {
     };
     scan(el.className);
     el.querySelectorAll("*").forEach((ch) => scan(ch.className));
+    if (dirs.size) return dirs;
+
+    // Strategy 2: rendered wall bar (hashed build, and any future renaming).
+    const win = el.ownerDocument.defaultView || window;
+    const cr = el.getBoundingClientRect();
+    if (!cr.width || !cr.height) return dirs;
+    // A real wall is much thicker than the hairline grid lines (~1px). 10% of the
+    // cell clears those with margin while staying below any wall thickness.
+    const THICK = Math.max(4, Math.min(cr.width, cr.height) * 0.1);
+    // Record the thick side of one computed style — but only when EXACTLY one side
+    // is thick. A wall bar borders a single edge; an all-round outline (focus ring,
+    // selected-cell highlight) borders 3–4 and must not be read as walls.
+    const consider = (s) => {
+      if (!s) return;
+      const bw = (v) => parseFloat(v) || 0;
+      const hit = [];
+      if (bw(s.borderTopWidth) >= THICK) hit.push("up");
+      if (bw(s.borderBottomWidth) >= THICK) hit.push("down");
+      if (bw(s.borderLeftWidth) >= THICK) hit.push("left");
+      if (bw(s.borderRightWidth) >= THICK) hit.push("right");
+      if (hit.length === 1) dirs.add(hit[0]);
+    };
+    for (const e of el.querySelectorAll("*")) {
+      // Only overlays that (roughly) span the cell can be wall bars; this skips the
+      // smaller centred number/path-segment nodes that could carry their own borders.
+      const rr = e.getBoundingClientRect();
+      if (rr.width < cr.width * 0.6 || rr.height < cr.height * 0.6) continue;
+      consider(win.getComputedStyle(e));
+      consider(win.getComputedStyle(e, "::before"));
+      consider(win.getComputedStyle(e, "::after"));
+    }
     return dirs;
   }
 

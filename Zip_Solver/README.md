@@ -68,13 +68,23 @@ the extension stops working, re-verify these first.
 - **Numbers:** the `.trail-cell-content` text holds the dot's number. Signed-in also
   exposes it as `aria-label="Number N"` on the cell plus `[data-cell-content]` text —
   the parser reads both.
-- **Walls (guest, semantic):** a cell carries child classes
-  `trail-cell-wall--{right,left,down,up}` for a blocked edge. Horizontal walls are marked
-  on **both** neighbouring cells (`--right` on the left cell, `--left` on the right one);
-  vertical walls are marked with `--down` on the top cell. The corner-join classes
-  `trail-cell-wall--down-left` / `--down-right` are **decorative** and must be ignored
-  (the parser only matches an end-anchored single direction). `connected()` treats an
-  edge as blocked if **either** side marks it.
+- **Walls — two detection strategies, since LinkedIn ships two builds:**
+  1. **Guest (semantic):** a cell carries child classes
+     `trail-cell-wall--{right,left,down,up}` for a blocked edge. Horizontal walls are
+     marked on **both** neighbouring cells (`--right` on the left cell, `--left` on the
+     right one); vertical walls are marked with `--down` on the top cell. The
+     corner-join classes `trail-cell-wall--down-left` / `--down-right` are **decorative**
+     and must be ignored (the parser only matches an end-anchored single direction).
+  2. **Signed-in (hashed):** the signed-in layout ships CSS-module hashed class names
+     (e.g. `_9e5e2e24`) that change per build, so they can't be matched by name. But in
+     both builds a wall renders identically: a cell-spanning overlay whose `::after`
+     carries a **thick one-sided border** (~12px on a ~66px cell) on exactly the wall's
+     side (`border-bottom` → down, `border-right` → right, etc.). `wallDirs()` falls back
+     to reading that rendered border via `getComputedStyle`, requiring **exactly one**
+     thick side so a focus ring or selected-cell highlight (3–4 thick sides) isn't
+     mistaken for a wall. This is class-name-agnostic and survives future re-hashing.
+
+  `connected()` treats an edge as blocked if **either** side marks it.
 - **Filled cells:** class `trail-cell--filled` (guest) or a `[data-testid="filled-cell"]`
   child (signed-in). Used to reset and to verify each drawn step.
 - **Fill mechanism (verified):** the game **auto-fills the "1" cell** as the path head.
@@ -123,13 +133,15 @@ Returns the ordered list of cell indices, or `null` if no path exists.
 - **Zip signature:** parsing requires a Zip marker (`.trail-cell` / `.trail-grid` /
   `[data-trail-grid]` / `[data-testid="zip-game-container"]`), so a Queens, Tango, or
   Sudoku board never mis-parses as Zip.
-- **⚠️ Walls in the signed-in DOM are hashed.** The signed-in layout classes are hashed
-  (e.g. `_1f5a19bf`), and walls render via CSS pseudo-elements keyed off those hashed
-  classes — so they can't be read by name, and computed style doesn't expose them. Wall
-  detection is therefore **verified for the guest DOM only**; wall-free signed-in
-  puzzles (like the captured sample) solve fine, but a **walled** signed-in puzzle needs
-  a captured sample to map the hashed wall classes before it can be supported. If a
-  signed-in solve draws an illegal move, this is the first thing to re-verify.
+- **Walls in the signed-in (hashed-class) DOM are read from rendered CSS, not class
+  names** — see the wall-detection strategies above. Verified against a live 6×6
+  signed-in-shaped board (walls at the same cells as a captured signed-in DOM sample):
+  the geometry-based detector reproduced the semantic ground truth exactly (0
+  mismatches) and the resulting solve was a valid, wall-respecting Hamiltonian path. If
+  a signed-in solve ever draws an illegal move again, first re-check the wall bar is
+  still ~10%+ of the cell's shorter side (`THICK` in `wallDirs()`) — a redesign that
+  changes wall thickness or renders it differently (e.g. an SVG line instead of a
+  border) would need that heuristic updated.
 
 If the input sequence ever stops working, re-inspect what the widget listens for (open
 DevTools on the iframe, add capturing listeners) and update `pressArrow()` /
