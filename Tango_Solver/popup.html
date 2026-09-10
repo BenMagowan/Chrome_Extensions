@@ -63,6 +63,66 @@
         <div id="menu" class="menu" role="menu" aria-label="Settings and more" hidden>
           <!-- role="presentation": a bare <p> isn't a valid child of role="menu".
                It still names the group below via aria-labelledby. -->
+          <p class="menu__label" id="settings-label" role="presentation">
+            Settings
+          </p>
+          <div role="group" aria-labelledby="settings-label">
+            <!-- A checkable menu item, not a link: role="menuitemcheckbox" +
+                 aria-checked is the accessible pairing for an in-menu toggle, and
+                 popup.js keeps aria-checked in sync with the stored preference.
+                 The .switch is purely decorative (aria-hidden) — the checkbox role
+                 already conveys the on/off state. -->
+            <button
+              id="autosolve-toggle"
+              class="menu__item menu__item--toggle"
+              type="button"
+              role="menuitemcheckbox"
+              aria-checked="true"
+            >
+              <span class="menu__item-text">Auto-solve</span>
+              <span class="switch" aria-hidden="true">
+                <span class="switch__knob"></span>
+              </span>
+            </button>
+
+            <!-- Target solve time. The engine spreads its clicks to land the whole
+                 solve near it. Two controls for one value, kept in sync by popup.js:
+                 a text box for exact entry (whole seconds, 1–999 — filtered to
+                 digits, clamped on commit, stepped with ↑/↓) and a slider for the
+                 common 1–60 range (it pins at 60 for larger typed values). Neither
+                 carries a menu role, and both are exempt from the menu's own
+                 arrow-key roving while focused. -->
+            <div class="menu__field">
+              <label class="menu__field-label" for="target-time">Solve time</label>
+              <span class="menu__field-control">
+                <input
+                  id="target-time"
+                  class="menu__number"
+                  type="text"
+                  inputmode="numeric"
+                  autocomplete="off"
+                  maxlength="3"
+                  value="5"
+                  aria-label="Solve time in seconds, 1 to 999"
+                />
+                <span class="menu__field-unit" aria-hidden="true">s</span>
+              </span>
+            </div>
+            <input
+              id="target-range"
+              class="menu__range"
+              type="range"
+              min="1"
+              max="60"
+              step="1"
+              value="5"
+              aria-label="Solve time slider, 1 to 60 seconds"
+            />
+          </div>
+
+          <!-- role="separator" is a valid child of role="menu", unlike a bare <hr>. -->
+          <div class="menu__sep" role="separator"></div>
+
           <p class="menu__label" id="more-solvers-label" role="presentation">
             More solvers
           </p>
@@ -137,6 +197,20 @@
         <span class="action__spinner" aria-hidden="true"></span>
         <span class="action__label" id="action-label">Solve puzzle</span>
       </button>
+
+      <!-- Completion timer: counts up live while symbols go down, then freezes at
+           the total once the board is solved. Shown only in the solving/solved
+           states (styles.css). aria-hidden because the same figure is folded into
+           the live status line for screen readers — a chip ticking every 100ms
+           would otherwise spam the a11y tree. -->
+      <p class="timer" id="timer" aria-hidden="true">
+        <svg class="timer__icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm0 2a7 7 0 1 1 0 14 7 7 0 0 1 0-14zm-.95 2.4v5.2l4.2 2.5.75-1.3-3.45-2.05V7.4z"
+          />
+        </svg>
+        <span id="timer-value">0.0s</span>
+      </p>
 
       <p class="hint" id="hint">Open a round of Tango to get started.</p>
     </main>

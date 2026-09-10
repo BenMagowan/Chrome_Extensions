@@ -294,6 +294,39 @@ body[data-state="solving"] .action__spinner {
   }
 }
 
+/* ---------- completion timer ---------- */
+
+/* Only meaningful while a solve is in flight or just finished; hidden the rest of
+   the time so it doesn't sit at a stale 0.0s. Tabular figures keep the width from
+   twitching as the count ticks over. */
+.timer {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+body:is([data-state="solving"], [data-state="solved"]) .timer {
+  display: flex;
+}
+
+/* Frozen total: greened to match the solved button, a quiet "done". */
+body[data-state="solved"] .timer {
+  color: var(--ok);
+}
+
+.timer__icon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  fill: currentColor;
+}
+
 /* ---------- hint ---------- */
 
 .hint {
@@ -433,6 +466,139 @@ body[data-state="solving"] .action__spinner {
   border-radius: 3px;
 }
 
+/* Auto-solve toggle: a <button role="menuitemcheckbox"> that has to reset the
+   button defaults to sit flush with the anchor items around it, then push its
+   pill switch to the far right. */
+.menu__item--toggle {
+  width: 100%;
+  justify-content: space-between;
+  appearance: none;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 550;
+  text-align: left;
+}
+
+/* The pill. The knob slides right and the track turns brand-blue when checked —
+   both driven off aria-checked, so the visual and the a11y state can't disagree. */
+.switch {
+  position: relative;
+  width: 30px;
+  height: 18px;
+  flex: none;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-muted) 42%, transparent);
+  transition: background 0.15s ease;
+}
+
+.switch__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(16 36 58 / 0.35);
+  transition: transform 0.15s ease;
+}
+
+.menu__item--toggle[aria-checked="true"] .switch {
+  background: var(--brand);
+}
+
+.menu__item--toggle[aria-checked="true"] .switch__knob {
+  transform: translateX(12px);
+}
+
+/* Target-time field, sitting under the toggle in the same Settings group: a label
+   on the left, a small "N s" text box on the right, matching the toggle's layout. */
+.menu__field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 9px 6px;
+}
+
+.menu__field-label {
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--text);
+}
+
+.menu__field-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.menu__number {
+  width: 40px;
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.menu__number:focus-visible {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.menu__field-unit {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Slider for the common 1–60 s range, sitting just under the field row and sharing
+   its value with the text box. A slim track with a brand-blue thumb; appearance is
+   reset on both so it reads as part of this UI rather than the OS default control. */
+.menu__range {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  width: calc(100% - 18px);
+  height: 4px;
+  margin: 2px 9px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-muted) 35%, transparent);
+  cursor: pointer;
+}
+
+.menu__range:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.menu__range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--brand);
+  border: 2px solid var(--surface);
+  box-shadow: 0 1px 2px rgb(16 36 58 / 0.35);
+}
+
+.menu__range::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--brand);
+}
+
 /* First thing in the menu, so it carries no top border of its own. */
 .menu__label {
   margin: 1px 0 2px;
@@ -512,6 +678,23 @@ body[data-state="checking"] .board {
 
 body[data-state="idle"] .board {
   opacity: 0.55;
+}
+
+/* Round the four corner cells to follow the board's 8px radius (inset by the 1px
+   padding = 7px). Without this the square cells are clipped by the board's
+   `overflow: hidden`, so the corners read as cut off. popup.js tags the corner
+   cells for any board size. */
+.board__cell--tl {
+  border-top-left-radius: 7px;
+}
+.board__cell--tr {
+  border-top-right-radius: 7px;
+}
+.board__cell--bl {
+  border-bottom-left-radius: 7px;
+}
+.board__cell--br {
+  border-bottom-right-radius: 7px;
 }
 
 .board__cell {

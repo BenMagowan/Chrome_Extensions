@@ -1,16 +1,17 @@
 /*
  * injected.js — the whole Tango engine as ONE self-contained function.
  *
- * Not a content script. The popup injects it on demand into every frame of the
- * LinkedIn games tab via
- *   chrome.scripting.executeScript({ target:{tabId, allFrames:true}, world:'MAIN', func: runTango, args:[mode] })
- * (See Queens_Solver for why on-demand MAIN-world injection is used instead of a
- *  pre-injected content script: no reload-after-install gotcha, immune to when the
- *  game iframe loaded, and exempt from the page CSP that blocks in-page eval.)
+ * The popup injects it on demand into every frame of the LinkedIn games tab via
+ *   chrome.scripting.executeScript({ target:{tabId, allFrames:true}, world:'MAIN', func: runTango, args:[mode, opts] })
+ * (See Queens_Solver for why on-demand MAIN-world injection is used for the popup
+ *  instead of a pre-injected content script: no reload-after-install gotcha, immune
+ *  to when the game iframe loaded, and exempt from the page CSP that blocks in-page
+ *  eval.) The same file is ALSO loaded as a content script, ahead of content.js,
+ *  which drives auto-solve on page load — so the engine never forks.
  *
  * MUST stay fully self-contained — executeScript serializes it with
  * Function.prototype.toString, so every helper is nested and nothing outside is
- * referenced except the `mode` argument.
+ * referenced except the `mode` / `opts` arguments.
  *
  * TANGO RULES (constraint satisfaction):
  *   - Each cell is a Sun or a Moon.
@@ -20,11 +21,21 @@
  *   - Some cells are pre-filled (locked) clues. The solution is unique.
  *
  * @param {'detect'|'solve'} mode
+ * @param {{targetMs?:number}} [opts] pacing for 'solve': aim the whole solve at
+ *        this total time (see the click-delay maths in the solve branch). Omit for
+ *        the default cadence. Ignored by 'detect'.
  * @returns {{solvable:boolean,N:number,solved:boolean,cells:object[]|null}} for 'detect',
  *          {{ok:boolean, placed?:number, alreadySolved?:boolean, error?:string}} for 'solve'
  */
-async function runTango(mode) {
+async function runTango(mode, opts) {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  // Optional pacing. When a target total time is supplied the solve branch spreads
+  // its clicks to land near it; null keeps the default, verified-safe cadence.
+  const targetMs =
+    opts && typeof opts.targetMs === "number" && opts.targetMs > 0
+      ? opts.targetMs
+      : null;
 
   // --- read a cell's current symbol from its inner <svg aria-label> ---
   // "Sun" | "Moon" | "Empty" — identical text in guest and signed-in DOMs.
@@ -256,11 +267,14 @@ async function runTango(mode) {
   }
   // Cycle a cell (Empty -> Sun -> Moon -> Empty) to the target symbol; state updates
   // asynchronously, so re-verify after each click. Max 3 clicks reaches any state.
-  async function clickUntil(el, targetSymbol) {
+  // `delay` is the pause after each click — the one lever the pacing turns, and it
+  // sleeps after the click that lands the target too, so consecutive cells stay
+  // spaced without a separate between-cell wait.
+  async function clickUntil(el, targetSymbol, delay) {
     for (let i = 0; i < 3; i++) {
       if (symbolOf(el) === targetSymbol) return;
       fireOneClick(el);
-      await sleep(200);
+      await sleep(delay);
     }
   }
 
@@ -288,14 +302,48 @@ async function runTango(mode) {
   const solution = solve(board);
   if (!solution) return { ok: false, error: "No solution exists for this board." };
 
+  // Work out how fast to click. Each cell that has to change costs a known number
+  // of clicks to walk the Empty->Sun->Moon cycle to its target, and clickUntil
+  // sleeps exactly once per click — so the click loop takes (total clicks × delay).
+  //
+  // We deliberately budget that loop at (target + BUFFER), not target: the rest of
+  // the solve (parse, the final state settle) adds a little, and the buffer means
+  // the real time lands comfortably OVER the target rather than under — e.g. a 1s
+  // target finishes ~1.5s, a 10s target ~10.5s. The floor is only there to stop a
+  // very short target clicking faster than the game reliably registers.
+  const DEFAULT_CLICK_MS = 200;
+  const MIN_CLICK_MS = 50;
+  const BUFFER_MS = 500;
+  const SYMBOL_NUM = { Empty: 0, Sun: 1, Moon: 2 };
+  const clicksBetween = (from, to) =>
+    (((SYMBOL_NUM[to] - SYMBOL_NUM[from]) % 3) + 3) % 3;
+
+  let totalClicks = 0;
+  for (const c of board.cells) {
+    if (c.locked) continue; // locked clues don't move, so they cost nothing
+    totalClicks += clicksBetween(c.symbol, solution[c.idx]);
+  }
+  const clickDelay =
+    targetMs && totalClicks > 0
+      ? Math.max(MIN_CLICK_MS, Math.round((targetMs + BUFFER_MS) / totalClicks))
+      : DEFAULT_CLICK_MS;
+
   // Drive every non-locked cell to its solution symbol. No separate reset needed —
   // clickUntil reaches the target from any current state, so this is idempotent.
+  // clickUntil already spaces the clicks (it sleeps after the landing click too),
+  // so no extra between-cell wait is needed.
   let placed = 0;
   for (const c of board.cells) {
     if (c.locked) continue;
-    await clickUntil(c.el, solution[c.idx]);
+    await clickUntil(c.el, solution[c.idx], clickDelay);
     placed++;
-    await sleep(200); // human-like spacing; avoids dropped rapid events
   }
   return { ok: true, placed, N: board.N };
 }
+
+// Expose the engine on the (isolated-world) global so the auto-solve content
+// script — content.js, listed after this file in the same content_scripts entry —
+// can call it whatever scope Chrome gives each file. This runs only when the file
+// is loaded as a script (content script or the popup's <script>); it is NOT part
+// of runTango, so the popup's executeScript({func: runTango}) never carries it.
+if (typeof self !== "undefined") self.runTango = runTango;
