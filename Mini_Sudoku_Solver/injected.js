@@ -1,16 +1,17 @@
 /*
  * injected.js — the whole Mini Sudoku engine as ONE self-contained function.
  *
- * Not a content script. The popup injects it on demand into every frame of the
- * LinkedIn games tab via
- *   chrome.scripting.executeScript({ target:{tabId, allFrames:true}, world:'MAIN', func: runSudoku, args:[mode] })
- * (See Queens_Solver for why on-demand MAIN-world injection is used instead of a
- *  pre-injected content script: no reload-after-install gotcha, immune to when the
- *  game iframe loaded, and exempt from the page CSP that blocks in-page eval.)
+ * The popup injects it on demand into every frame of the LinkedIn games tab via
+ *   chrome.scripting.executeScript({ target:{tabId, allFrames:true}, world:'MAIN', func: runSudoku, args:[mode, opts] })
+ * (See Queens_Solver for why on-demand MAIN-world injection is used for the popup
+ *  instead of a pre-injected content script: no reload-after-install gotcha, immune
+ *  to when the game iframe loaded, and exempt from the page CSP that blocks in-page
+ *  eval.) The same file is ALSO loaded as a content script, ahead of content.js,
+ *  which drives auto-solve on page load — so the engine never forks.
  *
  * MUST stay fully self-contained — executeScript serializes it with
  * Function.prototype.toString, so every helper is nested and nothing outside is
- * referenced except the `mode` argument.
+ * referenced except the `mode` / `opts` arguments.
  *
  * MINI SUDOKU RULES (constraint satisfaction):
  *   - 6×6 grid, digits 1–6.
@@ -24,11 +25,21 @@
  * write V into it. Prefilled cells are not editable and are skipped.
  *
  * @param {'detect'|'solve'} mode
+ * @param {{targetMs?:number}} [opts] pacing for 'solve': aim the whole solve at
+ *        this total time (see the click-delay maths in the solve branch). Omit for
+ *        the default cadence. Ignored by 'detect'.
  * @returns {{solvable:boolean,N:number,solved:boolean,cells:object[]|null}} for 'detect',
  *          {{ok:boolean, placed?:number, alreadySolved?:boolean, error?:string}} for 'solve'
  */
-async function runSudoku(mode) {
+async function runSudoku(mode, opts) {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  // Optional pacing. When a target total time is supplied the solve branch spreads
+  // its clicks to land near it; null keeps the default, verified-safe cadence.
+  const targetMs =
+    opts && typeof opts.targetMs === "number" && opts.targetMs > 0
+      ? opts.targetMs
+      : null;
 
   // --- read a cell's current digit (0 = empty) from `.sudoku-cell-content` ---
   function valueOf(cellEl) {
@@ -285,6 +296,30 @@ async function runSudoku(mode) {
     return { ok: false, error: "Number pad not found." };
   }
 
+  // Work out how fast to click. Each cell that needs a digit costs two clicks —
+  // select it, then its number button — each followed by one sleep, so the fill
+  // loop takes (cells to fill × 2 × delay).
+  //
+  // We deliberately budget that loop at (target + BUFFER), not target: the rest of
+  // the solve (parse, the final state settle) adds a little, and the buffer means
+  // the real time lands comfortably OVER the target rather than under — e.g. a 1s
+  // target finishes ~1.5s, a 10s target ~10.5s. The floor is only there to stop a
+  // very short target clicking faster than the game reliably registers: the digit
+  // goes to whichever cell the game thinks is selected, so a selection that lags
+  // the delay would land it in the previous cell.
+  const DEFAULT_CLICK_MS = 140;
+  const MIN_CLICK_MS = 50;
+  const BUFFER_MS = 500;
+  const CLICKS_PER_CELL = 2;
+  let toFill = 0;
+  for (const c of board.cells) {
+    if (!c.prefilled && c.value !== solution[c.idx]) toFill++;
+  }
+  const clickDelay =
+    targetMs && toFill > 0
+      ? Math.max(MIN_CLICK_MS, Math.round((targetMs + BUFFER_MS) / (toFill * CLICKS_PER_CELL)))
+      : DEFAULT_CLICK_MS;
+
   // Fill each non-prefilled cell whose current value ≠ target: select the cell,
   // then click its target number button. Re-read and retry once if it didn't take.
   // Skip cells already correct → idempotent from any partial state.
@@ -296,12 +331,19 @@ async function runSudoku(mode) {
     let ok = false;
     for (let attempt = 0; attempt < 2 && !ok; attempt++) {
       fireOneClick(c.el); // select the cell
-      await sleep(140);
+      await sleep(clickDelay);
       fireOneClick(numberBtn[target]); // write the digit
-      await sleep(140);
+      await sleep(clickDelay);
       ok = valueOf(c.el) === target;
     }
     if (ok) placed++;
   }
   return { ok: true, placed, N: board.N };
 }
+
+// Expose the engine on the (isolated-world) global so the auto-solve content
+// script — content.js, listed after this file in the same content_scripts entry —
+// can call it whatever scope Chrome gives each file. This runs only when the file
+// is loaded as a script (content script or the popup's <script>); it is NOT part
+// of runSudoku, so the popup's executeScript({func: runSudoku}) never carries it.
+if (typeof self !== "undefined") self.runSudoku = runSudoku;
