@@ -269,7 +269,12 @@ async function runSudoku(mode, opts) {
     // what's actually on screen rather than something invented.
     const done = isSolved(board);
     const solution = done || !hasClues ? null : solve(board);
-    return { solvable: true, N: board.N, solved: done, cells: snapshot(board, solution) };
+    // The grid, clues and walls are all drawn behind the "Solve now" start screen,
+    // but the number pad solve() types with only renders once the round starts —
+    // and starting it doesn't load a new page. `playable` lets content.js wait for
+    // that instead of firing a solve that can only fail with "Number pad not found".
+    const playable = !!document.querySelector('[data-number="1"]');
+    return { solvable: true, playable, N: board.N, solved: done, cells: snapshot(board, solution) };
   }
 
   // mode === 'solve'

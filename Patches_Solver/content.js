@@ -45,23 +45,27 @@
   const targetMs = typeof cfg.targetMs === "number" ? cfg.targetMs : 5000;
   if (isTop) console.log(TAG, "on; target", targetMs + "ms");
 
-  // The board renders asynchronously, so poll for it. Only the frame that actually
-  // holds the grid keeps going; other frames never see a grid and bail quietly, so
-  // just the game frame logs.
-  const TRIES = 30;
+  // The board renders asynchronously, and on some games only once the player
+  // presses Start — which doesn't always load a new page (Mini Sudoku's doesn't),
+  // so this script gets no second run to catch it. So keep polling until a board
+  // turns up, however long the start screen sits there, rather than giving up
+  // after a few tries. A frame that never holds a board just goes on making one
+  // cheap DOM query every 800 ms.
   const INTERVAL_MS = 800;
-  let sawGrid = false;
 
-  for (let i = 0; i < TRIES; i++) {
+  // While solving, leave a marker on this frame's <html> so the popup, if it's
+  // opened mid-solve, shows "Solving" (then the result) instead of offering a
+  // second solve. DOM attributes are shared across worlds, so the popup's
+  // executeScript can read it. Keep in step with readAutoSolve() in popup.js.
+  const marker = document.documentElement.dataset;
+
+  for (;;) {
     let res = null;
     try {
       res = await runPatches("detect"); // from injected.js (same content-script scope)
     } catch {
       /* transient (frame mid-render) — retry */
     }
-    // Patches reports `present` rather than a size: a board can be on screen and
-    // still have no tiling, which is "a grid was there" all the same.
-    if (res && res.present) sawGrid = true;
 
     if (res && res.solvable) {
       if (res.solved) {
@@ -69,22 +73,22 @@
         return;
       }
       console.log(TAG, `solving ${res.rows}×${res.cols} board (target ${targetMs}ms)`);
+      const startedAt = Date.now();
+      marker.autosolveStart = String(startedAt);
+      marker.autosolve = "solving";
+      let r = null;
       try {
-        const r = await runPatches("solve", { targetMs });
+        r = await runPatches("solve", { targetMs });
         console.log(TAG, r && r.ok ? `done — ${r.placed} patches placed` : "solve did not complete", r);
       } catch (e) {
         console.log(TAG, "solve threw", e);
       }
+      // Result first, then state, so the popup never sees "solved" without one.
+      marker.autosolveResult = JSON.stringify({ ...r, ms: Date.now() - startedAt });
+      marker.autosolve = r && r.ok ? (r.alreadySolved ? "done" : "solved") : "failed";
       return;
     }
 
-    // Not the game frame — give up quietly after a couple of seconds so only the
-    // frame with the board is noisy.
-    if (!sawGrid && i >= 3) return;
     await new Promise((r) => setTimeout(r, INTERVAL_MS));
-  }
-
-  if (sawGrid) {
-    console.log(TAG, "a grid was there but never became solvable within the wait window");
   }
 })();

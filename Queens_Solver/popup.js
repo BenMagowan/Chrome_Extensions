@@ -561,9 +561,85 @@ function stopPolling() {
  */
 const USER_OWNED = new Set(["solving", "solved", "error"]);
 
+/**
+ * content.js's auto-solve marker (see there) from whichever frame carries one —
+ * only the frame it solved in does — or null. The reader is passed to
+ * executeScript, so it must be self-contained.
+ */
+async function readAutoSolve() {
+  const tabId = await getActiveTabId();
+  if (tabId == null) return null;
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId, allFrames: true },
+      func: () => {
+        const d = document.documentElement.dataset;
+        if (!d.autosolve) return null;
+        let result = null;
+        try {
+          result = JSON.parse(d.autosolveResult || "null");
+        } catch {
+          /* unreadable — treat as no result */
+        }
+        return { state: d.autosolve, startedAt: Number(d.autosolveStart) || Date.now(), result };
+      },
+    });
+    return results.map((r) => r && r.result).find(Boolean) || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * True while the `solving` on screen is content.js's auto-solve rather than one
+ * this popup started. That solve isn't ours to await, so refresh() keeps polling
+ * through it to catch the finish from content.js's marker.
+ */
+let watchingAuto = false;
+
+/**
+ * Whether a solve this popup started now owns the UI (see USER_OWNED). Checked
+ * again after refresh()'s awaits, since Solve can be pressed while a poll is in
+ * flight — the poller keeps running on a `ready` board when Auto-solve is on.
+ */
+const superseded = () => USER_OWNED.has(state) && !watchingAuto;
+
+/**
+ * Mirror content.js's auto-solve in the popup: `solving` while it runs, with the
+ * timer counting from when it started, then `solved` with its result and time.
+ * Returns true when the auto-solve decided the state. A "solved" marker only
+ * counts if we watched it land or the board really is solved; otherwise it was
+ * left by an earlier board in the same page.
+ */
+function showAutoSolve(auto, boardSolved, data) {
+  if (auto && auto.state === "solving") {
+    if (!watchingAuto) {
+      watchingAuto = true;
+      setState("solving", data);
+      startTimer();
+      timerStart -= Date.now() - auto.startedAt; // count from content.js's start
+    }
+    return true; // keep polling to catch the finish
+  }
+  const wasWatching = watchingAuto;
+  if (wasWatching) {
+    watchingAuto = false;
+    stopTimer();
+  }
+  if (auto && auto.state === "solved" && auto.result && (wasWatching || boardSolved)) {
+    // Quote content.js's own figure, which covers its whole solve.
+    elapsedMs = auto.result.ms;
+    timerValueEl.textContent = fmtTime(elapsedMs);
+    setState("solved", { ...data, ...auto.result });
+    stopPolling();
+    return true;
+  }
+  return false;
+}
+
 /** Detect a board; move to `ready` only when one is present & solvable. */
 async function refresh() {
-  if (USER_OWNED.has(state)) return;
+  if (superseded()) return;
 
   // If we're not on the Queens game page, there is no board to find — go straight
   // to "open the game" instead of flashing "Looking for puzzle…" on an unrelated
@@ -578,6 +654,8 @@ async function refresh() {
   const board = results.find((r) => r.solvable);
 
   if (board) {
+    const auto = await readAutoSolve();
+    if (superseded()) return; // Solve was pressed while we were looking
     // Draw before switching state: the board element is revealed by the state
     // change, so filling it first avoids a frame of empty grid.
     renderBoard(board.cells, board.N);
@@ -585,9 +663,14 @@ async function refresh() {
     // (content.js) is already solving on page load; having the popup ALSO fire on
     // open would run a second solve concurrently — the "opening the popup makes it
     // go twice as fast" bug. Auto-solve while the popup is open is instead handled
-    // by the toggle handler (enabling it on a `ready` board solves once).
+    // by the toggle handler (enabling it on a `ready` board solves once). What the
+    // popup does do is mirror content.js's solve, so it never offers a second one.
+    if (showAutoSolve(auto, board.solved, { N: board.N })) return;
     setState(board.solved ? "done" : "ready", { N: board.N });
-    stopPolling(); // found it — stop re-checking
+    // Found it — stop re-checking. Except with Auto-solve on and no marker yet:
+    // content.js is still due to start on this board (its poll just hasn't come
+    // round), so keep watching for it rather than parking on "Solve puzzle".
+    if (board.solved || !autoSolve || auto) stopPolling();
   } else if (state === "checking" && Date.now() - openedAt < GRACE_MS) {
     // Still within the grace window: the game may simply not have rendered yet.
   } else {

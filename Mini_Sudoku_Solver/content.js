@@ -45,44 +45,58 @@
   const targetMs = typeof cfg.targetMs === "number" ? cfg.targetMs : 5000;
   if (isTop) console.log(TAG, "on; target", targetMs + "ms");
 
-  // The board renders asynchronously in the iframe, so poll for it. Only the frame
-  // that actually holds the grid keeps going; other frames (the top page, unrelated
-  // iframes) never see a grid and bail quietly, so just the game frame logs.
-  const TRIES = 30;
+  // The board renders asynchronously, and on some games only once the player
+  // presses Start — which doesn't always load a new page (this game's doesn't),
+  // so this script gets no second run to catch it. So keep polling until a board
+  // turns up, however long the start screen sits there, rather than giving up
+  // after a few tries. A frame that never holds a board just goes on making one
+  // cheap DOM query every 800 ms.
   const INTERVAL_MS = 800;
-  let sawGrid = false;
 
-  for (let i = 0; i < TRIES; i++) {
+  // While solving, leave a marker on this frame's <html> so the popup, if it's
+  // opened mid-solve, shows "Solving" (then the result) instead of offering a
+  // second solve. DOM attributes are shared across worlds, so the popup's
+  // executeScript can read it. Keep in step with readAutoSolve() in popup.js.
+  const marker = document.documentElement.dataset;
+
+  let saidWaiting = false;
+
+  for (;;) {
     let res = null;
     try {
       res = await runSudoku("detect"); // from injected.js (same content-script scope)
     } catch {
       /* transient (frame mid-render) — retry */
     }
-    if (res && res.N > 0) sawGrid = true;
 
-    if (res && res.solvable) {
+    // The board is drawn behind the "Solve now" start screen long before it can be
+    // played: its number pad only appears once the round starts (see `playable` in
+    // injected.js). Solving before then can only fail, so wait for it.
+    if (res && res.solvable && !res.solved && !res.playable) {
+      if (!saidWaiting) console.log(TAG, "board is behind the start screen — waiting for the round to start");
+      saidWaiting = true;
+    } else if (res && res.solvable) {
       if (res.solved) {
         console.log(TAG, "board already solved — nothing to do");
         return;
       }
       console.log(TAG, `solving ${res.N}×${res.N} board (target ${targetMs}ms)`);
+      const startedAt = Date.now();
+      marker.autosolveStart = String(startedAt);
+      marker.autosolve = "solving";
+      let r = null;
       try {
-        const r = await runSudoku("solve", { targetMs });
+        r = await runSudoku("solve", { targetMs });
         console.log(TAG, r && r.ok ? `done — ${r.placed} digits placed` : "solve did not complete", r);
       } catch (e) {
         console.log(TAG, "solve threw", e);
       }
+      // Result first, then state, so the popup never sees "solved" without one.
+      marker.autosolveResult = JSON.stringify({ ...r, ms: Date.now() - startedAt });
+      marker.autosolve = r && r.ok ? (r.alreadySolved ? "done" : "solved") : "failed";
       return;
     }
 
-    // Not the game frame — give up quietly after a couple of seconds so only the
-    // frame with the board is noisy.
-    if (!sawGrid && i >= 3) return;
     await new Promise((r) => setTimeout(r, INTERVAL_MS));
-  }
-
-  if (sawGrid) {
-    console.log(TAG, "a grid was there but never became solvable within the wait window");
   }
 })();
