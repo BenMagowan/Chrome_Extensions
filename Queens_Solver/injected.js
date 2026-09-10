@@ -20,11 +20,21 @@
  * nothing from the popup's scope. Only the `mode` argument is passed in.
  *
  * @param {'detect'|'solve'} mode
+ * @param {{targetMs?:number}} [opts] pacing for 'solve': aim the whole solve at
+ *        this total time (see the click-delay maths in the solve branch). Omit for
+ *        the default cadence. Ignored by 'detect'.
  * @returns {{solvable:boolean,N:number,solved:boolean}} for 'detect',
  *          {{ok:boolean, placed?:number, alreadySolved?:boolean, error?:string}} for 'solve'
  */
-async function runQueens(mode) {
+async function runQueens(mode, opts) {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  // Optional pacing. When a target total time is supplied the solve branch spreads
+  // its clicks to land near it; null keeps the default, verified-safe cadence.
+  const targetMs =
+    opts && typeof opts.targetMs === "number" && opts.targetMs > 0
+      ? opts.targetMs
+      : null;
 
   // --- region id for a cell ---
   // Three independent sources, tried in order, because no single one survives every
@@ -214,11 +224,14 @@ async function runQueens(mode) {
 
   // Cycle a cell (empty->cross->queen->empty) to the target state; state updates
   // asynchronously, so re-verify after each click. Max 3 clicks reaches any state.
-  async function clickUntil(el, target) {
+  // `delay` is the pause after each click — the one lever the pacing turns, and it
+  // sleeps after the click that lands the target too, so consecutive cells stay
+  // spaced without a separate between-cell wait.
+  async function clickUntil(el, target, delay) {
     for (let i = 0; i < 3; i++) {
       if (cellState(el) === target) return;
       fireOneClick(el);
-      await sleep(200);
+      await sleep(delay);
     }
   }
 
@@ -280,28 +293,64 @@ async function runQueens(mode) {
   // that button opens a confirmation modal we'd then have to drive.
   const solutionKeys = keysOf(solution);
   const locked = (el) => el.getAttribute("aria-disabled") === "true";
+
+  // Work out how fast to click. Each cell that has to change costs a known number
+  // of clicks to walk the empty->cross->queen cycle to its target, and clickUntil
+  // sleeps exactly once per click — so the click loop takes (total clicks × delay).
+  //
+  // We deliberately budget that loop at (target + BUFFER), not target: the rest of
+  // the solve (parse, the final state settle) adds a little, and the buffer means
+  // the real time lands comfortably OVER the target rather than under — e.g. a 1s
+  // target finishes ~1.5s, a 10s target ~10.5s. The floor is low (was 120ms, which
+  // pinned the quickest possible solve at ~2s for a normal board — 16 clicks); it's
+  // only there to stop a very short target on a very large board clicking faster
+  // than the game reliably registers.
+  const DEFAULT_CLICK_MS = 200;
+  const MIN_CLICK_MS = 50;
+  const BUFFER_MS = 500;
+  const STATE_NUM = { empty: 0, cross: 1, queen: 2 };
+  const clicksBetween = (from, to) =>
+    (((STATE_NUM[to] - STATE_NUM[from]) % 3) + 3) % 3;
+
+  let totalClicks = 0;
+  for (const c of board.cells) {
+    if (locked(c.el)) continue; // locked cells don't move, so they cost nothing
+    const target = solutionKeys.has(c.row + "," + c.col) ? "queen" : "empty";
+    totalClicks += clicksBetween(cellState(c.el), target);
+  }
+  const clickDelay =
+    targetMs && totalClicks > 0
+      ? Math.max(MIN_CLICK_MS, Math.round((targetMs + BUFFER_MS) / totalClicks))
+      : DEFAULT_CLICK_MS;
+
   let cleared = 0;
   for (const c of board.cells) {
     // Solution cells are left alone here — the placement pass below cycles them to
     // "queen" from whatever they are now, so clearing them first only costs clicks.
     if (solutionKeys.has(c.row + "," + c.col)) continue;
     // Starter puzzles ship with pre-placed queens locked; clicking those does
-    // nothing, so skip rather than burn three clicks and 600ms finding that out.
+    // nothing, so skip rather than burn clicks finding that out.
     if (locked(c.el)) continue;
     if (cellState(c.el) !== "empty") {
-      await clickUntil(c.el, "empty");
+      await clickUntil(c.el, "empty", clickDelay);
       cleared++;
-      await sleep(200);
     }
   }
-  // Place a queen in each solution cell.
+  // Place a queen in each solution cell. clickUntil already spaces the clicks (it
+  // sleeps after the landing click too), so no extra between-cell wait is needed.
   const byKey = new Map();
   for (const c of board.cells) byKey.set(c.row + "," + c.col, c.el);
   for (const { row, col } of solution) {
     const el = byKey.get(row + "," + col);
     if (!el) continue;
-    await clickUntil(el, "queen");
-    await sleep(200); // human-like spacing; avoids dropped rapid events
+    await clickUntil(el, "queen", clickDelay);
   }
   return { ok: true, placed: solution.length, cleared };
 }
+
+// Expose the engine on the (isolated-world) global so the auto-solve content
+// script — content.js, listed after this file in the same content_scripts entry —
+// can call it whatever scope Chrome gives each file. This runs only when the file
+// is loaded as a script (content script or the popup's <script>); it is NOT part
+// of runQueens, so the popup's executeScript({func: runQueens}) never carries it.
+if (typeof self !== "undefined") self.runQueens = runQueens;
