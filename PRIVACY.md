@@ -26,6 +26,7 @@ To provide its core functionality, the extension requests the following permissi
 
 * **Host Permission:** This is required solely to read the puzzle data and interact with the game boards across LinkedIn's gaming directory. The extension cannot and does not access any other pages on LinkedIn (such as your feed, messages, network, or profile).
 * **Scripting:** This allows the extension to inject the local solving algorithms directly into the game page environment.
+* **Storage:** This is used to store user preferences (like toggling auto-solve) locally on your device. No personal data is stored.
 
 ## 3. Third-Party Services and Tracking
 

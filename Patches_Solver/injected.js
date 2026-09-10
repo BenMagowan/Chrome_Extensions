@@ -1,15 +1,16 @@
 /*
  * injected.js — the whole Patches engine as ONE self-contained function.
  *
- * Not a content script. The popup injects it on demand into every frame of the
- * LinkedIn games tab via
- *   chrome.scripting.executeScript({ target:{tabId, allFrames:true}, world:'MAIN', func: runPatches, args:[mode] })
- * (See Queens_Solver for why on-demand MAIN-world injection is used instead of a
- *  pre-injected content script.)
+ * The popup injects it on demand into every frame of the LinkedIn games tab via
+ *   chrome.scripting.executeScript({ target:{tabId, allFrames:true}, world:'MAIN', func: runPatches, args:[mode, opts] })
+ * (See Queens_Solver for why on-demand MAIN-world injection is used for the popup
+ *  instead of a pre-injected content script.) The same file is ALSO loaded as a
+ *  content script, ahead of content.js, which drives auto-solve on page load — so
+ *  the engine never forks.
  *
  * MUST stay fully self-contained — executeScript serializes it with
  * Function.prototype.toString, so every helper is nested and nothing outside is
- * referenced except the `mode` argument.
+ * referenced except the `mode` / `opts` arguments.
  *
  * PATCHES RULES: partition the grid into rectangular regions ("patches"), one per clue,
  * tiling every cell — i.e. a Shikaku tiling. EVERY patch is a rectangle; a clue merely
@@ -34,12 +35,24 @@
  * So the solver computes each patch's rectangle and draws it corner→corner with keys.
  *
  * @param {'detect'|'solve'} mode
+ * @param {{targetMs?:number}} [opts] pacing for 'solve': aim the whole solve at
+ *        this total time (see the press-delay maths in fill()). Omit for the
+ *        default cadence. Ignored by 'detect'.
  * @returns {{solvable:boolean,present:boolean,rows:number,cols:number,solved:boolean,
  *            cells:object[]|null}} for 'detect',
  *          {{ok:boolean, placed?:number, alreadySolved?:boolean, error?:string}} for 'solve'
  */
-async function runPatches(mode) {
+async function runPatches(mode, opts) {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  // When this call started: fill() paces its drawing against the time left of it.
+  const startedAt = performance.now();
+
+  // Optional pacing. When a target total time is supplied, fill() spreads its key
+  // presses to land near it; null keeps the default, verified-safe cadence.
+  const targetMs =
+    opts && typeof opts.targetMs === "number" && opts.targetMs > 0
+      ? opts.targetMs
+      : null;
 
   // --- parse the board into {rows, cols, clues, boardEl} ---
   // Grid-agnostic: keys off [data-cell-idx]; rows/cols come from the "Row R, column C"
@@ -284,8 +297,16 @@ async function runPatches(mode) {
       }
       return cursorIdx() != null;
     }
-    // move the cursor to a target cell by reading its current position each step
-    async function goto(target) {
+    // The verified default cadence: the pause after each Arrow press, after the
+    // anchoring Enter, and after the committing Enter. A Solve time replaces all
+    // three for the drawing pass below; the erase pass always keeps these.
+    const ARROW_MS = 70;
+    const ANCHOR_MS = 120;
+    const COMMIT_MS = 150;
+
+    // move the cursor to a target cell by reading its current position each step,
+    // pausing `delay` after each Arrow press
+    async function goto(target, delay = ARROW_MS) {
       for (let g = 0; g < rows + cols + 4; g++) {
         const f = cursorIdx();
         if (f === target) return true;
@@ -296,7 +317,7 @@ async function runPatches(mode) {
         else if (fr > tr) press("ArrowUp", 38);
         else if (fc < tc) press("ArrowRight", 39);
         else if (fc > tc) press("ArrowLeft", 37);
-        await sleep(70);
+        await sleep(delay);
       }
       return cursorIdx() === target;
     }
@@ -333,14 +354,48 @@ async function runPatches(mode) {
       cleared++;
     }
 
+    // Work out how fast to press. Drawing a patch is Arrows to its top-left, Enter
+    // (anchor), Arrows to its bottom-right, Enter (commit), each press followed by
+    // one sleep — so the drawing takes (presses × delay). goto() steps vertically
+    // then horizontally, so its presses are the Manhattan distance, and the whole
+    // route can be counted up front from where the cursor sits now.
+    //
+    // Unlike Queens/Tango, getting here takes a variable while — entering grid mode
+    // and erasing a part-drawn board — so the drawing is budgeted with whatever is
+    // LEFT of (target + BUFFER), not the whole of it. The buffer lands the real time
+    // comfortably OVER the target (a 5s target finishes ~5.5s). The floor stops a
+    // very short target pressing faster than the game reliably registers; goto()
+    // re-reads the cursor every step and each Enter waits on a confirmed corner, so
+    // a lagging render costs extra presses rather than a wrong rectangle.
+    const MIN_PRESS_MS = 50;
+    const BUFFER_MS = 500;
+    const dist = (a, b) =>
+      Math.abs(Math.floor(a / cols) - Math.floor(b / cols)) + Math.abs((a % cols) - (b % cols));
+    const from = cursorIdx();
+    let at = from == null ? solution[0].tl : from;
+    let presses = 0;
+    for (const rect of solution) {
+      presses += dist(at, rect.tl) + 1 + dist(rect.tl, rect.br) + 1;
+      at = rect.br;
+    }
+    const pressMs = targetMs
+      ? Math.max(
+          MIN_PRESS_MS,
+          Math.round((targetMs + BUFFER_MS - (performance.now() - startedAt)) / presses)
+        )
+      : null;
+    const arrowMs = pressMs == null ? ARROW_MS : pressMs;
+    const anchorMs = pressMs == null ? ANCHOR_MS : pressMs;
+    const commitMs = pressMs == null ? COMMIT_MS : pressMs;
+
     let placed = 0;
     for (const rect of solution) {
-      if (!(await goto(rect.tl))) return { ok: false, error: "Cursor navigation failed." };
+      if (!(await goto(rect.tl, arrowMs))) return { ok: false, error: "Cursor navigation failed." };
       press("Enter", 13); // anchor
-      await sleep(120);
-      if (!(await goto(rect.br))) return { ok: false, error: "Cursor navigation failed." };
+      await sleep(anchorMs);
+      if (!(await goto(rect.br, arrowMs))) return { ok: false, error: "Cursor navigation failed." };
       press("Enter", 13); // commit — fills the bounding-box rectangle
-      await sleep(150);
+      await sleep(commitMs);
       placed++;
     }
     return { ok: true, placed, cleared };
@@ -439,3 +494,10 @@ async function runPatches(mode) {
   const filled = await fill(board, solution);
   return filled.ok ? { ...filled, rows: board.rows, cols: board.cols } : filled;
 }
+
+// Expose the engine on the (isolated-world) global so the auto-solve content
+// script — content.js, listed after this file in the same content_scripts entry —
+// can call it whatever scope Chrome gives each file. This runs only when the file
+// is loaded as a script (content script or the popup's <script>); it is NOT part
+// of runPatches, so the popup's executeScript({func: runPatches}) never carries it.
+if (typeof self !== "undefined") self.runPatches = runPatches;
