@@ -1,16 +1,17 @@
 /*
  * injected.js — the whole Zip engine as ONE self-contained function.
  *
- * Not a content script. The popup injects it on demand into every frame of the
- * LinkedIn games tab via
- *   chrome.scripting.executeScript({ target:{tabId, allFrames:true}, world:'MAIN', func: runZip, args:[mode] })
- * (See Queens_Solver for why on-demand MAIN-world injection is used instead of a
- *  pre-injected content script: no reload-after-install gotcha, immune to when the
- *  game iframe loaded, and exempt from the page CSP that blocks in-page eval.)
+ * The popup injects it on demand into every frame of the LinkedIn games tab via
+ *   chrome.scripting.executeScript({ target:{tabId, allFrames:true}, world:'MAIN', func: runZip, args:[mode, opts] })
+ * (See Queens_Solver for why on-demand MAIN-world injection is used for the popup
+ *  instead of a pre-injected content script: no reload-after-install gotcha, immune
+ *  to when the game iframe loaded, and exempt from the page CSP that blocks in-page
+ *  eval.) The same file is ALSO loaded as a content script, ahead of content.js,
+ *  which drives auto-solve on page load — so the engine never forks.
  *
  * MUST stay fully self-contained — executeScript serializes it with
  * Function.prototype.toString, so every helper is nested and nothing outside is
- * referenced except the `mode` argument.
+ * referenced except the `mode` / `opts` arguments.
  *
  * ZIP RULES (single Hamiltonian path):
  *   - Draw ONE continuous path that fills every cell exactly once.
@@ -25,12 +26,24 @@
  * path as a sequence of Arrow keydowns. (Plain clicks do NOT draw the path — verified.)
  *
  * @param {'detect'|'solve'} mode
+ * @param {{targetMs?:number}} [opts] pacing for 'solve': aim the whole solve at
+ *        this total time (see the step-delay maths in the solve branch). Omit for
+ *        the default cadence. Ignored by 'detect'.
  * @returns {{solvable:boolean,N:number,solved:boolean,cells:object[]|null,path:number[]|null}}
  *          for 'detect',
  *          {{ok:boolean, placed?:number, alreadySolved?:boolean, error?:string}} for 'solve'
  */
-async function runZip(mode) {
+async function runZip(mode, opts) {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  // When this call started: the solve branch paces against the time left of it.
+  const startedAt = performance.now();
+
+  // Optional pacing. When a target total time is supplied the solve branch spreads
+  // its Arrow presses to land near it; null keeps the default, verified-safe cadence.
+  const targetMs =
+    opts && typeof opts.targetMs === "number" && opts.targetMs > 0
+      ? opts.targetMs
+      : null;
 
   // --- a cell's number (0 = blank) ---
   // Guest: `.trail-cell-content` text. Signed-in: aria-label "Number N" on the cell
@@ -385,6 +398,27 @@ async function runZip(mode) {
     await sleep(120);
   }
 
+  // Work out how fast to step. Each Arrow press extends the path one cell and is
+  // followed by one sleep, so the replay takes (steps × delay). Unlike Queens/Tango,
+  // getting here takes a variable while — an Undo reset of a half-drawn board can
+  // be dozens of presses — so the replay is budgeted with whatever is LEFT of
+  // (target + BUFFER) after the parse, solve and reset, not the whole of it.
+  //
+  // The buffer means the real time lands comfortably OVER the target rather than
+  // under — e.g. a 5s target finishes ~5.5s. The floor stops a very short target
+  // pressing faster than the game reliably registers (each step re-checks and
+  // re-presses once, so a render lagging the delay would land as a second move).
+  const DEFAULT_STEP_MS = 90;
+  const MIN_STEP_MS = 50;
+  const BUFFER_MS = 500;
+  const steps = path.length - 1;
+  const stepDelay = targetMs
+    ? Math.max(
+        MIN_STEP_MS,
+        Math.round((targetMs + BUFFER_MS - (performance.now() - startedAt)) / steps)
+      )
+    : DEFAULT_STEP_MS;
+
   // Replay the path as Arrow presses, one cell per step, re-checking progress.
   let placed = 1; // the start is already drawn
   for (let i = 1; i < path.length; i++) {
@@ -394,10 +428,17 @@ async function runZip(mode) {
     for (let attempt = 0; attempt < 2 && !ok; attempt++) {
       const before = filledCount(board);
       pressArrow(dir);
-      await sleep(90);
+      await sleep(stepDelay);
       ok = filledCount(board) > before || isFilled(board.elByIdx[path[i]]);
     }
     if (ok) placed++;
   }
   return { ok: true, placed, N: board.N };
 }
+
+// Expose the engine on the (isolated-world) global so the auto-solve content
+// script — content.js, listed after this file in the same content_scripts entry —
+// can call it whatever scope Chrome gives each file. This runs only when the file
+// is loaded as a script (content script or the popup's <script>); it is NOT part
+// of runZip, so the popup's executeScript({func: runZip}) never carries it.
+if (typeof self !== "undefined") self.runZip = runZip;
