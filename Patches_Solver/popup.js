@@ -20,7 +20,8 @@
 const statusEl = document.getElementById("status-text");
 const actionBtn = document.getElementById("action");
 const actionLabel = document.getElementById("action-label");
-const hintEl = document.getElementById("hint");
+const hintLink = document.getElementById("hint-link");
+document.getElementById("site-link").href = siteUrl("menu");
 const brandIcon = document.getElementById("brand-icon");
 const boardEl = document.getElementById("board");
 const menuBtn = document.getElementById("menu-btn");
@@ -41,6 +42,11 @@ const POLL_MS = 800;
 // conclude there's nothing there.
 const GRACE_MS = 1600;
 
+// Every hint is a link to the puzzle site (site.js); only the wording changes,
+// to a "want another?" once there's nothing left to solve here.
+const HINT_ANY = "Play unlimited puzzles, no daily limit →";
+const HINT_SOLVED = "Want another? Play unlimited puzzles →";
+
 /**
  * Every UI state, in one table. `status`/`hint` may be functions of the payload.
  * `act` is what a click does: null means the button is inert.
@@ -49,29 +55,26 @@ const STATES = {
   checking: {
     status: "Looking for a board…",
     label: "Looking for puzzle…",
-    // The hint is the only prose on screen now that the board has taken the
-    // status line's place, so it says what's happening rather than jumping
-    // ahead to advice we may be about to make redundant.
-    hint: "Checking this tab for the Patches game…",
+    hint: HINT_ANY,
     act: null,
   },
   idle: {
     status: "No board found",
     label: "Open Patches game",
-    hint: "Open settings to toggle auto-solve or set a target time.",
+    hint: HINT_ANY,
     act: "open",
   },
   ready: {
     // Patches boards aren't always square, so both dimensions are reported.
     status: (d) => `Board detected · ${d.rows}×${d.cols}`,
     label: "Solve puzzle",
-    hint: "Open settings to set a target time.",
+    hint: HINT_ANY,
     act: "solve",
   },
   solving: {
     status: "Placing patches…",
     label: "Solving",
-    hint: "Open settings to set a target time.",
+    hint: HINT_ANY,
     act: null,
   },
   solved: {
@@ -82,7 +85,7 @@ const STATES = {
       return d.ms != null ? `${base} · ${fmtTime(d.ms)}` : base;
     },
     label: "Solved",
-    hint: "Check out the other puzzle solvers in the menu.",
+    hint: HINT_SOLVED,
     act: null,
   },
   // The board was already tiled when we looked — distinct from `solved`, which
@@ -90,7 +93,7 @@ const STATES = {
   done: {
     status: (d) => `Already solved · ${d.rows}×${d.cols}`,
     label: "Nothing to solve",
-    hint: "This board is solved. Check out the other puzzle solvers in the menu.",
+    hint: HINT_SOLVED,
     act: null,
   },
   // Patches only: detect can find a real board that has no valid tiling. That
@@ -99,13 +102,13 @@ const STATES = {
   stuck: {
     status: "Board found, but no solution exists",
     label: "Nothing to solve",
-    hint: "This layout can't be tiled with the patches given.",
+    hint: HINT_ANY,
     act: null,
   },
   error: {
     status: (d) => d.message,
     label: "Try again",
-    hint: "The board may still be loading, or the page has changed.",
+    hint: HINT_ANY,
     act: "solve",
   },
 };
@@ -122,7 +125,8 @@ function setState(next, data = {}) {
   document.body.dataset.state = next;
   statusEl.textContent = resolve(spec.status, data);
   actionLabel.textContent = spec.label;
-  hintEl.textContent = resolve(spec.hint, data);
+  hintLink.textContent = resolve(spec.hint, data);
+  hintLink.href = siteUrl(next);
   actionBtn.disabled = spec.act === null;
   actionBtn.setAttribute("aria-busy", String(next === "solving"));
 }

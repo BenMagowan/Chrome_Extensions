@@ -341,6 +341,23 @@ body[data-state="solved"] .timer {
   min-height: 17px;
 }
 
+/* The hint is a link to the puzzle site in every state. */
+.hint__link {
+  color: var(--brand);
+  font-weight: 550;
+  text-decoration: none;
+  border-radius: 3px;
+}
+
+.hint__link:hover {
+  text-decoration: underline;
+}
+
+.hint__link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
 /* ---------- settings menu ---------- */
 
 /* Positioning context for the dropdown, which is anchored to the cog. */
@@ -612,7 +629,7 @@ body[data-state="solved"] .timer {
   color: var(--text-muted);
 }
 
-/* Divides the solver list from the coffee link below it. */
+/* Divides the solver list from the Unlimited puzzles link below it. */
 .menu__sep {
   height: 1px;
   margin: 5px 4px;

@@ -54,3 +54,18 @@ game-specific details and verified DOM selectors):
 
 > For educational use. Solving the puzzle for you removes the challenge — enjoy the
 > games unaided too.
+
+## Links to the puzzle site
+
+Each solver links to its matching game on the unlimited puzzle site. The domain,
+game slug and `ref` live in that extension's `site.js`, and every link is built by
+`siteUrl(src)` as `/<game>/easy/1?ref=<extension>&src=<placement>`:
+
+- **Popup hint** — the hint line is always a link; `src` is the popup state
+  (`checking`, `idle`, `ready`, `solving`, `solved`, `done`, `error`, `stuck`).
+- **Cog menu** — "Unlimited puzzles" with the crown icon, `src=menu`.
+- **Install / uninstall** — `background.js` opens `/welcome/<game>` on first install
+  only (`src=install`) and sets `/goodbye/<game>` as the uninstall page
+  (`src=uninstall`).
+
+To move to a new domain, change `SITE_ORIGIN` in all five `site.js` files.
