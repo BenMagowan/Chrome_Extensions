@@ -569,9 +569,11 @@ function stopPolling() {
 const USER_OWNED = new Set(["solving", "solved", "error"]);
 
 /**
- * content.js's auto-solve marker (see there) from whichever frame carries one —
- * only the frame it solved in does — or null. The reader is passed to
- * executeScript, so it must be self-contained.
+ * The solve marker (see exclusive() in injected.js) from whichever frame carries
+ * one — only the frame holding the board does — or null. Every solve writes it,
+ * whether content.js's auto-solve or one a popup started, so a popup opened
+ * mid-solve can show it. The reader is passed to executeScript, so it must be
+ * self-contained.
  */
 async function readAutoSolve() {
   const tabId = await getActiveTabId();
@@ -598,9 +600,10 @@ async function readAutoSolve() {
 }
 
 /**
- * True while the `solving` on screen is content.js's auto-solve rather than one
- * this popup started. That solve isn't ours to await, so refresh() keeps polling
- * through it to catch the finish from content.js's marker.
+ * True while the `solving` on screen is a solve running in the page that this
+ * popup isn't awaiting — content.js's auto-solve, or one started from an earlier
+ * popup that was closed mid-solve. That solve isn't ours to await, so refresh()
+ * keeps polling through it to catch the finish from its marker.
  */
 let watchingAuto = false;
 
@@ -612,11 +615,11 @@ let watchingAuto = false;
 const superseded = () => USER_OWNED.has(state) && !watchingAuto;
 
 /**
- * Mirror content.js's auto-solve in the popup: `solving` while it runs, with the
- * timer counting from when it started, then `solved` with its result and time.
- * Returns true when the auto-solve decided the state. A "solved" marker only
- * counts if we watched it land or the board really is solved; otherwise it was
- * left by an earlier board in the same page.
+ * Mirror a solve running in the page: `solving` while it runs, with the timer
+ * counting from when it started, then its outcome. Returns true when the marker
+ * decided the state. A finished marker only counts if we watched it land, or —
+ * for "solved" — the board really is solved; otherwise it was left by an earlier
+ * board or attempt in the same page.
  */
 function showAutoSolve(auto, boardSolved, data) {
   if (auto && auto.state === "solving") {
@@ -624,7 +627,7 @@ function showAutoSolve(auto, boardSolved, data) {
       watchingAuto = true;
       setState("solving", data);
       startTimer();
-      timerStart -= Date.now() - auto.startedAt; // count from content.js's start
+      timerStart -= Date.now() - auto.startedAt; // count from the solve's own start
     }
     return true; // keep polling to catch the finish
   }
@@ -633,11 +636,19 @@ function showAutoSolve(auto, boardSolved, data) {
     watchingAuto = false;
     stopTimer();
   }
-  if (auto && auto.state === "solved" && auto.result && (wasWatching || boardSolved)) {
-    // Quote content.js's own figure, which covers its whole solve.
+  if (!auto || !auto.result) return false;
+  if (auto.state === "solved" && (wasWatching || boardSolved)) {
+    // Quote the solve's own figure, which covers the whole of it.
     elapsedMs = auto.result.ms;
     timerValueEl.textContent = fmtTime(elapsedMs);
     setState("solved", { ...data, ...auto.result });
+    stopPolling();
+    return true;
+  }
+  // A solve we watched fail: say why. Dropping back to "Solve puzzle" without a
+  // word would read as though nothing had happened.
+  if (auto.state === "failed" && wasWatching) {
+    setState("error", { message: auto.result.error || "The solve didn't finish." });
     stopPolling();
     return true;
   }
@@ -655,6 +666,17 @@ async function refresh() {
   if (!tab || !isGameUrl(tab.url)) {
     setState("idle");
     return;
+  }
+
+  // Following a solve in the page, or holding a found board while Auto-solve is
+  // due to start on it: only the marker can move things on from here, and reading
+  // it is far cheaper than a detect, which re-parses the board and re-runs the
+  // solver in every frame. So poll just the marker until it changes, then detect
+  // once to settle the state.
+  if (watchingAuto || (state === "ready" && autoSolve)) {
+    const auto = await readAutoSolve();
+    if (superseded()) return;
+    if (watchingAuto ? auto && auto.state === "solving" : !auto) return;
   }
 
   const results = await runInFrames("detect");
@@ -712,6 +734,18 @@ async function runSolve() {
   // Pace the solve to the target time set in the menu (the engine spreads its
   // key presses to land near it), so the completion timer settles around that figure.
   const results = await runInFrames("solve", { targetMs });
+
+  // Another solve already holds this board (see exclusive() in injected.js) —
+  // usually content.js's auto-solve, started between our last poll and the click.
+  // That's not an error, and not ours to repeat: follow that solve to its result
+  // instead, timed from its own start.
+  if (results.some((r) => r.busy)) {
+    const auto = await readAutoSolve();
+    watchingAuto = true;
+    if (auto) timerStart = performance.now() - (Date.now() - auto.startedAt);
+    pollTimer = setInterval(refresh, POLL_MS);
+    return;
+  }
   stopTimer();
 
   const ok = results.find((r) => r.ok);
@@ -727,7 +761,9 @@ async function runSolve() {
     });
     return;
   }
-  const err = results.find((r) => r.error);
+  // Prefer the frame that held the board: every other frame only ever says "Board
+  // not found", which would bury the real reason.
+  const err = results.find((r) => r.board && r.error) || results.find((r) => r.error);
   setState("error", {
     message: err ? err.error : "No board frame responded.",
   });

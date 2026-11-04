@@ -25,11 +25,15 @@
  * write V into it. Prefilled cells are not editable and are skipped.
  *
  * @param {'detect'|'solve'} mode
- * @param {{targetMs?:number}} [opts] pacing for 'solve': aim the whole solve at
- *        this total time (see the click-delay maths in the solve branch). Omit for
- *        the default cadence. Ignored by 'detect'.
- * @returns {{solvable:boolean,N:number,solved:boolean,cells:object[]|null}} for 'detect',
- *          {{ok:boolean, placed?:number, alreadySolved?:boolean, error?:string}} for 'solve'
+ * @param {{targetMs?:number, preview?:boolean}} [opts] `targetMs` paces 'solve': aim
+ *        the whole solve at this total time (see the click-delay maths in the solve
+ *        branch); omit for the default cadence. `preview:false` makes 'detect' skip
+ *        the solve that builds the popup's preview (`cells` comes back null).
+ * @returns {{solvable:boolean,playable:boolean,N:number,solved:boolean,cells:object[]|null}}
+ *          for 'detect',
+ *          {{ok:boolean, placed?:number, alreadySolved?:boolean, error?:string,
+ *            busy?:boolean, board?:boolean}} for 'solve' — `busy` when another solve
+ *          already holds this board, `board` from the frame that has the board
  */
 async function runSudoku(mode, opts) {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -250,6 +254,70 @@ async function runSudoku(mode, opts) {
     el.dispatchEvent(new MouseEvent("click", { ...base, buttons: 0 }));
   }
 
+  // How long a write gets to show before it counts as dropped. Far above a normal
+  // render, so a digit that did land (just slowly) is never typed a second time.
+  const SETTLE_MS = 600;
+  // How long the finished board gets to show the win before we call it unsolved.
+  const CONFIRM_MS = 1500;
+
+  /** Resolve true as soon as cond() holds, or false once `ms` has passed without. */
+  async function waitFor(cond, ms) {
+    const until = performance.now() + ms;
+    while (!cond()) {
+      if (performance.now() >= until) return false;
+      await sleep(25);
+    }
+    return true;
+  }
+
+  // --- did the solve actually work? ---
+  // Every digit landing still isn't the puzzle being won, so judge the result by the
+  // game's own win condition on a fresh read of the board, with a moment for a slow
+  // render to catch up. true = solved; false = still unsolved when the wait ran out;
+  // null = the board is no longer on the page (the game swapping in a results
+  // screen, or the player navigating away), so there's nothing left to check —
+  // neither is a missed click, so the caller doesn't report it as one.
+  async function confirmSolved() {
+    const until = performance.now() + CONFIRM_MS;
+    for (;;) {
+      const b = parseBoard(); // re-read: isSolved judges the digits a parse captured
+      if (!b) return null;
+      if (isSolved(b)) return true;
+      if (performance.now() >= until) return false;
+      await sleep(25);
+    }
+  }
+
+  // --- one solve per board, visible to the popup ---
+  // Every solve path ends up here — content.js's auto-solve, and the popup's Solve
+  // in the page's MAIN world — so this is where the board is claimed. The claim is a
+  // marker on this frame's <html>: DOM attributes are shared across worlds, and the
+  // check and the claim run with no await between them, so two solves racing for one
+  // board can't both get in. The popup reads the same marker (readAutoSolve in
+  // popup.js) to show a solve in progress — whoever started it — and then its result.
+  async function exclusive(run) {
+    const marker = document.documentElement.dataset;
+    if (marker.autosolve === "solving") {
+      return { ok: false, busy: true, board: true, error: "A solve is already running on this board." };
+    }
+    const claimedAt = Date.now();
+    marker.autosolveStart = String(claimedAt);
+    delete marker.autosolveResult;
+    marker.autosolve = "solving";
+    let r;
+    try {
+      r = await run();
+    } catch (e) {
+      r = { ok: false, error: "Solve failed: " + ((e && e.message) || e) };
+    }
+    // `board` tells the popup this frame held the board, so its error is the one to show.
+    r = { ...r, board: true };
+    // Result first, then state, so the popup never sees a finished state without one.
+    marker.autosolveResult = JSON.stringify({ ...r, ms: Date.now() - claimedAt });
+    marker.autosolve = r.ok ? (r.alreadySolved ? "done" : "solved") : "failed";
+    return r;
+  }
+
   // --- dispatch ---
   const board = parseBoard();
   const valid =
@@ -268,82 +336,99 @@ async function runSudoku(mode, opts) {
     // would only yield a "solution" built on the player's guesses. Either way, show
     // what's actually on screen rather than something invented.
     const done = isSolved(board);
-    const solution = done || !hasClues ? null : solve(board);
     // The grid, clues and walls are all drawn behind the "Solve now" start screen,
     // but the number pad solve() types with only renders once the round starts —
-    // and starting it doesn't load a new page. `playable` lets content.js wait for
-    // that instead of firing a solve that can only fail with "Number pad not found".
+    // and starting it doesn't load a new page. `playable` lets content.js and the
+    // popup wait for that instead of firing a solve that can only fail with
+    // "Number pad not found".
     const playable = !!document.querySelector('[data-number="1"]');
+    // content.js only asks whether there's a board to solve, so it skips the
+    // preview and the solve that building one costs.
+    if (opts && opts.preview === false) {
+      return { solvable: true, playable, N: board.N, solved: done, cells: null };
+    }
+    const solution = done || !hasClues ? null : solve(board);
     return { solvable: true, playable, N: board.N, solved: done, cells: snapshot(board, solution) };
   }
 
   // mode === 'solve'
   if (!valid) return { ok: false, error: "Board not found or still loading." };
-  // Already finished (e.g. completed between the popup's last poll and the click) —
-  // report it instead of clicking at a won board.
-  if (isSolved(board)) return { ok: true, placed: 0, alreadySolved: true, N: board.N };
-  // Every Mini Sudoku ships with clues, so finding none means `sudoku-cell-prefilled`
-  // has stopped identifying them. Bail out loudly: solving on from here would treat
-  // the real clues as editable, produce a grid that contradicts them, and then fail
-  // to write it (clue cells aren't editable), leaving the board mangled.
-  if (!hasClues) {
-    return { ok: false, error: "Couldn't tell clues from guesses on this board." };
-  }
-  const solution = solve(board);
-  if (!solution) return { ok: false, error: "No solution exists for this board." };
-
-  // Cache the number pad buttons `[data-number="1..N"]`.
-  const numberBtn = {};
-  for (let v = 1; v <= board.N; v++) {
-    numberBtn[v] = document.querySelector(`[data-number="${v}"]`);
-  }
-  if (Object.values(numberBtn).some((b) => !b)) {
-    return { ok: false, error: "Number pad not found." };
-  }
-
-  // Work out how fast to click. Each cell that needs a digit costs two clicks —
-  // select it, then its number button — each followed by one sleep, so the fill
-  // loop takes (cells to fill × 2 × delay).
-  //
-  // We deliberately budget that loop at (target + BUFFER), not target: the rest of
-  // the solve (parse, the final state settle) adds a little, and the buffer means
-  // the real time lands comfortably OVER the target rather than under — e.g. a 1s
-  // target finishes ~1.5s, a 10s target ~10.5s. The floor is only there to stop a
-  // very short target clicking faster than the game reliably registers: the digit
-  // goes to whichever cell the game thinks is selected, so a selection that lags
-  // the delay would land it in the previous cell.
-  const DEFAULT_CLICK_MS = 140;
-  const MIN_CLICK_MS = 50;
-  const BUFFER_MS = 500;
-  const CLICKS_PER_CELL = 2;
-  let toFill = 0;
-  for (const c of board.cells) {
-    if (!c.prefilled && c.value !== solution[c.idx]) toFill++;
-  }
-  const clickDelay =
-    targetMs && toFill > 0
-      ? Math.max(MIN_CLICK_MS, Math.round((targetMs + BUFFER_MS) / (toFill * CLICKS_PER_CELL)))
-      : DEFAULT_CLICK_MS;
-
-  // Fill each non-prefilled cell whose current value ≠ target: select the cell,
-  // then click its target number button. Re-read and retry once if it didn't take.
-  // Skip cells already correct → idempotent from any partial state.
-  let placed = 0;
-  for (const c of board.cells) {
-    if (c.prefilled) continue;
-    const target = solution[c.idx];
-    if (valueOf(c.el) === target) continue;
-    let ok = false;
-    for (let attempt = 0; attempt < 2 && !ok; attempt++) {
-      fireOneClick(c.el); // select the cell
-      await sleep(clickDelay);
-      fireOneClick(numberBtn[target]); // write the digit
-      await sleep(clickDelay);
-      ok = valueOf(c.el) === target;
+  return exclusive(async () => {
+    // Already finished (e.g. completed between the popup's last poll and the click) —
+    // report it instead of clicking at a won board.
+    if (isSolved(board)) return { ok: true, placed: 0, alreadySolved: true, N: board.N };
+    // Every Mini Sudoku ships with clues, so finding none means `sudoku-cell-prefilled`
+    // has stopped identifying them. Bail out loudly: solving on from here would treat
+    // the real clues as editable, produce a grid that contradicts them, and then fail
+    // to write it (clue cells aren't editable), leaving the board mangled.
+    if (!hasClues) {
+      return { ok: false, error: "Couldn't tell clues from guesses on this board." };
     }
-    if (ok) placed++;
-  }
-  return { ok: true, placed, N: board.N };
+    const solution = solve(board);
+    if (!solution) return { ok: false, error: "No solution exists for this board." };
+
+    // Cache the number pad buttons `[data-number="1..N"]`.
+    const numberBtn = {};
+    for (let v = 1; v <= board.N; v++) {
+      numberBtn[v] = document.querySelector(`[data-number="${v}"]`);
+    }
+    if (Object.values(numberBtn).some((b) => !b)) {
+      return { ok: false, error: "Number pad not found. Start the round first." };
+    }
+
+    // Work out how fast to click. Each cell that needs a digit costs two clicks —
+    // select it, then its number button — each followed by one sleep, so the fill
+    // loop takes (cells to fill × 2 × delay).
+    //
+    // We deliberately budget that loop at (target + BUFFER), not target: the rest of
+    // the solve (parse, the final state settle) adds a little, and the buffer means
+    // the real time lands comfortably OVER the target rather than under — e.g. a 1s
+    // target finishes ~1.5s, a 10s target ~10.5s. The floor is only there to stop a
+    // very short target clicking faster than the game reliably registers: the digit
+    // goes to whichever cell the game thinks is selected, so a selection that lags
+    // the delay would land it in the previous cell.
+    const DEFAULT_CLICK_MS = 140;
+    const MIN_CLICK_MS = 50;
+    const BUFFER_MS = 500;
+    const CLICKS_PER_CELL = 2;
+    let toFill = 0;
+    for (const c of board.cells) {
+      if (!c.prefilled && c.value !== solution[c.idx]) toFill++;
+    }
+    const clickDelay =
+      targetMs && toFill > 0
+        ? Math.max(MIN_CLICK_MS, Math.round((targetMs + BUFFER_MS) / (toFill * CLICKS_PER_CELL)))
+        : DEFAULT_CLICK_MS;
+
+    // Fill each non-prefilled cell whose current value ≠ target: select the cell,
+    // then click its target number button. A digit that hasn't shown yet gets up to
+    // SETTLE_MS before it counts as dropped — retyping one that landed late could
+    // toggle it back out — and only then is it retried, once, from a fresh read.
+    // Skip cells already correct → idempotent from any partial state.
+    let placed = 0;
+    for (const c of board.cells) {
+      if (c.prefilled) continue;
+      const target = solution[c.idx];
+      let ok = valueOf(c.el) === target;
+      if (ok) continue;
+      for (let attempt = 0; attempt < 2 && !ok; attempt++) {
+        fireOneClick(c.el); // select the cell
+        await sleep(clickDelay);
+        fireOneClick(numberBtn[target]); // write the digit
+        await sleep(clickDelay);
+        ok = await waitFor(() => valueOf(c.el) === target, SETTLE_MS);
+      }
+      // A cell that won't take its digit leaves the board unsolved, so stop rather
+      // than type on and still call it solved.
+      if (!ok) return { ok: false, error: "A digit didn't register. Try again.", placed };
+      placed++;
+    }
+    // Only the board can say it's won: report success on its word, not ours.
+    if ((await confirmSolved()) === false) {
+      return { ok: false, error: "The board still isn't solved. Try again.", placed };
+    }
+    return { ok: true, placed, N: board.N };
+  });
 }
 
 // Expose the engine on the (isolated-world) global so the auto-solve content

@@ -21,11 +21,14 @@
  *   - Some cells are pre-filled (locked) clues. The solution is unique.
  *
  * @param {'detect'|'solve'} mode
- * @param {{targetMs?:number}} [opts] pacing for 'solve': aim the whole solve at
- *        this total time (see the click-delay maths in the solve branch). Omit for
- *        the default cadence. Ignored by 'detect'.
+ * @param {{targetMs?:number, preview?:boolean}} [opts] `targetMs` paces 'solve': aim
+ *        the whole solve at this total time (see the click-delay maths in the solve
+ *        branch); omit for the default cadence. `preview:false` makes 'detect' skip
+ *        the solve that builds the popup's preview (`cells` comes back null).
  * @returns {{solvable:boolean,N:number,solved:boolean,cells:object[]|null}} for 'detect',
- *          {{ok:boolean, placed?:number, alreadySolved?:boolean, error?:string}} for 'solve'
+ *          {{ok:boolean, placed?:number, alreadySolved?:boolean, error?:string,
+ *            busy?:boolean, board?:boolean}} for 'solve' — `busy` when another solve
+ *          already holds this board, `board` from the frame that has the board
  */
 async function runTango(mode, opts) {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -265,17 +268,90 @@ async function runTango(mode, opts) {
     el.dispatchEvent(new MouseEvent("mouseup", { ...base, buttons: 0 }));
     el.dispatchEvent(new MouseEvent("click", { ...base, buttons: 0 }));
   }
-  // Cycle a cell (Empty -> Sun -> Moon -> Empty) to the target symbol; state updates
-  // asynchronously, so re-verify after each click. Max 3 clicks reaches any state.
+  // How long a click gets to show before it counts as dropped. Far above a normal
+  // render, because the cost of guessing wrong is lopsided: these clicks CYCLE a
+  // symbol, so repeating one that did land (just slowly) walks the cell past its
+  // target, while waiting a little longer on one that really was dropped only costs
+  // time.
+  const SETTLE_MS = 600;
+  // How long the finished board gets to show the win before we call it unsolved.
+  const CONFIRM_MS = 1500;
+
+  /** Resolve true as soon as cond() holds, or false once `ms` has passed without. */
+  async function waitFor(cond, ms) {
+    const until = performance.now() + ms;
+    while (!cond()) {
+      if (performance.now() >= until) return false;
+      await sleep(25);
+    }
+    return true;
+  }
+
+  // Cycle a cell (Empty -> Sun -> Moon -> Empty) to the target symbol, one click at
+  // a time. State updates asynchronously, so each click is given up to SETTLE_MS to
+  // show before the next one is decided from a fresh read; deciding off a render
+  // that merely lagged would click once too often. Two clicks reach any symbol; the
+  // spare tries cover a click that really was dropped. Returns whether it got there.
   // `delay` is the pause after each click — the one lever the pacing turns, and it
   // sleeps after the click that lands the target too, so consecutive cells stay
   // spaced without a separate between-cell wait.
   async function clickUntil(el, targetSymbol, delay) {
-    for (let i = 0; i < 3; i++) {
-      if (symbolOf(el) === targetSymbol) return;
+    for (let i = 0; i < 4; i++) {
+      const from = symbolOf(el);
+      if (from === targetSymbol) return true;
       fireOneClick(el);
       await sleep(delay);
+      await waitFor(() => symbolOf(el) !== from, SETTLE_MS);
     }
+    return symbolOf(el) === targetSymbol;
+  }
+
+  // --- did the solve actually work? ---
+  // Every click landing still isn't the puzzle being won, so judge the result by the
+  // game's own win condition on a fresh read of the board, with a moment for a slow
+  // render to catch up. true = solved; false = still unsolved when the wait ran out;
+  // null = the board is no longer on the page (the game swapping in a results
+  // screen, or the player navigating away), so there's nothing left to check —
+  // neither is a missed click, so the caller doesn't report it as one.
+  async function confirmSolved() {
+    const until = performance.now() + CONFIRM_MS;
+    for (;;) {
+      const b = parseBoard(); // re-read: isSolved judges the symbols a parse captured
+      if (!b) return null;
+      if (isSolved(b)) return true;
+      if (performance.now() >= until) return false;
+      await sleep(25);
+    }
+  }
+
+  // --- one solve per board, visible to the popup ---
+  // Every solve path ends up here — content.js's auto-solve, and the popup's Solve
+  // in the page's MAIN world — so this is where the board is claimed. The claim is a
+  // marker on this frame's <html>: DOM attributes are shared across worlds, and the
+  // check and the claim run with no await between them, so two solves racing for one
+  // board can't both get in. The popup reads the same marker (readAutoSolve in
+  // popup.js) to show a solve in progress — whoever started it — and then its result.
+  async function exclusive(run) {
+    const marker = document.documentElement.dataset;
+    if (marker.autosolve === "solving") {
+      return { ok: false, busy: true, board: true, error: "A solve is already running on this board." };
+    }
+    const claimedAt = Date.now();
+    marker.autosolveStart = String(claimedAt);
+    delete marker.autosolveResult;
+    marker.autosolve = "solving";
+    let r;
+    try {
+      r = await run();
+    } catch (e) {
+      r = { ok: false, error: "Solve failed: " + ((e && e.message) || e) };
+    }
+    // `board` tells the popup this frame held the board, so its error is the one to show.
+    r = { ...r, board: true };
+    // Result first, then state, so the popup never sees a finished state without one.
+    marker.autosolveResult = JSON.stringify({ ...r, ms: Date.now() - claimedAt });
+    marker.autosolve = r.ok ? (r.alreadySolved ? "done" : "solved") : "failed";
+    return r;
   }
 
   // --- dispatch ---
@@ -286,6 +362,11 @@ async function runTango(mode, opts) {
     // An already-finished board is its own answer; keep the player's symbols so the
     // preview matches what's on screen.
     const done = isSolved(board);
+    // content.js only asks whether there's a board to solve, so it skips the
+    // preview and the solve that building one costs.
+    if (opts && opts.preview === false) {
+      return { solvable: true, N: board.N, solved: done, cells: null };
+    }
     return {
       solvable: true,
       N: board.N,
@@ -296,49 +377,59 @@ async function runTango(mode, opts) {
 
   // mode === 'solve'
   if (!board) return { ok: false, error: "Board not found or still loading." };
-  // Already finished (e.g. completed between the popup's last poll and the click) —
-  // report it instead of clicking a won board back out of its win state.
-  if (isSolved(board)) return { ok: true, placed: 0, alreadySolved: true, N: board.N };
-  const solution = solve(board);
-  if (!solution) return { ok: false, error: "No solution exists for this board." };
+  return exclusive(async () => {
+    // Already finished (e.g. completed between the popup's last poll and the click) —
+    // report it instead of clicking a won board back out of its win state.
+    if (isSolved(board)) return { ok: true, placed: 0, alreadySolved: true, N: board.N };
+    const solution = solve(board);
+    if (!solution) return { ok: false, error: "No solution exists for this board." };
 
-  // Work out how fast to click. Each cell that has to change costs a known number
-  // of clicks to walk the Empty->Sun->Moon cycle to its target, and clickUntil
-  // sleeps exactly once per click — so the click loop takes (total clicks × delay).
-  //
-  // We deliberately budget that loop at (target + BUFFER), not target: the rest of
-  // the solve (parse, the final state settle) adds a little, and the buffer means
-  // the real time lands comfortably OVER the target rather than under — e.g. a 1s
-  // target finishes ~1.5s, a 10s target ~10.5s. The floor is only there to stop a
-  // very short target clicking faster than the game reliably registers.
-  const DEFAULT_CLICK_MS = 200;
-  const MIN_CLICK_MS = 50;
-  const BUFFER_MS = 500;
-  const SYMBOL_NUM = { Empty: 0, Sun: 1, Moon: 2 };
-  const clicksBetween = (from, to) =>
-    (((SYMBOL_NUM[to] - SYMBOL_NUM[from]) % 3) + 3) % 3;
+    // Work out how fast to click. Each cell that has to change costs a known number
+    // of clicks to walk the Empty->Sun->Moon cycle to its target, and clickUntil
+    // sleeps exactly once per click — so the click loop takes (total clicks × delay).
+    //
+    // We deliberately budget that loop at (target + BUFFER), not target: the rest of
+    // the solve (parse, the final state settle) adds a little, and the buffer means
+    // the real time lands comfortably OVER the target rather than under — e.g. a 1s
+    // target finishes ~1.5s, a 10s target ~10.5s. The floor is only there to stop a
+    // very short target clicking faster than the game reliably registers.
+    const DEFAULT_CLICK_MS = 200;
+    const MIN_CLICK_MS = 50;
+    const BUFFER_MS = 500;
+    const SYMBOL_NUM = { Empty: 0, Sun: 1, Moon: 2 };
+    const clicksBetween = (from, to) =>
+      (((SYMBOL_NUM[to] - SYMBOL_NUM[from]) % 3) + 3) % 3;
 
-  let totalClicks = 0;
-  for (const c of board.cells) {
-    if (c.locked) continue; // locked clues don't move, so they cost nothing
-    totalClicks += clicksBetween(c.symbol, solution[c.idx]);
-  }
-  const clickDelay =
-    targetMs && totalClicks > 0
-      ? Math.max(MIN_CLICK_MS, Math.round((targetMs + BUFFER_MS) / totalClicks))
-      : DEFAULT_CLICK_MS;
+    let totalClicks = 0;
+    for (const c of board.cells) {
+      if (c.locked) continue; // locked clues don't move, so they cost nothing
+      totalClicks += clicksBetween(c.symbol, solution[c.idx]);
+    }
+    const clickDelay =
+      targetMs && totalClicks > 0
+        ? Math.max(MIN_CLICK_MS, Math.round((targetMs + BUFFER_MS) / totalClicks))
+        : DEFAULT_CLICK_MS;
 
-  // Drive every non-locked cell to its solution symbol. No separate reset needed —
-  // clickUntil reaches the target from any current state, so this is idempotent.
-  // clickUntil already spaces the clicks (it sleeps after the landing click too),
-  // so no extra between-cell wait is needed.
-  let placed = 0;
-  for (const c of board.cells) {
-    if (c.locked) continue;
-    await clickUntil(c.el, solution[c.idx], clickDelay);
-    placed++;
-  }
-  return { ok: true, placed, N: board.N };
+    // Drive every non-locked cell to its solution symbol. No separate reset needed —
+    // clickUntil reaches the target from any current state, so this is idempotent.
+    // clickUntil already spaces the clicks (it sleeps after the landing click too),
+    // so no extra between-cell wait is needed.
+    let placed = 0;
+    for (const c of board.cells) {
+      if (c.locked) continue;
+      // A cell that won't take its symbol leaves the board unsolved, so stop rather
+      // than click on and still call it solved.
+      if (!(await clickUntil(c.el, solution[c.idx], clickDelay))) {
+        return { ok: false, error: "A click didn't register. Try again.", placed };
+      }
+      placed++;
+    }
+    // Only the board can say it's won: report success on its word, not ours.
+    if ((await confirmSolved()) === false) {
+      return { ok: false, error: "The board still isn't solved. Try again.", placed };
+    }
+    return { ok: true, placed, N: board.N };
+  });
 }
 
 // Expose the engine on the (isolated-world) global so the auto-solve content

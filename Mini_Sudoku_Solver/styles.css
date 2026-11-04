@@ -255,6 +255,7 @@ body[data-state="idle"] .action:hover:not(:disabled) {
 }
 
 body[data-state="checking"] .action:disabled,
+body[data-state="waiting"] .action:disabled,
 body[data-state="stuck"] .action:disabled {
   background: var(--surface-sunk);
   border-color: var(--line);
@@ -675,8 +676,9 @@ body[data-state="solved"] .timer {
    *visually only* — it stays in the a11y tree, where the live region goes on
    announcing "Looking for a board", "Board detected", "Solved" and the rest.
    An error is the exception: that message has no equivalent in the grid, so it
-   is the one state that still shows its text. */
-body:not([data-state="error"]) .status {
+   still shows its text. So does `waiting`: the grid looks ready to solve, and
+   only the line says why the button won't. */
+body:not([data-state="error"]):not([data-state="waiting"]) .status {
   position: absolute;
   width: 1px;
   height: 1px;
