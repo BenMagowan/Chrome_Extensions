@@ -384,22 +384,23 @@ async function runQueens(mode, opts) {
     const solution = solve(board);
     if (!solution) return { ok: false, error: "No solution exists for this board." };
 
-    // Wipe the board back to the solution before drawing it.
+    // Clear the player's wrong queens before drawing the solution, and nothing else.
     //
-    // Everything the player left behind that isn't part of the solution goes: wrong
-    // queens obviously, but crosses too. A cross is only ever a note-to-self about a
-    // cell the player had ruled out, and once the real answer is on the board those
-    // notes are at best noise and at worst visibly contradict it (a cross sitting
-    // where a crown belongs). Clearing them leaves the finished board looking like
-    // the solution rather than the solution overlaid on an abandoned attempt.
+    // Crosses stay where they are. They're the player's own notes, the win only
+    // counts queens, and erasing them cost two clicks apiece (cross -> queen ->
+    // empty) — on a board full of them, most of the solve went on wiping notes
+    // before a single crown appeared. A cross on a solution cell still turns into
+    // its queen in the placement pass (one click on: cross -> queen).
     //
     // We do this cell-by-cell rather than via the header's "Clear" button because
-    // that button opens a confirmation modal we'd then have to drive.
+    // that button opens a confirmation modal we'd then have to drive (and it would
+    // take the crosses with it).
     const solutionKeys = keysOf(solution);
     const locked = (el) => el.getAttribute("aria-disabled") === "true";
 
     // Work out how fast to click. Each cell that has to change costs a known number
-    // of clicks to walk the empty->cross->queen cycle to its target, and clickUntil
+    // of clicks to walk the empty->cross->queen cycle to its target (a wrong queen
+    // costs one, to empty; a cross off the solution costs none), and clickUntil
     // sleeps exactly once per click — so the click loop takes (total clicks × delay).
     //
     // We deliberately budget that loop at (target + BUFFER), not target: the rest of
@@ -419,8 +420,9 @@ async function runQueens(mode, opts) {
     let totalClicks = 0;
     for (const c of board.cells) {
       if (locked(c.el)) continue; // locked cells don't move, so they cost nothing
-      const target = solutionKeys.has(c.row + "," + c.col) ? "queen" : "empty";
-      totalClicks += clicksBetween(cellState(c.el), target);
+      const now = cellState(c.el);
+      if (solutionKeys.has(c.row + "," + c.col)) totalClicks += clicksBetween(now, "queen");
+      else if (now === "queen") totalClicks += clicksBetween(now, "empty");
     }
     const clickDelay =
       targetMs && totalClicks > 0
@@ -435,7 +437,8 @@ async function runQueens(mode, opts) {
       // Starter puzzles ship with pre-placed queens locked; clicking those does
       // nothing, so skip rather than burn clicks finding that out.
       if (locked(c.el)) continue;
-      if (cellState(c.el) !== "empty") {
+      // Only wrong queens go; crosses are left as the player's notes.
+      if (cellState(c.el) === "queen") {
         if (!(await clickUntil(c.el, "empty", clickDelay))) return { ok: false, error: MISSED, cleared };
         cleared++;
       }

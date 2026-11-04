@@ -171,9 +171,11 @@ The code is written to degrade gracefully if LinkedIn changes the markup:
   game finishes rendering.
 - **Stray marks:** the header **Clear** button opens a confirmation modal (verified
   live), so the extension deliberately avoids it. Instead it resets cell-by-cell:
-  every mark not part of the solution — wrong Queens *and* Crosses — is cycled back
-  to empty before the solution is placed, so a half-finished wrong attempt doesn't
-  end up layered underneath the answer. Locked starter queens (`aria-disabled`)
+  only **wrong Queens** are cycled back to empty before the solution is placed.
+  **Crosses are left alone** — they're the player's notes, the win only counts
+  queens, and clearing them cost two clicks each (on an X-heavy board most of the
+  solve went on erasing). A Cross on a solution cell just takes one more click to
+  become its Queen. Locked starter queens (`aria-disabled`)
   are skipped, since clicking them does nothing and they're in the solution anyway.
 - **Dropped rapid events:** ~200 ms delay between cells plus per-cell re-verification.
 
