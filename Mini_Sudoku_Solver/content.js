@@ -24,26 +24,33 @@
   const TAG = "[Mini Sudoku auto-solve]";
   const isTop = window.top === window;
 
-  // Read the shared setting the popup writes (mirrored into chrome.storage.local).
-  let cfg;
-  try {
-    cfg = await chrome.storage.local.get(["autosolve", "targetMs"]);
-  } catch {
-    return; // no storage access — nothing we can do
-  }
+  // The shared settings the popup writes (mirrored into chrome.storage.local), or
+  // null without storage access. Read again just before solving, not only here:
+  // the poll below can wait a long time for a board — a start screen can sit there
+  // indefinitely — and the user may change them in the popup meanwhile.
+  const readSettings = async () => {
+    try {
+      return await chrome.storage.local.get(["autosolve", "targetMs"]);
+    } catch {
+      return null;
+    }
+  };
   // Auto-solve is ON by default: only an explicit opt-out (the popup wrote `false`)
   // turns it off. This also means it works on the very first game load, before the
   // popup has ever been opened to mirror a value into storage.
-  if (cfg.autosolve === false) {
+  const isOn = (cfg) => cfg.autosolve !== false;
+  // Same default as the popup (DEFAULT_TARGET_S): 5s until the user sets one.
+  const targetOf = (cfg) => (typeof cfg.targetMs === "number" ? cfg.targetMs : 5000);
+
+  let cfg = await readSettings();
+  if (!cfg) return; // no storage access — nothing we can do
+  if (!isOn(cfg)) {
     // Log once (top frame only) so "why didn't it solve?" has an answer in the
     // page console: the user turned it off.
     if (isTop) console.log(TAG, "off — turned off in the extension popup");
     return;
   }
-
-  // Same default as the popup (DEFAULT_TARGET_S): 5s until the user sets one.
-  const targetMs = typeof cfg.targetMs === "number" ? cfg.targetMs : 5000;
-  if (isTop) console.log(TAG, "on; target", targetMs + "ms");
+  if (isTop) console.log(TAG, "on; target", targetOf(cfg) + "ms");
 
   // The board renders asynchronously, and on some games only once the player
   // presses Start — which doesn't always load a new page (this game's doesn't),
@@ -53,18 +60,18 @@
   // cheap DOM query every 800 ms.
   const INTERVAL_MS = 800;
 
-  // While solving, leave a marker on this frame's <html> so the popup, if it's
-  // opened mid-solve, shows "Solving" (then the result) instead of offering a
-  // second solve. DOM attributes are shared across worlds, so the popup's
-  // executeScript can read it. Keep in step with readAutoSolve() in popup.js.
-  const marker = document.documentElement.dataset;
+  // There's no marker to write here: the engine's solve mode claims the board
+  // itself and marks it for the popup (exclusive() in injected.js), so a popup
+  // solve and this one can never both run on the board.
 
   let saidWaiting = false;
 
   for (;;) {
     let res = null;
     try {
-      res = await runSudoku("detect"); // from injected.js (same content-script scope)
+      // from injected.js (same content-script scope). No preview: this only needs
+      // to know whether there's a board to solve, not what the answer looks like.
+      res = await runSudoku("detect", { preview: false });
     } catch {
       /* transient (frame mid-render) — retry */
     }
@@ -80,20 +87,24 @@
         console.log(TAG, "board already solved — nothing to do");
         return;
       }
+      // The setting as it is now, not as it was at page load: it may have been
+      // turned off (or the time changed) in the popup while we waited.
+      cfg = await readSettings();
+      if (!cfg) return; // lost storage access (the extension was reloaded, say)
+      if (!isOn(cfg)) {
+        console.log(TAG, "off — turned off in the extension popup while waiting");
+        return;
+      }
+      const targetMs = targetOf(cfg);
       console.log(TAG, `solving ${res.N}×${res.N} board (target ${targetMs}ms)`);
-      const startedAt = Date.now();
-      marker.autosolveStart = String(startedAt);
-      marker.autosolve = "solving";
       let r = null;
       try {
         r = await runSudoku("solve", { targetMs });
-        console.log(TAG, r && r.ok ? `done — ${r.placed} digits placed` : "solve did not complete", r);
+        if (r && r.busy) console.log(TAG, "another solve is already running on this board — leaving it be");
+        else console.log(TAG, r && r.ok ? `done — ${r.placed} digits placed` : "solve did not complete", r);
       } catch (e) {
         console.log(TAG, "solve threw", e);
       }
-      // Result first, then state, so the popup never sees "solved" without one.
-      marker.autosolveResult = JSON.stringify({ ...r, ms: Date.now() - startedAt });
-      marker.autosolve = r && r.ok ? (r.alreadySolved ? "done" : "solved") : "failed";
       return;
     }
 

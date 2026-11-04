@@ -40,7 +40,11 @@
  *        default cadence. Ignored by 'detect'.
  * @returns {{solvable:boolean,present:boolean,rows:number,cols:number,solved:boolean,
  *            cells:object[]|null}} for 'detect',
- *          {{ok:boolean, placed?:number, alreadySolved?:boolean, error?:string}} for 'solve'
+ *          {{ok:boolean, placed?:number, alreadySolved?:boolean, error?:string,
+ *            busy?:boolean, board?:boolean}} for 'solve' — `busy` when another solve
+ *          already holds this board, `board` from the frame that has the board.
+ *          (Unlike the other engines, 'detect' ignores `opts.preview`: whether a board
+ *          is solvable here means finding a tiling, so the solve always runs.)
  */
 async function runPatches(mode, opts) {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -322,13 +326,13 @@ async function runPatches(mode, opts) {
       return cursorIdx() === target;
     }
 
+    // How long a press gets to show its effect before it counts as refused — well
+    // above a normal render, so a slow one is never mistaken for a refusal.
+    const SETTLE_MS = 600;
+
     if (!(await ensureGrid())) return { ok: false, error: "Could not focus the gameboard." };
 
-    // Erase whatever is already on the board before drawing the solution.
-    //
-    // This is mandatory, not tidiness: the game will not draw a rectangle across cells
-    // that already belong to a patch, so a single stray patch left in place blocks
-    // every solution rectangle that overlaps it.
+    // Erase every drawn patch that has a cell outside `keep`.
     //
     // The erase is **Backspace with the cursor on a drawn cell**, which removes that
     // cell's whole patch in one press (verified live: a 2×2 patch went from 4 drawn
@@ -341,18 +345,38 @@ async function runPatches(mode, opts) {
     // specific patch, and on a resumed game the history may not reach back to the
     // patches already on the board. Backspace addresses a region directly, so it works
     // regardless of how the board got into its current state.
-    let cleared = 0;
-    for (let guard = 0; guard <= rows * cols; guard++) {
-      const drawn = drawnIdxs(board);
-      if (drawn.length === 0) break;
-      if (!(await goto(drawn[0]))) return { ok: false, error: "Cursor navigation failed." };
-      press("Backspace", 8);
-      await sleep(180);
-      // Stop rather than spin if a press stops removing anything — better to attempt
-      // the fill and report honestly than to loop on an unerasable board.
-      if (drawnIdxs(board).length >= drawn.length) break;
-      cleared++;
+    //
+    // A press that removes nothing is most likely a dangling anchor eating it (see
+    // ensureGrid), so it's retried from a fresh grid mode. A board that still won't
+    // clear fails the solve: drawing on top of a stray patch would only have the
+    // rectangles that overlap it refused.
+    async function eraseExcept(keep) {
+      let erased = 0;
+      let stalls = 0;
+      for (let guard = 0; guard <= rows * cols + 4; guard++) {
+        const drawn = drawnIdxs(board);
+        const stray = drawn.find((i) => !keep.has(i));
+        if (stray == null) return { ok: true, erased };
+        if (!(await goto(stray))) return { ok: false, error: "Cursor navigation failed." };
+        press("Backspace", 8);
+        await sleep(180);
+        if (await waitFor(() => drawnIdxs(board).length < drawn.length, SETTLE_MS)) {
+          erased++;
+          stalls = 0;
+        } else if (++stalls > 2 || !(await ensureGrid())) {
+          break;
+        }
+      }
+      return { ok: false, error: "Couldn't clear the patches already on the board." };
     }
+
+    // Erase whatever is already on the board before drawing the solution. This is
+    // mandatory, not tidiness: the game will not draw a rectangle across cells that
+    // already belong to a patch, so a single stray patch left in place blocks every
+    // solution rectangle that overlaps it.
+    const wiped = await eraseExcept(new Set());
+    if (!wiped.ok) return wiped;
+    const cleared = wiped.erased;
 
     // Work out how fast to press. Drawing a patch is Arrows to its top-left, Enter
     // (anchor), Arrows to its bottom-right, Enter (commit), each press followed by
@@ -365,8 +389,8 @@ async function runPatches(mode, opts) {
     // LEFT of (target + BUFFER), not the whole of it. The buffer lands the real time
     // comfortably OVER the target (a 5s target finishes ~5.5s). The floor stops a
     // very short target pressing faster than the game reliably registers; goto()
-    // re-reads the cursor every step and each Enter waits on a confirmed corner, so
-    // a lagging render costs extra presses rather than a wrong rectangle.
+    // re-reads the cursor every step and each patch is checked once committed, so a
+    // lagging render costs extra presses rather than a wrong rectangle.
     const MIN_PRESS_MS = 50;
     const BUFFER_MS = 500;
     const dist = (a, b) =>
@@ -388,25 +412,142 @@ async function runPatches(mode, opts) {
     const anchorMs = pressMs == null ? ANCHOR_MS : pressMs;
     const commitMs = pressMs == null ? COMMIT_MS : pressMs;
 
+    // Draw each patch, then check the board shows exactly the patches drawn so far
+    // plus this one before moving on. A commit can fail two ways: refused outright,
+    // which leaves its anchor dangling — so the next Enter would commit where it
+    // should anchor, and every patch after it would come out wrong — or drawn as the
+    // wrong rectangle. Either way: Escape drops the anchor (ensureGrid), anything
+    // that isn't a confirmed patch is erased, and the patch is drawn once more.
+    const confirmed = new Set(); // cells of the patches already drawn and checked
+    const showsExactly = (want) => {
+      const drawn = drawnIdxs(board);
+      return drawn.length === want.size && drawn.every((i) => want.has(i));
+    };
     let placed = 0;
     for (const rect of solution) {
-      if (!(await goto(rect.tl, arrowMs))) return { ok: false, error: "Cursor navigation failed." };
-      press("Enter", 13); // anchor
-      await sleep(anchorMs);
-      if (!(await goto(rect.br, arrowMs))) return { ok: false, error: "Cursor navigation failed." };
-      press("Enter", 13); // commit — fills the bounding-box rectangle
-      await sleep(commitMs);
+      const want = new Set([...confirmed, ...rect.cells]);
+      let drew = false;
+      for (let attempt = 0; attempt < 2 && !drew; attempt++) {
+        if (attempt > 0) {
+          if (!(await ensureGrid())) break;
+          const tidy = await eraseExcept(confirmed);
+          if (!tidy.ok) return { ...tidy, placed, cleared };
+        }
+        if (!(await goto(rect.tl, arrowMs))) return { ok: false, error: "Cursor navigation failed." };
+        press("Enter", 13); // anchor
+        await sleep(anchorMs);
+        if (!(await goto(rect.br, arrowMs))) return { ok: false, error: "Cursor navigation failed." };
+        press("Enter", 13); // commit — fills the bounding-box rectangle
+        await sleep(commitMs);
+        drew = await waitFor(() => showsExactly(want), SETTLE_MS);
+      }
+      if (!drew) {
+        return {
+          ok: false,
+          error: `Patch ${placed + 1} of ${solution.length} wouldn't draw. Try again.`,
+          placed,
+          cleared,
+        };
+      }
+      rect.cells.forEach((i) => confirmed.add(i));
       placed++;
     }
     return { ok: true, placed, cleared };
   }
 
   // --- is the board ALREADY finished? ---
-  // Every cell belonging to some drawn patch is the win condition: the game only
-  // draws rectangles, and refuses to draw one across cells that already belong to
-  // a patch, so a fully covered board is a valid tiling.
+  // The win condition, checked in full against the patches on the board: every cell
+  // in a patch, and each clue's patch a solid rectangle around that clue, of the
+  // size and shape it asks for. Full coverage alone is not enough — the game draws
+  // any rectangle it's given, so a board can be completely covered by patches of the
+  // wrong sizes, and reading that as won left the solver refusing to fix it.
   function isSolved(board) {
-    return drawnIdxs(board).length === board.rows * board.cols;
+    const { cols, clues } = board;
+    const patchOf = drawnPatchOf(board);
+    if (patchOf.some((p) => p === -1)) return false; // a cell outside every clue's patch
+    const box = clues.map(() => ({ r0: Infinity, c0: Infinity, r1: -1, c1: -1, n: 0 }));
+    patchOf.forEach((p, idx) => {
+      const b = box[p];
+      const r = Math.floor(idx / cols);
+      const c = idx % cols;
+      b.r0 = Math.min(b.r0, r);
+      b.c0 = Math.min(b.c0, c);
+      b.r1 = Math.max(b.r1, r);
+      b.c1 = Math.max(b.c1, c);
+      b.n++;
+    });
+    return clues.every((cl, i) => {
+      const b = box[i];
+      if (patchOf[cl.idx] !== i) return false; // the clue sits outside its own patch
+      const h = b.r1 - b.r0 + 1;
+      const w = b.c1 - b.c0 + 1;
+      if (h * w !== b.n) return false; // not a solid rectangle
+      if (cl.area != null && b.n !== cl.area) return false;
+      if (cl.shape === "SQUARE" && h !== w) return false;
+      if (cl.shape === "HORIZONTAL_RECT" && w <= h) return false;
+      if (cl.shape === "VERTICAL_RECT" && h <= w) return false;
+      return true;
+    });
+  }
+
+  /** Resolve true as soon as cond() holds, or false once `ms` has passed without. */
+  async function waitFor(cond, ms) {
+    const until = performance.now() + ms;
+    while (!cond()) {
+      if (performance.now() >= until) return false;
+      await sleep(25);
+    }
+    return true;
+  }
+
+  // --- did the solve actually work? ---
+  // Every patch drawing still isn't the puzzle being won, so judge the result by the
+  // win condition on the live board, with a moment for a slow render to catch up.
+  // true = solved; false = still unsolved when the wait ran out; null = the board is
+  // no longer on the page (the game swapping in a results screen, or the player
+  // navigating away), so there's nothing left to check — neither is a refused
+  // patch, so the caller doesn't report it as one.
+  async function confirmSolved(b) {
+    const until = performance.now() + 1500;
+    for (;;) {
+      // isSolved reads the cells live off boardEl, so the parsed board is good —
+      // unless the game re-rendered it, when the old element no longer says anything.
+      if (!b.boardEl.isConnected) b = parseBoard();
+      if (!b) return null;
+      if (isSolved(b)) return true;
+      if (performance.now() >= until) return false;
+      await sleep(25);
+    }
+  }
+
+  // --- one solve per board, visible to the popup ---
+  // Every solve path ends up here — content.js's auto-solve, and the popup's Solve
+  // in the page's MAIN world — so this is where the board is claimed. The claim is a
+  // marker on this frame's <html>: DOM attributes are shared across worlds, and the
+  // check and the claim run with no await between them, so two solves racing for one
+  // board can't both get in. The popup reads the same marker (readAutoSolve in
+  // popup.js) to show a solve in progress — whoever started it — and then its result.
+  async function exclusive(run) {
+    const marker = document.documentElement.dataset;
+    if (marker.autosolve === "solving") {
+      return { ok: false, busy: true, board: true, error: "A solve is already running on this board." };
+    }
+    const claimedAt = Date.now();
+    marker.autosolveStart = String(claimedAt);
+    delete marker.autosolveResult;
+    marker.autosolve = "solving";
+    let r;
+    try {
+      r = await run();
+    } catch (e) {
+      r = { ok: false, error: "Solve failed: " + ((e && e.message) || e) };
+    }
+    // `board` tells the popup this frame held the board, so its error is the one to show.
+    r = { ...r, board: true };
+    // Result first, then state, so the popup never sees a finished state without one.
+    marker.autosolveResult = JSON.stringify({ ...r, ms: Date.now() - claimedAt });
+    marker.autosolve = r.ok ? (r.alreadySolved ? "done" : "solved") : "failed";
+    return r;
   }
 
   /** Map cell index -> clue index, for the patches the PLAYER has already drawn. */
@@ -484,15 +625,22 @@ async function runPatches(mode, opts) {
 
   // mode === 'solve'
   if (!board) return { ok: false, error: "Board not found or still loading." };
-  // Already finished (e.g. completed between the popup's last poll and the click) —
-  // report it instead of erasing a won board just to redraw it.
-  if (isSolved(board)) {
-    return { ok: true, placed: board.clues.length, alreadySolved: true, rows: board.rows, cols: board.cols };
-  }
-  const solution = solve(board);
-  if (!solution) return { ok: false, error: "No rectangle tiling found for this board." };
-  const filled = await fill(board, solution);
-  return filled.ok ? { ...filled, rows: board.rows, cols: board.cols } : filled;
+  return exclusive(async () => {
+    // Already finished (e.g. completed between the popup's last poll and the click) —
+    // report it instead of erasing a won board just to redraw it.
+    if (isSolved(board)) {
+      return { ok: true, placed: board.clues.length, alreadySolved: true, rows: board.rows, cols: board.cols };
+    }
+    const solution = solve(board);
+    if (!solution) return { ok: false, error: "No rectangle tiling found for this board." };
+    const filled = await fill(board, solution);
+    if (!filled.ok) return filled;
+    // Only the board can say it's won: report success on its word, not ours.
+    if ((await confirmSolved(board)) === false) {
+      return { ok: false, error: "The board still isn't solved. Try again.", placed: filled.placed };
+    }
+    return { ...filled, rows: board.rows, cols: board.cols };
+  });
 }
 
 // Expose the engine on the (isolated-world) global so the auto-solve content

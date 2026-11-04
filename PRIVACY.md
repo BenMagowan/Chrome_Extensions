@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Effective Date:** July 16, 2026
+**Effective Date:** November 4, 2026
 
 This Privacy Policy describes how we handle information when you install and use our Chrome Extension.
 
@@ -24,7 +24,7 @@ None of this game data, nor any information about your LinkedIn profile, browsin
 
 To provide its core functionality, the extension requests the following permissions:
 
-* **Host Permission:** This is required solely to read the puzzle data and interact with the game boards across LinkedIn's gaming directory. The extension cannot and does not access any other pages on LinkedIn (such as your feed, messages, network, or profile).
+* **Host Permission:** This is required solely to read the puzzle data and interact with the game boards across LinkedIn's gaming directory, and is requested for LinkedIn Games pages (`linkedin.com/games/…`) only. The extension does not access any other pages on LinkedIn (such as your feed, messages, network, or profile). Chrome may describe this permission as access to linkedin.com, because browsers grant site access by website rather than by page; the extension's code still only runs on the games pages.
 * **Scripting:** This allows the extension to inject the local solving algorithms directly into the game page environment.
 * **Storage:** This is used to store user preferences (like toggling auto-solve) locally on your device. No personal data is stored.
 

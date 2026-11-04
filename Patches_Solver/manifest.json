@@ -28,5 +28,5 @@
     }
   ],
   "permissions": ["scripting", "storage"],
-  "host_permissions": ["*://*.linkedin.com/*"]
+  "host_permissions": ["*://*.linkedin.com/games/*"]
 }
