@@ -103,9 +103,20 @@ redesign breaks the extension.
   `[data-testid="patches-game-board"]` (`role="group"`, `aria-label="Gameboard"`,
   `tabindex="0"`). (The guest board renders in the top document; signed-in may use an
   iframe — injection uses `allFrames: true` either way.)
+- **⚠️ aria-labels are translated.** LinkedIn serves the games in the player's
+  language, and every `aria-label` and button text changes with it (append
+  `?_l=fr_FR` to the game URL to see one). Never read state from label *words*: use
+  `data-testid`, `data-*` attributes, layout or rendered colour. The English wording
+  is kept only as a fallback for older markup. Verified live in English, French,
+  German, Japanese and Arabic.
 - **Cells:** `[data-cell-idx="0…rows*cols-1"]`, row-major. Grid size comes from the
-  `"Row R, column C"` aria text (max R = rows, max C = cols) — **not hardcoded** (guest
-  was 6×6, the signed-in sample 5×5).
+  layout (the cells sharing the first cell's top edge are one row), falling back on
+  the two numbers each label opens with — **not hardcoded** (guest was 6×6, the
+  signed-in sample 5×5).
+- **Drawn patches:** each committed patch is a `[data-testid="region-overlay-…"]` box
+  over the grid; a cell is drawn when its centre is inside one, and the patch belongs
+  to the one clue inside it. (`patches-drawing-region` is the box still being dragged
+  and is ignored.) The aria phrases below say the same thing but only in English.
 - **Clues:** a clue cell contains a `[data-shape="PatchesShapeConstraint_…"]`
   (`SQUARE` / `HORIZONTAL_RECT` / `VERTICAL_RECT` / `UNKNOWN`) and, when sized, a
   `[data-testid="patches-clue-number-<idx>"]` with the area (also in the aria as

@@ -107,7 +107,9 @@ the extension stops working, re-verify these first.
   **Plain clicks do not draw the path.** Pressing an **Arrow key** (dispatched at
   `document` level) extends the path one cell in that direction when the move is legal
   (adjacent, unvisited, no wall); state updates asynchronously. So the solver computes
-  the full path, **resets** any existing drawing via the **Undo** control, then replays
+  the full path, **resets** any existing drawing via the **Undo** control (matched by
+  its English text) and then by **clicking the start cell**, which rewinds a drawn path
+  to that one cell in any language (the button is translated: "Annuler"), then replays
   the path as a sequence of Arrow `keydown`s. (LinkedIn also supports clicking the
   furthest cell in a straight line to fill a whole segment, but per-cell Arrow presses
   are the most robust and are what this extension uses.)

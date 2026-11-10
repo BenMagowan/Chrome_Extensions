@@ -80,6 +80,12 @@ working after a LinkedIn redesign, re-verify these first.
   `www.linkedin.com/games/view/tango/desktop` ("LinkedIn Games Interactive Grid
   Component"). Injection uses `allFrames: true`; only the frame with the board returns
   a result.
+- **⚠️ aria-labels are translated.** LinkedIn serves the games in the player's
+  language, and every `aria-label` and button text changes with it (append
+  `?_l=fr_FR` to the game URL to see one). Never read state from label *words*: use
+  `data-testid`, `data-*` attributes, layout or rendered colour. The English wording
+  is kept only as a fallback for older markup. Verified live in English, French,
+  German, Japanese and Arabic.
 - **⚠️ The DOM differs between guest and signed-in sessions** — parse only off what's
   common to both:
 
@@ -95,7 +101,11 @@ working after a LinkedIn redesign, re-verify these first.
   - **Cells:** every cell is a `[data-cell-idx]` element with `role="button"`
     (`data-cell-idx = 0 … N²-1`, row-major → `row = idx / N | 0`, `col = idx % N`).
     Grid = the element holding the largest cluster of these. N = `round(sqrt(cellCount))`, even.
-  - **State/symbol:** the cell's inner `svg[aria-label]` is `"Sun"`, `"Moon"`, or `"Empty"`.
+  - **State/symbol:** the cell's inner svg carries `data-testid="cell-zero"` (Sun),
+    `"cell-one"` (Moon) or `"cell-empty"`, in every language. Its `aria-label`
+    (`"Sun"` / `"Moon"` / `"Empty"` in English) is translated, so it is only the
+    fallback for markup without the test id. Edge markers likewise:
+    `data-testid="edge-equal"` / `"edge-cross"` first, English `aria-label` second.
   - **Locked clue:** `aria-disabled === "true"`.
   - **Edges (`=` / `×`):** `svg[aria-label="Equal"|"Cross"]` **inside the grid** (scope
     it — a `Cross` icon also appears in the how-to-play legend). Direction: wrapper class
