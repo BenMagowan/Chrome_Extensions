@@ -80,6 +80,12 @@ the extension stops working, re-verify these first.
   - Iframe: `<iframe class="game-launch-page__iframe w-full" src="https://www.linkedin.com/games/view/queens/desktop">`
   - ⇒ Injection uses `allFrames: true`; only the frame that actually has the board
     returns one, so the popup just picks that frame's result.
+- **⚠️ aria-labels are translated.** LinkedIn serves the games in the player's
+  language, and every `aria-label` and button text changes with it (append
+  `?_l=fr_FR` to the game URL to see one). Never read state from label *words*: use
+  `data-testid`, `data-*` attributes, layout or rendered colour. The English wording
+  is kept only as a fallback for older markup. Verified live in English, French,
+  German, Japanese and Arabic.
 - **⚠️ The DOM differs between guest and signed-in sessions.** The parser must not
   depend on ids/classes that only exist in one. Two confirmed variants:
 
@@ -107,8 +113,12 @@ the extension stops working, re-verify these first.
   queens are left untouched and only the missing ones are filled.
 - **Placed marks:** the inner markup differs by DOM (guest: `span.cell-input--queen`
   › `svg.queens-icon-svg`; signed-in: hashed spans + `svg[data-testid="queen-svg"]`),
-  so **don't rely on it** — read state from the `aria-label` prefix instead:
-  `Empty` / `Cross` / `Queen` (identical in both).
+  but the `aria-label` prefix (`Empty` / `Cross` / `Queen`) is **translated**
+  ("Reine de couleur lavande…"), so state is read from the mark itself:
+  `[data-testid="queen-svg"]` / `.cell-input--queen` → queen,
+  `[data-testid="cross-svg"]` → cross, else the English prefix as a fallback.
+  Region colour names are translated too, so outside English the regions come from
+  the rendered background colour.
 - **Click cycle:** one click = Cross, two = Queen, three = back to Empty.
 - **Click mechanism (important):** the widget is **not** React (no `__reactFiber`
   keys) and **ignores pointer-only synthetic events**. The sequence that actually

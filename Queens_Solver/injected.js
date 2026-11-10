@@ -46,6 +46,8 @@ async function runQueens(mode, opts) {
   //      (guest #queens-grid, and signed-in [data-testid="interactive-grid"]), and it
   //      is the only source that gives a human-readable name. The colour phrase may
   //      end the label rather than be followed by a comma, hence the `(?:,|$)`.
+  //      ENGLISH ONLY: the label is translated ("Cellule vide de couleur lavande"), so
+  //      in every other language this source misses and (3) carries the board.
   //   2. the cell-color-N class, present in the guest/older markup.
   //   3. the rendered background colour.
   // (3) is the important one: a cell's *label text* changes as it is filled in
@@ -168,7 +170,13 @@ async function runQueens(mode, opts) {
     el.dispatchEvent(new MouseEvent("mouseup", { ...base, buttons: 0 }));
     el.dispatchEvent(new MouseEvent("click", { ...base, buttons: 0 }));
   }
+  // A cell's mark, read off the mark's own element first: data-testid (queen-svg /
+  // cross-svg) and the older guest queen class are the same in every language. The
+  // aria-label prefix is TRANSLATED ("Reine de couleur…", "Croix de couleur…"), so it
+  // is only the fallback, for markup with neither, where it is known in English alone.
   const cellState = (el) => {
+    if (el.querySelector('[data-testid="queen-svg"], .cell-input--queen')) return "queen";
+    if (el.querySelector('[data-testid="cross-svg"]')) return "cross";
     const l = el.getAttribute("aria-label") || "";
     return l.startsWith("Queen") ? "queen" : l.startsWith("Cross") ? "cross" : "empty";
   };

@@ -59,8 +59,10 @@ async function runPatches(mode, opts) {
       : null;
 
   // --- parse the board into {rows, cols, clues, boardEl} ---
-  // Grid-agnostic: keys off [data-cell-idx]; rows/cols come from the "Row R, column C"
-  // aria text (stable in both guest and signed-in DOMs).
+  // Grid-agnostic: keys off [data-cell-idx]. Nothing here may depend on the WORDS in
+  // an aria-label: LinkedIn translates them ("Ligne 1, colonne 1, indice de forme
+  // libre, 6 cellules"), so every read has a language-neutral source — layout,
+  // data-testid, data-shape — and the English wording is kept only as a fallback.
   function parseBoard() {
     // Patches signature so a Zip board (which also uses [data-trail-grid]) never
     // mis-parses as Patches.
@@ -92,17 +94,28 @@ async function runPatches(mode, opts) {
       }
     }
 
-    // rows/cols from the aria "Row R, column C" text.
+    // rows/cols from the layout: the cells sharing the first cell's top edge are one
+    // row. If the grid isn't laid out (zero-size), fall back on the two numbers every
+    // label opens with — "Row R, column C" in English, the same pair in the same
+    // order in translation — taking the largest of each.
     let rows = 0,
       cols = 0;
-    for (const el of els) {
-      const m = /Row\s+(\d+),\s*column\s+(\d+)/i.exec(el.getAttribute("aria-label") || "");
-      if (m) {
-        rows = Math.max(rows, parseInt(m[1], 10));
-        cols = Math.max(cols, parseInt(m[2], 10));
+    const firstRect = els[0].getBoundingClientRect();
+    if (firstRect.height > 0) {
+      for (const el of els) {
+        if (Math.abs(el.getBoundingClientRect().top - firstRect.top) < firstRect.height / 2) cols++;
+      }
+      rows = cols ? els.length / cols : 0;
+    } else {
+      for (const el of els) {
+        const m = /(\d+)\D+(\d+)/.exec(el.getAttribute("aria-label") || "");
+        if (m) {
+          rows = Math.max(rows, parseInt(m[1], 10));
+          cols = Math.max(cols, parseInt(m[2], 10));
+        }
       }
     }
-    if (rows < 2 || cols < 2 || rows * cols !== els.length) return null;
+    if (!Number.isInteger(rows) || rows < 2 || cols < 2 || rows * cols !== els.length) return null;
 
     // Clues: any cell carrying a [data-shape] marker (or an "…clue…" aria-label).
     // Both constraints are optional; absent means unconstrained, never unsupported:
@@ -146,6 +159,58 @@ async function runPatches(mode, opts) {
     if (clues.length < 2) return null;
 
     return { rows, cols, clues, boardEl };
+  }
+
+  // --- which patch, if any, each cell is drawn into ---
+  // Returns one entry per cell index: -1 = not drawn, a clue's index = drawn into that
+  // clue's patch, -2 = drawn, but into a patch that doesn't hold exactly one clue.
+  //
+  // The game draws each committed patch as a `[data-testid="region-overlay-…"]` box
+  // laid over the grid, so a cell is drawn when its centre sits inside one. That is
+  // the primary read because it is the same in every language. (The box for a patch
+  // still being dragged out is `patches-drawing-region`, which the selector skips.)
+  //
+  // The cells themselves only say so in their aria-label, in translated words: an
+  // ordinary cell reads "…, in region with clue at row R, column C" and a clue cell
+  // inside a patch "…, in drawn region" ("dans la région dessinée" in French). That
+  // English text is kept as the fallback for markup without the overlay boxes.
+  function drawnOwners(board) {
+    const { rows, cols, clues } = board;
+    const clueIndexAt = new Map(clues.map((c, i) => [c.idx, i]));
+    const owner = new Array(rows * cols).fill(-1);
+
+    const boxes = Array.from(board.boardEl.querySelectorAll('[data-testid^="region-overlay"]'))
+      .map((o) => o.getBoundingClientRect())
+      .filter((r) => r.width > 0 && r.height > 0);
+    if (boxes.length) {
+      const inBox = boxes.map(() => []);
+      for (const el of board.boardEl.querySelectorAll("[data-cell-idx]")) {
+        const r = el.getBoundingClientRect();
+        const x = r.left + r.width / 2;
+        const y = r.top + r.height / 2;
+        const b = boxes.findIndex((o) => x > o.left && x < o.right && y > o.top && y < o.bottom);
+        if (b !== -1) inBox[b].push(parseInt(el.getAttribute("data-cell-idx"), 10));
+      }
+      for (const idxs of inBox) {
+        const held = idxs.filter((i) => clueIndexAt.has(i));
+        const o = held.length === 1 ? clueIndexAt.get(held[0]) : -2;
+        for (const i of idxs) owner[i] = o;
+      }
+    }
+
+    for (const el of board.boardEl.querySelectorAll("[data-cell-idx]")) {
+      const idx = parseInt(el.getAttribute("data-cell-idx"), 10);
+      if (owner[idx] !== -1) continue;
+      const aria = el.getAttribute("aria-label") || "";
+      const m = /in region with clue at row\s+(\d+),\s*column\s+(\d+)/i.exec(aria);
+      if (m) {
+        const at = (parseInt(m[1], 10) - 1) * cols + (parseInt(m[2], 10) - 1);
+        owner[idx] = clueIndexAt.has(at) ? clueIndexAt.get(at) : -2;
+      } else if (/in drawn region/i.test(aria)) {
+        owner[idx] = clueIndexAt.has(idx) ? clueIndexAt.get(idx) : -2;
+      }
+    }
+    return owner;
   }
 
   // --- rectangle exact-cover solver (Shikaku with optional shape/area constraints) ---
@@ -248,14 +313,13 @@ async function runPatches(mode, opts) {
   }
 
   // --- keyboard fill ---
-  // A cell that belongs to a drawn patch says so in its aria-label: an ordinary cell
-  // reads "…, in region with clue at row R, column C", and a *clue* cell inside a
-  // patch reads "…, in drawn region". Either means "already drawn".
-  const DRAWN = /in region with clue at|in drawn region/i;
+  /** The indices of every cell that is already part of a drawn patch. */
   function drawnIdxs(board) {
-    return Array.from(board.boardEl.querySelectorAll("[data-cell-idx]"))
-      .filter((el) => DRAWN.test(el.getAttribute("aria-label") || ""))
-      .map((el) => parseInt(el.getAttribute("data-cell-idx"), 10));
+    const out = [];
+    drawnOwners(board).forEach((o, idx) => {
+      if (o !== -1) out.push(idx);
+    });
+    return out;
   }
   function cursorIdx() {
     const a = document.activeElement;
@@ -551,25 +615,10 @@ async function runPatches(mode, opts) {
   }
 
   /** Map cell index -> clue index, for the patches the PLAYER has already drawn. */
-  // Read back out of the same aria text the erase pass keys off: an ordinary cell
-  // in a patch names its owning clue's row/column, and a clue cell sitting inside
-  // its own patch just says "in drawn region".
+  // The same read the erase pass keys off (drawnOwners), with a patch that has no
+  // single owning clue counted as no patch at all — it can't be part of a win.
   function drawnPatchOf(board) {
-    const { rows, cols, clues } = board;
-    const clueIndexAt = new Map(clues.map((c, i) => [c.idx, i]));
-    const patchOf = new Array(rows * cols).fill(-1);
-    for (const el of board.boardEl.querySelectorAll("[data-cell-idx]")) {
-      const idx = parseInt(el.getAttribute("data-cell-idx"), 10);
-      const aria = el.getAttribute("aria-label") || "";
-      const m = /in region with clue at row\s+(\d+),\s*column\s+(\d+)/i.exec(aria);
-      if (m) {
-        const owner = (parseInt(m[1], 10) - 1) * cols + (parseInt(m[2], 10) - 1);
-        if (clueIndexAt.has(owner)) patchOf[idx] = clueIndexAt.get(owner);
-      } else if (/in drawn region/i.test(aria) && clueIndexAt.has(idx)) {
-        patchOf[idx] = clueIndexAt.get(idx);
-      }
-    }
-    return patchOf;
+    return drawnOwners(board).map((o) => (o < 0 ? -1 : o));
   }
 
   /** Map cell index -> clue index, for a tiling solve() came up with. */

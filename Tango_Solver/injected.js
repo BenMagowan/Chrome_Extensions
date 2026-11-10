@@ -40,9 +40,18 @@ async function runTango(mode, opts) {
       ? opts.targetMs
       : null;
 
-  // --- read a cell's current symbol from its inner <svg aria-label> ---
-  // "Sun" | "Moon" | "Empty" — identical text in guest and signed-in DOMs.
+  // --- read a cell's current symbol: "Sun" | "Moon" | "Empty" ---
+  // The symbol svg's data-testid (cell-zero = Sun, cell-one = Moon, cell-empty) comes
+  // first because it is the same in every language. The aria-label is TRANSLATED
+  // ("Soleil" / "Lune" / "Vide" in French), so it is only the fallback for the older
+  // markup that has no data-testid, where it is known in English alone.
+  const SYMBOL_SEL = '[data-testid="cell-zero"], [data-testid="cell-one"], [data-testid="cell-empty"]';
   function symbolOf(cellEl) {
+    const marked = cellEl.querySelector(SYMBOL_SEL);
+    if (marked) {
+      const id = marked.getAttribute("data-testid");
+      return id === "cell-zero" ? "Sun" : id === "cell-one" ? "Moon" : "Empty";
+    }
     const svg = cellEl.querySelector("svg[aria-label]");
     const l = svg ? svg.getAttribute("aria-label") : "";
     if (l === "Sun" || l === "Moon") return l;
@@ -90,19 +99,27 @@ async function runTango(mode, opts) {
     });
 
     // Tango signature: cells must carry Sun/Moon/Empty svgs (so a Queens board,
-    // which also uses [data-cell-idx], never mis-parses as Tango).
+    // which also uses [data-cell-idx], never mis-parses as Tango). data-testid in any
+    // language; the English aria-label for the older markup without one.
     const looksTango = els.some((el) => {
+      if (el.querySelector(SYMBOL_SEL)) return true;
       const svg = el.querySelector("svg[aria-label]");
       return svg && /^(Sun|Moon|Empty)$/.test(svg.getAttribute("aria-label") || "");
     });
     if (!looksTango) return null;
 
     // Edges: "=" (Equal) and "×" (Cross) markers, scoped to the grid so the
-    // how-to-play legend's Cross icon is ignored. Direction from the wrapper class
-    // (guest: lotka-cell-edge--right/--down) or geometry (signed-in: hashed classes).
+    // how-to-play legend's Cross icon is ignored. Found by data-testid (edge-equal /
+    // edge-cross, the same in every language), or by the English aria-label in the
+    // older markup. Direction from the wrapper class (guest:
+    // lotka-cell-edge--right/--down) or geometry (signed-in: hashed classes).
     const edges = [];
+    const isEqual = (svg) =>
+      svg.getAttribute("data-testid") === "edge-equal" || svg.getAttribute("aria-label") === "Equal";
     gridEl
-      .querySelectorAll('svg[aria-label="Equal"], svg[aria-label="Cross"]')
+      .querySelectorAll(
+        '[data-testid="edge-equal"], [data-testid="edge-cross"], svg[aria-label="Equal"], svg[aria-label="Cross"]'
+      )
       .forEach((svg) => {
         const cell = svg.closest("[data-cell-idx]");
         if (!cell) return;
@@ -117,7 +134,7 @@ async function runTango(mode, opts) {
           dir = toRight < toBottom ? "right" : "down";
         }
         const b = dir === "right" ? idx + 1 : idx + N;
-        edges.push({ a: idx, b, eq: svg.getAttribute("aria-label") === "Equal" });
+        edges.push({ a: idx, b, eq: isEqual(svg) });
       });
 
     return { N, cells, edges };

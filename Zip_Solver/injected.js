@@ -558,11 +558,14 @@ async function runZip(mode, opts) {
         if (!(await waitFor(() => filledCount(board) < before, SETTLE_MS))) break; // stuck
       }
     }
-    // Ensure the start cell is the current head.
+    // Ensure the start cell is the current head. Clicking it does both jobs: it
+    // starts the path when nothing is drawn, and it rewinds a drawn path back to that
+    // one cell. The rewind matters wherever the Undo button above wasn't found — it is
+    // matched by its English text, and LinkedIn translates it ("Annuler" in French).
     const startEl = board.elByIdx[board.start];
-    if (!isFilled(startEl)) {
+    if (!isFilled(startEl) || filledCount(board) > 1) {
       fireOneClick(startEl);
-      await waitFor(() => isFilled(startEl), SETTLE_MS);
+      await waitFor(() => isFilled(startEl) && filledCount(board) <= 1, SETTLE_MS);
     }
     // Every Arrow extends from the head, so replaying over a path that didn't clear
     // would draw from the wrong cell. Say so instead.
