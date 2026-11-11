@@ -1,6 +1,6 @@
 {
   "extName": {
-    "message": "Mini Sudoku Puzzle Solver"
+    "message": "Solucionador de Mini Sudoku"
   },
   "extDescription": {
     "message": "Resuelve por ti el Mini Sudoku diario de LinkedIn. Rellena la cuadrícula 6×6 con un clic, o solo cuando carga el tablero."

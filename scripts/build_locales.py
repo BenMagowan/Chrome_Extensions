@@ -677,7 +677,7 @@ Résout-il le puzzle dès son chargement ? Avec la résolution automatique activ
 Du même développeur : {others}.
 
 {name} est une extension indépendante, sans lien avec LinkedIn et non approuvée par LinkedIn.""",
-    "de": """{name} löst das tägliche {game}-Spiel auf LinkedIn. {intro}
+    "de": """{name} knackt das tägliche {game}-Spiel auf LinkedIn. {intro}
 
 So funktioniert's
 1. Hefte die Erweiterung an: Klicke in der Chrome-Symbolleiste auf das Puzzleteil und dann auf die Stecknadel neben {name}.
@@ -705,6 +705,23 @@ Vom selben Entwickler: {others}.
 
 {name} ist eine unabhängige Erweiterung und steht in keiner Verbindung zu LinkedIn und wird nicht von LinkedIn unterstützt.""",
 }
+# The extension's name in each language. English keeps the brand; the others translate
+# "solver" and keep LinkedIn's own game name, which LinkedIn doesn't translate either.
+NAMES = {
+    "es": "Solucionador de {game}",
+    "pt": "Solucionador de {game}",
+    "fr": "Solveur de {game}",
+    "de": "{game}-Löser",
+}
+
+
+def name_in(game, lang):
+    if lang == "en":
+        return game["name"]
+    word = game["game"].replace(" ", "-") if lang == "de" else game["game"]
+    return NAMES[lang].format(game=word)
+
+
 AND = {"es": " y ", "pt": " e ", "fr": " et ", "de": " und "}
 
 
@@ -753,7 +770,7 @@ def check_engine_errors():
 
 def messages_for(solver, lang):
     game = GAMES[solver]
-    out = {"extName": {"message": game["name"]}}
+    out = {"extName": {"message": name_in(game, lang)}}
     for source in (game["ui"], UI, ERRORS):
         for key, values in source.items():
             out[key] = {"message": by_lang(values, key)[lang]}
@@ -773,10 +790,10 @@ def store_listing(lang):
     auto_name = by_lang(UI["autoSolve"], "autoSolve")[lang]
     for solver, game in GAMES.items():
         s = game["store"][lang]
-        others = [g["name"] for k, g in GAMES.items() if k != solver]
+        others = [name_in(g, lang) for k, g in GAMES.items() if k != solver]
         summary = by_lang(game["ui"]["extDescription"], "extDescription")[lang]
         body = STORE[lang].format(
-            name=game["name"],
+            name=name_in(game, lang),
             game=game["game"],
             slug=game["slug"],
             site=game["site"],
@@ -789,7 +806,7 @@ def store_listing(lang):
             auto_name=auto_name,
             others=", ".join(others[:-1]) + AND[lang] + others[-1],
         )
-        lines += ["", f"## {game['game']}", "", f"Summary ({len(summary)} characters):", "", "```", summary, "```", "", "Full description:", "", "```", body, "```"]
+        lines += ["", f"## {game['game']}", "", f"Name: {name_in(game, lang)}", "", f"Summary ({len(summary)} characters):", "", "```", summary, "```", "", "Full description:", "", "```", body, "```"]
     return "\n".join(lines) + "\n"
 
 
