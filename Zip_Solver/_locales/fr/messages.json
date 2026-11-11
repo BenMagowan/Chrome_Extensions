@@ -1,6 +1,6 @@
 {
   "extName": {
-    "message": "Zip Puzzle Solver"
+    "message": "Solveur de Zip"
   },
   "extDescription": {
     "message": "Résout pour vous le puzzle Zip quotidien de LinkedIn. Trace le chemin par toutes les cases en un clic, ou tout seul au chargement."

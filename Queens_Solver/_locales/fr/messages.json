@@ -1,6 +1,6 @@
 {
   "extName": {
-    "message": "Queens Puzzle Solver"
+    "message": "Solveur de Queens"
   },
   "extDescription": {
     "message": "Résout pour vous le puzzle Queens quotidien de LinkedIn. Place chaque reine en un clic, ou tout seul dès que la grille se charge."

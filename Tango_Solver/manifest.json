@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "default_locale": "en",
-  "name": "Tango Puzzle Solver",
-  "version": "1.4.5",
+  "name": "__MSG_extName__",
+  "version": "1.4.6",
   "icons": {
     "16": "images/icon-16.png",
     "32": "images/icon-32.png",

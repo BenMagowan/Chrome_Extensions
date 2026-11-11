@@ -1,6 +1,6 @@
 {
   "extName": {
-    "message": "Patches Puzzle Solver"
+    "message": "Solucionador de Patches"
   },
   "extDescription": {
     "message": "Resuelve por ti el puzle diario Patches de LinkedIn. Dibuja todos los rectángulos con un clic, o solo cuando carga el tablero."

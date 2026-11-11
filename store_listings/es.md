@@ -7,6 +7,8 @@ Description, after choosing this language in the language menu.
 
 ## Queens
 
+Name: Solucionador de Queens
+
 Summary (123 characters):
 
 ```
@@ -16,10 +18,10 @@ Resuelve por ti el puzle diario Queens de LinkedIn. Coloca todas las reinas con 
 Full description:
 
 ```
-Queens Puzzle Solver resuelve el juego diario Queens de LinkedIn. Lee el tablero, calcula dónde va cada reina y las coloca por ti.
+Solucionador de Queens resuelve el juego diario Queens de LinkedIn. Lee el tablero, calcula dónde va cada reina y las coloca por ti.
 
 Cómo se usa
-1. Fija la extensión: haz clic en la pieza de puzle de la barra de herramientas de Chrome y luego en la chincheta junto a Queens Puzzle Solver.
+1. Fija la extensión: haz clic en la pieza de puzle de la barra de herramientas de Chrome y luego en la chincheta junto a Solucionador de Queens.
 2. Abre el puzle de hoy en linkedin.com/games/queens y empieza la partida.
 3. Eso es todo. La opción «Resolución automática» está activada, así que las reinas se colocan en cuanto aparece el tablero. Si la desactivas, haz clic en el icono de la extensión y pulsa «Resolver puzle».
 
@@ -42,12 +44,14 @@ Preguntas
 ¿En qué navegadores funciona? En Chrome para ordenador.
 ¿Resuelve el puzle nada más cargar? Con la resolución automática activada, empieza en cuanto empiezas la partida y tarda más o menos el tiempo de resolución que hayas elegido.
 
-Del mismo desarrollador: Tango Puzzle Solver, Zip Puzzle Solver, Patches Puzzle Solver y Mini Sudoku Puzzle Solver.
+Del mismo desarrollador: Solucionador de Tango, Solucionador de Zip, Solucionador de Patches y Solucionador de Mini Sudoku.
 
-Queens Puzzle Solver es una extensión independiente y no está afiliada a LinkedIn ni cuenta con su respaldo.
+Solucionador de Queens es una extensión independiente y no está afiliada a LinkedIn ni cuenta con su respaldo.
 ```
 
 ## Tango
+
+Name: Solucionador de Tango
 
 Summary (119 characters):
 
@@ -58,10 +62,10 @@ Resuelve por ti el puzle diario Tango de LinkedIn. Rellena cada sol y luna con u
 Full description:
 
 ```
-Tango Puzzle Solver resuelve el juego diario Tango de LinkedIn. Lee la cuadrícula y sus signos = y ×, calcula dónde va cada sol y cada luna y los coloca por ti.
+Solucionador de Tango resuelve el juego diario Tango de LinkedIn. Lee la cuadrícula y sus signos = y ×, calcula dónde va cada sol y cada luna y los coloca por ti.
 
 Cómo se usa
-1. Fija la extensión: haz clic en la pieza de puzle de la barra de herramientas de Chrome y luego en la chincheta junto a Tango Puzzle Solver.
+1. Fija la extensión: haz clic en la pieza de puzle de la barra de herramientas de Chrome y luego en la chincheta junto a Solucionador de Tango.
 2. Abre el puzle de hoy en linkedin.com/games/tango y empieza la partida.
 3. Eso es todo. La opción «Resolución automática» está activada, así que la cuadrícula se rellena en cuanto aparece el tablero. Si la desactivas, haz clic en el icono de la extensión y pulsa «Resolver puzle».
 
@@ -82,12 +86,14 @@ Preguntas
 ¿En qué navegadores funciona? En Chrome para ordenador.
 ¿Resuelve el puzle nada más cargar? Con la resolución automática activada, empieza en cuanto aparece el tablero y tarda más o menos el tiempo de resolución que hayas elegido.
 
-Del mismo desarrollador: Queens Puzzle Solver, Zip Puzzle Solver, Patches Puzzle Solver y Mini Sudoku Puzzle Solver.
+Del mismo desarrollador: Solucionador de Queens, Solucionador de Zip, Solucionador de Patches y Solucionador de Mini Sudoku.
 
-Tango Puzzle Solver es una extensión independiente y no está afiliada a LinkedIn ni cuenta con su respaldo.
+Solucionador de Tango es una extensión independiente y no está afiliada a LinkedIn ni cuenta con su respaldo.
 ```
 
 ## Zip
+
+Name: Solucionador de Zip
 
 Summary (130 characters):
 
@@ -98,10 +104,10 @@ Resuelve por ti el puzle diario Zip de LinkedIn. Traza el camino por todas las c
 Full description:
 
 ```
-Zip Puzzle Solver resuelve el juego diario Zip de LinkedIn. Lee la cuadrícula, sus números y sus muros, encuentra el único camino que pasa por todas las celdas con los números en orden y lo traza por ti.
+Solucionador de Zip resuelve el juego diario Zip de LinkedIn. Lee la cuadrícula, sus números y sus muros, encuentra el único camino que pasa por todas las celdas con los números en orden y lo traza por ti.
 
 Cómo se usa
-1. Fija la extensión: haz clic en la pieza de puzle de la barra de herramientas de Chrome y luego en la chincheta junto a Zip Puzzle Solver.
+1. Fija la extensión: haz clic en la pieza de puzle de la barra de herramientas de Chrome y luego en la chincheta junto a Solucionador de Zip.
 2. Abre el puzle de hoy en linkedin.com/games/zip y empieza la partida.
 3. Eso es todo. La opción «Resolución automática» está activada, así que el camino se traza en cuanto aparece el tablero. Si la desactivas, haz clic en el icono de la extensión y pulsa «Resolver puzle».
 
@@ -122,12 +128,14 @@ Preguntas
 ¿En qué navegadores funciona? En Chrome para ordenador.
 ¿Resuelve el puzle nada más cargar? Con la resolución automática activada, empieza en cuanto aparece el tablero y tarda más o menos el tiempo de resolución que hayas elegido.
 
-Del mismo desarrollador: Queens Puzzle Solver, Tango Puzzle Solver, Patches Puzzle Solver y Mini Sudoku Puzzle Solver.
+Del mismo desarrollador: Solucionador de Queens, Solucionador de Tango, Solucionador de Patches y Solucionador de Mini Sudoku.
 
-Zip Puzzle Solver es una extensión independiente y no está afiliada a LinkedIn ni cuenta con su respaldo.
+Solucionador de Zip es una extensión independiente y no está afiliada a LinkedIn ni cuenta con su respaldo.
 ```
 
 ## Patches
+
+Name: Solucionador de Patches
 
 Summary (126 characters):
 
@@ -138,10 +146,10 @@ Resuelve por ti el puzle diario Patches de LinkedIn. Dibuja todos los rectángul
 Full description:
 
 ```
-Patches Puzzle Solver resuelve el juego diario Patches de LinkedIn. Lee el tamaño y la forma de cada pista, calcula cómo encajan los rectángulos en la cuadrícula y los dibuja por ti.
+Solucionador de Patches resuelve el juego diario Patches de LinkedIn. Lee el tamaño y la forma de cada pista, calcula cómo encajan los rectángulos en la cuadrícula y los dibuja por ti.
 
 Cómo se usa
-1. Fija la extensión: haz clic en la pieza de puzle de la barra de herramientas de Chrome y luego en la chincheta junto a Patches Puzzle Solver.
+1. Fija la extensión: haz clic en la pieza de puzle de la barra de herramientas de Chrome y luego en la chincheta junto a Solucionador de Patches.
 2. Abre el puzle de hoy en linkedin.com/games/patches y empieza la partida.
 3. Eso es todo. La opción «Resolución automática» está activada, así que los rectángulos se dibujan en cuanto aparece el tablero. Si la desactivas, haz clic en el icono de la extensión y pulsa «Resolver puzle».
 
@@ -164,12 +172,14 @@ Preguntas
 ¿En qué navegadores funciona? En Chrome para ordenador.
 ¿Resuelve el puzle nada más cargar? Con la resolución automática activada, empieza en cuanto aparece el tablero y tarda más o menos el tiempo de resolución que hayas elegido.
 
-Del mismo desarrollador: Queens Puzzle Solver, Tango Puzzle Solver, Zip Puzzle Solver y Mini Sudoku Puzzle Solver.
+Del mismo desarrollador: Solucionador de Queens, Solucionador de Tango, Solucionador de Zip y Solucionador de Mini Sudoku.
 
-Patches Puzzle Solver es una extensión independiente y no está afiliada a LinkedIn ni cuenta con su respaldo.
+Solucionador de Patches es una extensión independiente y no está afiliada a LinkedIn ni cuenta con su respaldo.
 ```
 
 ## Mini Sudoku
+
+Name: Solucionador de Mini Sudoku
 
 Summary (121 characters):
 
@@ -180,10 +190,10 @@ Resuelve por ti el Mini Sudoku diario de LinkedIn. Rellena la cuadrícula 6×6 c
 Full description:
 
 ```
-Mini Sudoku Puzzle Solver resuelve el juego diario Mini Sudoku de LinkedIn. Lee la cuadrícula 6×6 y rellena todos los números que faltan para que cada fila, columna y caja tenga del 1 al 6 una sola vez.
+Solucionador de Mini Sudoku resuelve el juego diario Mini Sudoku de LinkedIn. Lee la cuadrícula 6×6 y rellena todos los números que faltan para que cada fila, columna y caja tenga del 1 al 6 una sola vez.
 
 Cómo se usa
-1. Fija la extensión: haz clic en la pieza de puzle de la barra de herramientas de Chrome y luego en la chincheta junto a Mini Sudoku Puzzle Solver.
+1. Fija la extensión: haz clic en la pieza de puzle de la barra de herramientas de Chrome y luego en la chincheta junto a Solucionador de Mini Sudoku.
 2. Abre el puzle de hoy en linkedin.com/games/mini-sudoku y empieza la partida.
 3. Eso es todo. La opción «Resolución automática» está activada, así que la cuadrícula se rellena en cuanto aparece el tablero. Si la desactivas, haz clic en el icono de la extensión y pulsa «Resolver puzle».
 
@@ -204,7 +214,7 @@ Preguntas
 ¿En qué navegadores funciona? En Chrome para ordenador.
 ¿Resuelve el puzle nada más cargar? Con la resolución automática activada, empieza en cuanto aparece el tablero y tarda más o menos el tiempo de resolución que hayas elegido.
 
-Del mismo desarrollador: Queens Puzzle Solver, Tango Puzzle Solver, Zip Puzzle Solver y Patches Puzzle Solver.
+Del mismo desarrollador: Solucionador de Queens, Solucionador de Tango, Solucionador de Zip y Solucionador de Patches.
 
-Mini Sudoku Puzzle Solver es una extensión independiente y no está afiliada a LinkedIn ni cuenta con su respaldo.
+Solucionador de Mini Sudoku es una extensión independiente y no está afiliada a LinkedIn ni cuenta con su respaldo.
 ```
