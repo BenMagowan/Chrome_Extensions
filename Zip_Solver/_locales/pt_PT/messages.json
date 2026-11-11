@@ -1,0 +1,164 @@
+{
+  "extName": {
+    "message": "Zip Puzzle Solver"
+  },
+  "extDescription": {
+    "message": "Resolve para você o Zip diário do LinkedIn. Traça o caminho por todas as células com um clique, ou sozinho ao carregar o tabuleiro."
+  },
+  "actionTitle": {
+    "message": "Resolver o Zip"
+  },
+  "lblOpen": {
+    "message": "Abrir o Zip"
+  },
+  "stSolving": {
+    "message": "Traçando o caminho…"
+  },
+  "stSolved": {
+    "message": "Resolvido · caminho de $1 células traçado"
+  },
+  "localeTag": {
+    "message": "pt-BR"
+  },
+  "menuAria": {
+    "message": "Configurações e mais"
+  },
+  "settings": {
+    "message": "Configurações"
+  },
+  "autoSolve": {
+    "message": "Resolução automática"
+  },
+  "solveTime": {
+    "message": "Tempo de resolução"
+  },
+  "solveTimeAria": {
+    "message": "Tempo de resolução em segundos, de 1 a 999"
+  },
+  "solveTimeSliderAria": {
+    "message": "Controle deslizante do tempo de resolução, de 1 a 60 segundos"
+  },
+  "moreSolvers": {
+    "message": "Mais solucionadores"
+  },
+  "unlimitedPuzzles": {
+    "message": "Quebra-cabeças ilimitados"
+  },
+  "boardPreview": {
+    "message": "Prévia do tabuleiro"
+  },
+  "solutionPreview": {
+    "message": "Prévia da solução, $1 por $2."
+  },
+  "hintAny": {
+    "message": "Jogue quebra-cabeças ilimitados, sem limite diário →"
+  },
+  "hintSolved": {
+    "message": "Quer mais um? Jogue quebra-cabeças ilimitados →"
+  },
+  "stChecking": {
+    "message": "Procurando um tabuleiro…"
+  },
+  "lblChecking": {
+    "message": "Procurando o quebra-cabeça…"
+  },
+  "stIdle": {
+    "message": "Nenhum tabuleiro encontrado"
+  },
+  "stReady": {
+    "message": "Tabuleiro detectado · $1×$2"
+  },
+  "lblSolve": {
+    "message": "Resolver quebra-cabeça"
+  },
+  "lblSolving": {
+    "message": "Resolvendo"
+  },
+  "lblSolved": {
+    "message": "Resolvido"
+  },
+  "stDone": {
+    "message": "Já resolvido · $1×$2"
+  },
+  "lblNothing": {
+    "message": "Nada para resolver"
+  },
+  "lblTryAgain": {
+    "message": "Tentar novamente"
+  },
+  "stStuck": {
+    "message": "Tabuleiro encontrado, mas não há solução"
+  },
+  "stWaiting": {
+    "message": "Tabuleiro encontrado · inicie a partida para resolver"
+  },
+  "lblWaiting": {
+    "message": "Aguardando a partida"
+  },
+  "errNoFinish": {
+    "message": "A resolução não terminou."
+  },
+  "errNoFrame": {
+    "message": "Nenhum tabuleiro respondeu."
+  },
+  "errBusy": {
+    "message": "Já há uma resolução em andamento neste tabuleiro."
+  },
+  "errFailed": {
+    "message": "A resolução falhou: $1"
+  },
+  "errNoBoard": {
+    "message": "Tabuleiro não encontrado ou ainda carregando."
+  },
+  "errNoSolution": {
+    "message": "Este tabuleiro não tem solução."
+  },
+  "errUnsolved": {
+    "message": "O tabuleiro ainda não está resolvido. Tente novamente."
+  },
+  "errClick": {
+    "message": "Um clique não foi registrado. Tente novamente."
+  },
+  "errColours": {
+    "message": "Foram lidas $1 cores em um tabuleiro $2×$3."
+  },
+  "errCluesGuesses": {
+    "message": "Não foi possível distinguir as pistas dos seus palpites neste tabuleiro."
+  },
+  "errNoPad": {
+    "message": "Teclado numérico não encontrado. Inicie a partida primeiro."
+  },
+  "errDigit": {
+    "message": "Um número não foi registrado. Tente novamente."
+  },
+  "errFocus": {
+    "message": "Não foi possível selecionar o tabuleiro."
+  },
+  "errCursor": {
+    "message": "Não foi possível mover o cursor."
+  },
+  "errClearPatches": {
+    "message": "Não foi possível apagar os retângulos que já estavam no tabuleiro."
+  },
+  "errPatchDraw": {
+    "message": "Não foi possível desenhar o retângulo $1 de $2. Tente novamente."
+  },
+  "errNoTiling": {
+    "message": "Não foi encontrada nenhuma forma de cobrir este tabuleiro com retângulos."
+  },
+  "errPathTime": {
+    "message": "Não foi possível encontrar um caminho a tempo. O tabuleiro pode ter sido lido incorretamente."
+  },
+  "errNoPath": {
+    "message": "Não existe caminho para este tabuleiro."
+  },
+  "errClearPath": {
+    "message": "Não foi possível apagar o caminho já traçado. Desfaça-o e tente novamente."
+  },
+  "errInternalStep": {
+    "message": "Erro interno: passo do caminho não adjacente."
+  },
+  "errPathStopped": {
+    "message": "O caminho parou após $1 de $2 células. Tente novamente."
+  }
+}

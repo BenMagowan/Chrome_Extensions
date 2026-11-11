@@ -1,0 +1,167 @@
+{
+  "extName": {
+    "message": "Queens Puzzle Solver"
+  },
+  "extDescription": {
+    "message": "Löst das tägliche Queens-Rätsel von LinkedIn für dich. Setzt alle Queens mit einem Klick oder von selbst, sobald das Feld lädt."
+  },
+  "actionTitle": {
+    "message": "Queens lösen"
+  },
+  "lblOpen": {
+    "message": "Queens öffnen"
+  },
+  "stSolving": {
+    "message": "Kronen werden gesetzt…"
+  },
+  "stSolved": {
+    "message": "Gelöst · $1 Kronen gesetzt"
+  },
+  "stSolvedCleared": {
+    "message": "Gelöst · $1 Kronen gesetzt, $2 entfernt"
+  },
+  "localeTag": {
+    "message": "de"
+  },
+  "menuAria": {
+    "message": "Einstellungen und mehr"
+  },
+  "settings": {
+    "message": "Einstellungen"
+  },
+  "autoSolve": {
+    "message": "Automatisch lösen"
+  },
+  "solveTime": {
+    "message": "Lösungszeit"
+  },
+  "solveTimeAria": {
+    "message": "Lösungszeit in Sekunden, 1 bis 999"
+  },
+  "solveTimeSliderAria": {
+    "message": "Schieberegler für die Lösungszeit, 1 bis 60 Sekunden"
+  },
+  "moreSolvers": {
+    "message": "Weitere Löser"
+  },
+  "unlimitedPuzzles": {
+    "message": "Unbegrenzt Rätsel"
+  },
+  "boardPreview": {
+    "message": "Vorschau des Spielfelds"
+  },
+  "solutionPreview": {
+    "message": "Vorschau der Lösung, $1 mal $2."
+  },
+  "hintAny": {
+    "message": "Unbegrenzt Rätsel spielen, ohne Tageslimit →"
+  },
+  "hintSolved": {
+    "message": "Noch eins? Unbegrenzt Rätsel spielen →"
+  },
+  "stChecking": {
+    "message": "Suche nach einem Spielfeld…"
+  },
+  "lblChecking": {
+    "message": "Suche nach dem Rätsel…"
+  },
+  "stIdle": {
+    "message": "Kein Spielfeld gefunden"
+  },
+  "stReady": {
+    "message": "Spielfeld erkannt · $1×$2"
+  },
+  "lblSolve": {
+    "message": "Rätsel lösen"
+  },
+  "lblSolving": {
+    "message": "Wird gelöst"
+  },
+  "lblSolved": {
+    "message": "Gelöst"
+  },
+  "stDone": {
+    "message": "Bereits gelöst · $1×$2"
+  },
+  "lblNothing": {
+    "message": "Nichts zu lösen"
+  },
+  "lblTryAgain": {
+    "message": "Erneut versuchen"
+  },
+  "stStuck": {
+    "message": "Spielfeld gefunden, aber es gibt keine Lösung"
+  },
+  "stWaiting": {
+    "message": "Spielfeld gefunden · starte die Runde, um es zu lösen"
+  },
+  "lblWaiting": {
+    "message": "Warte auf die Runde"
+  },
+  "errNoFinish": {
+    "message": "Das Lösen wurde nicht abgeschlossen."
+  },
+  "errNoFrame": {
+    "message": "Kein Spielfeld hat geantwortet."
+  },
+  "errBusy": {
+    "message": "Auf diesem Spielfeld läuft bereits eine Lösung."
+  },
+  "errFailed": {
+    "message": "Lösen fehlgeschlagen: $1"
+  },
+  "errNoBoard": {
+    "message": "Spielfeld nicht gefunden oder lädt noch."
+  },
+  "errNoSolution": {
+    "message": "Für dieses Spielfeld gibt es keine Lösung."
+  },
+  "errUnsolved": {
+    "message": "Das Spielfeld ist noch nicht gelöst. Versuch es noch einmal."
+  },
+  "errClick": {
+    "message": "Ein Klick wurde nicht übernommen. Versuch es noch einmal."
+  },
+  "errColours": {
+    "message": "$1 Farben auf einem $2×$3-Spielfeld gelesen."
+  },
+  "errCluesGuesses": {
+    "message": "Vorgaben und eigene Einträge ließen sich auf diesem Spielfeld nicht unterscheiden."
+  },
+  "errNoPad": {
+    "message": "Ziffernfeld nicht gefunden. Starte zuerst die Runde."
+  },
+  "errDigit": {
+    "message": "Eine Ziffer wurde nicht übernommen. Versuch es noch einmal."
+  },
+  "errFocus": {
+    "message": "Das Spielfeld konnte nicht ausgewählt werden."
+  },
+  "errCursor": {
+    "message": "Der Cursor ließ sich nicht bewegen."
+  },
+  "errClearPatches": {
+    "message": "Die bereits gezeichneten Rechtecke ließen sich nicht entfernen."
+  },
+  "errPatchDraw": {
+    "message": "Rechteck $1 von $2 ließ sich nicht zeichnen. Versuch es noch einmal."
+  },
+  "errNoTiling": {
+    "message": "Für dieses Spielfeld wurde keine Aufteilung in Rechtecke gefunden."
+  },
+  "errPathTime": {
+    "message": "Kein Pfad rechtzeitig gefunden. Das Spielfeld wurde möglicherweise falsch gelesen."
+  },
+  "errNoPath": {
+    "message": "Für dieses Spielfeld gibt es keinen Pfad."
+  },
+  "errClearPath": {
+    "message": "Der bereits gezeichnete Pfad ließ sich nicht entfernen. Mach ihn rückgängig und versuch es noch einmal."
+  },
+  "errInternalStep": {
+    "message": "Interner Fehler: nicht benachbarter Pfadschritt."
+  },
+  "errPathStopped": {
+    "message": "Der Pfad endete nach $1 von $2 Feldern. Versuch es noch einmal."
+  }
+}

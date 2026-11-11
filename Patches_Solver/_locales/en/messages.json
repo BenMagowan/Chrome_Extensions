@@ -1,0 +1,164 @@
+{
+  "extName": {
+    "message": "Patches Puzzle Solver"
+  },
+  "extDescription": {
+    "message": "Solves the daily LinkedIn Patches puzzle for you. Draws every rectangle in one click, or on its own when the board loads."
+  },
+  "actionTitle": {
+    "message": "Solve Patches"
+  },
+  "lblOpen": {
+    "message": "Open Patches game"
+  },
+  "stSolving": {
+    "message": "Placing patches…"
+  },
+  "stSolved": {
+    "message": "Solved · $1 patches placed"
+  },
+  "localeTag": {
+    "message": "en"
+  },
+  "menuAria": {
+    "message": "Settings and more"
+  },
+  "settings": {
+    "message": "Settings"
+  },
+  "autoSolve": {
+    "message": "Auto-solve"
+  },
+  "solveTime": {
+    "message": "Solve time"
+  },
+  "solveTimeAria": {
+    "message": "Solve time in seconds, 1 to 999"
+  },
+  "solveTimeSliderAria": {
+    "message": "Solve time slider, 1 to 60 seconds"
+  },
+  "moreSolvers": {
+    "message": "More solvers"
+  },
+  "unlimitedPuzzles": {
+    "message": "Unlimited puzzles"
+  },
+  "boardPreview": {
+    "message": "Board preview"
+  },
+  "solutionPreview": {
+    "message": "Solution preview, $1 by $2."
+  },
+  "hintAny": {
+    "message": "Play unlimited puzzles, no daily limit →"
+  },
+  "hintSolved": {
+    "message": "Want another? Play unlimited puzzles →"
+  },
+  "stChecking": {
+    "message": "Looking for a board…"
+  },
+  "lblChecking": {
+    "message": "Looking for puzzle…"
+  },
+  "stIdle": {
+    "message": "No board found"
+  },
+  "stReady": {
+    "message": "Board detected · $1×$2"
+  },
+  "lblSolve": {
+    "message": "Solve puzzle"
+  },
+  "lblSolving": {
+    "message": "Solving"
+  },
+  "lblSolved": {
+    "message": "Solved"
+  },
+  "stDone": {
+    "message": "Already solved · $1×$2"
+  },
+  "lblNothing": {
+    "message": "Nothing to solve"
+  },
+  "lblTryAgain": {
+    "message": "Try again"
+  },
+  "stStuck": {
+    "message": "Board found, but no solution exists"
+  },
+  "stWaiting": {
+    "message": "Board found · start the round to solve it"
+  },
+  "lblWaiting": {
+    "message": "Waiting for the round"
+  },
+  "errNoFinish": {
+    "message": "The solve didn't finish."
+  },
+  "errNoFrame": {
+    "message": "No board frame responded."
+  },
+  "errBusy": {
+    "message": "A solve is already running on this board."
+  },
+  "errFailed": {
+    "message": "Solve failed: $1"
+  },
+  "errNoBoard": {
+    "message": "Board not found or still loading."
+  },
+  "errNoSolution": {
+    "message": "No solution exists for this board."
+  },
+  "errUnsolved": {
+    "message": "The board still isn't solved. Try again."
+  },
+  "errClick": {
+    "message": "A click didn't register. Try again."
+  },
+  "errColours": {
+    "message": "Read $1 colours on a $2×$3 board."
+  },
+  "errCluesGuesses": {
+    "message": "Couldn't tell clues from guesses on this board."
+  },
+  "errNoPad": {
+    "message": "Number pad not found. Start the round first."
+  },
+  "errDigit": {
+    "message": "A digit didn't register. Try again."
+  },
+  "errFocus": {
+    "message": "Could not focus the gameboard."
+  },
+  "errCursor": {
+    "message": "Cursor navigation failed."
+  },
+  "errClearPatches": {
+    "message": "Couldn't clear the patches already on the board."
+  },
+  "errPatchDraw": {
+    "message": "Patch $1 of $2 wouldn't draw. Try again."
+  },
+  "errNoTiling": {
+    "message": "No rectangle tiling found for this board."
+  },
+  "errPathTime": {
+    "message": "Couldn't find a path in time. The board may have been misread."
+  },
+  "errNoPath": {
+    "message": "No path exists for this board."
+  },
+  "errClearPath": {
+    "message": "Couldn't clear the path already drawn. Undo it and try again."
+  },
+  "errInternalStep": {
+    "message": "Internal: non-adjacent path step."
+  },
+  "errPathStopped": {
+    "message": "The path stopped after $1 of $2 cells. Try again."
+  }
+}

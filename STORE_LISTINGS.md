@@ -13,6 +13,13 @@ since that sentence is what search snippets and assistants quote.
 When the site gets its real name and domain, update the "More puzzles" paragraph in
 all five.
 
+This file is the English. The Spanish, Portuguese, French and German listings are in
+`store_listings/`, written by `scripts/build_locales.py`, which also holds their
+text: change the English here, then make the same change to each language in that
+script and run it. The translated summaries ship inside each package (`_locales`);
+each translated description is pasted into the dashboard after picking that language
+in the Store listing page's language menu.
+
 ## Queens
 
 Summary (123 characters):
@@ -33,7 +40,7 @@ How to use it
 
 What it does
 • Solves every daily Queens puzzle, whatever the board size.
-• If you've already started, it clears your wrong queens and X marks and finishes from there.
+• If you've already started, it clears your wrong queens and finishes from there.
 • Shows a live preview of the board, with its colour regions and any queens already placed.
 • You choose how long the solve takes, from 1 to 999 seconds. The default is 5.
 • Tells you when today's board is already solved.

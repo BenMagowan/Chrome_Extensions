@@ -1,17 +1,18 @@
 {
   "manifest_version": 3,
+  "default_locale": "en",
   "name": "Tango Puzzle Solver",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "icons": {
     "16": "images/icon-16.png",
     "32": "images/icon-32.png",
     "48": "images/icon-48.png",
     "128": "images/icon-128.png"
   },
-  "description": "Solves the daily LinkedIn Tango puzzle for you. Fills in every sun and moon in one click, or on its own when the board loads.",
+  "description": "__MSG_extDescription__",
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Solve Tango"
+    "default_title": "__MSG_actionTitle__"
   },
   "background": {
     "service_worker": "background.js"

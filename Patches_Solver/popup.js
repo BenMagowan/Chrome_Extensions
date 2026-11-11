@@ -44,8 +44,8 @@ const GRACE_MS = 1600;
 
 // Every hint is a link to the puzzle site (site.js); only the wording changes,
 // to a "want another?" once there's nothing left to solve here.
-const HINT_ANY = "Play unlimited puzzles, no daily limit →";
-const HINT_SOLVED = "Want another? Play unlimited puzzles →";
+const HINT_ANY = t("hintAny");
+const HINT_SOLVED = t("hintSolved");
 
 /**
  * Every UI state, in one table. `status`/`hint` may be functions of the payload.
@@ -53,27 +53,27 @@ const HINT_SOLVED = "Want another? Play unlimited puzzles →";
  */
 const STATES = {
   checking: {
-    status: "Looking for a board…",
-    label: "Looking for puzzle…",
+    status: t("stChecking"),
+    label: t("lblChecking"),
     hint: HINT_ANY,
     act: null,
   },
   idle: {
-    status: "No board found",
-    label: "Open Patches game",
+    status: t("stIdle"),
+    label: t("lblOpen"),
     hint: HINT_ANY,
     act: "open",
   },
   ready: {
     // Patches boards aren't always square, so both dimensions are reported.
-    status: (d) => `Board detected · ${d.rows}×${d.cols}`,
-    label: "Solve puzzle",
+    status: (d) => t("stReady", d.rows, d.cols),
+    label: t("lblSolve"),
     hint: HINT_ANY,
     act: "solve",
   },
   solving: {
-    status: "Placing patches…",
-    label: "Solving",
+    status: t("stSolving"),
+    label: t("lblSolving"),
     hint: HINT_ANY,
     act: null,
   },
@@ -81,18 +81,18 @@ const STATES = {
     // The elapsed time is appended here too (not just on the visible chip) so the
     // live region reads it aloud.
     status: (d) => {
-      const base = `Solved · ${d.placed} patches placed`;
+      const base = t("stSolved", d.placed);
       return d.ms != null ? `${base} · ${fmtTime(d.ms)}` : base;
     },
-    label: "Solved",
+    label: t("lblSolved"),
     hint: HINT_SOLVED,
     act: null,
   },
   // The board was already tiled when we looked — distinct from `solved`, which
   // means we did it. Nothing to claim credit for, so no entrance flourish either.
   done: {
-    status: (d) => `Already solved · ${d.rows}×${d.cols}`,
-    label: "Nothing to solve",
+    status: (d) => t("stDone", d.rows, d.cols),
+    label: t("lblNothing"),
     hint: HINT_SOLVED,
     act: null,
   },
@@ -100,14 +100,14 @@ const STATES = {
   // is emphatically not "no board found", so it gets its own state rather than
   // being flattened into idle — the user should know the board WAS seen.
   stuck: {
-    status: "Board found, but no solution exists",
-    label: "Nothing to solve",
+    status: t("stStuck"),
+    label: t("lblNothing"),
     hint: HINT_ANY,
     act: null,
   },
   error: {
     status: (d) => d.message,
-    label: "Try again",
+    label: t("lblTryAgain"),
     hint: HINT_ANY,
     act: "solve",
   },
@@ -233,7 +233,7 @@ function renderBoard(cells, rows, cols) {
 
   // A real board is worth describing, unlike the placeholder it replaces.
   boardEl.removeAttribute("aria-hidden");
-  boardEl.setAttribute("aria-label", `Solution preview, ${rows} by ${cols}.`);
+  boardEl.setAttribute("aria-label", t("solutionPreview", rows, cols));
 }
 
 /* ---------------------------------------------------------------- brand icon */
@@ -490,7 +490,7 @@ let timerTick = null;
 let elapsedMs = 0;
 
 function fmtTime(ms) {
-  return (Math.max(0, ms) / 1000).toFixed(1) + "s";
+  return fmtSeconds(ms); // i18n.js: the decimal mark follows the popup's language
 }
 
 function startTimer() {
@@ -648,7 +648,7 @@ function showAutoSolve(auto, boardSolved, data) {
   // A solve we watched fail: say why. Dropping back to "Solve puzzle" without a
   // word would read as though nothing had happened.
   if (auto.state === "failed" && wasWatching) {
-    setState("error", { message: auto.result.error || "The solve didn't finish." });
+    setState("error", { message: tError(auto.result.error) || t("errNoFinish") });
     stopPolling();
     return true;
   }
@@ -765,7 +765,7 @@ async function runSolve() {
   // not found", which would bury the real reason.
   const err = results.find((r) => r.board && r.error) || results.find((r) => r.error);
   setState("error", {
-    message: err ? err.error : "No board frame responded.",
+    message: err ? tError(err.error) : t("errNoFrame"),
   });
   // Deliberately no polling restart: the button stays live as "Try again", so a
   // retry is one click away and the error message survives long enough to read.
