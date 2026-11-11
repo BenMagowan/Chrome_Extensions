@@ -1,0 +1,164 @@
+{
+  "extName": {
+    "message": "Tango Puzzle Solver"
+  },
+  "extDescription": {
+    "message": "Résout pour vous le puzzle Tango quotidien de LinkedIn. Place chaque soleil et lune en un clic, ou tout seul au chargement."
+  },
+  "actionTitle": {
+    "message": "Résoudre Tango"
+  },
+  "lblOpen": {
+    "message": "Ouvrir Tango"
+  },
+  "stSolving": {
+    "message": "Placement des symboles…"
+  },
+  "stSolved": {
+    "message": "Résolu · $1 symboles placés"
+  },
+  "localeTag": {
+    "message": "fr"
+  },
+  "menuAria": {
+    "message": "Paramètres et plus"
+  },
+  "settings": {
+    "message": "Paramètres"
+  },
+  "autoSolve": {
+    "message": "Résolution automatique"
+  },
+  "solveTime": {
+    "message": "Durée de résolution"
+  },
+  "solveTimeAria": {
+    "message": "Durée de résolution en secondes, de 1 à 999"
+  },
+  "solveTimeSliderAria": {
+    "message": "Curseur de durée de résolution, de 1 à 60 secondes"
+  },
+  "moreSolvers": {
+    "message": "Autres solveurs"
+  },
+  "unlimitedPuzzles": {
+    "message": "Puzzles illimités"
+  },
+  "boardPreview": {
+    "message": "Aperçu de la grille"
+  },
+  "solutionPreview": {
+    "message": "Aperçu de la solution, $1 sur $2."
+  },
+  "hintAny": {
+    "message": "Jouez à des puzzles illimités, sans limite quotidienne →"
+  },
+  "hintSolved": {
+    "message": "Envie d'un autre ? Jouez à des puzzles illimités →"
+  },
+  "stChecking": {
+    "message": "Recherche d'une grille…"
+  },
+  "lblChecking": {
+    "message": "Recherche du puzzle…"
+  },
+  "stIdle": {
+    "message": "Aucune grille trouvée"
+  },
+  "stReady": {
+    "message": "Grille détectée · $1×$2"
+  },
+  "lblSolve": {
+    "message": "Résoudre le puzzle"
+  },
+  "lblSolving": {
+    "message": "Résolution"
+  },
+  "lblSolved": {
+    "message": "Résolu"
+  },
+  "stDone": {
+    "message": "Déjà résolu · $1×$2"
+  },
+  "lblNothing": {
+    "message": "Rien à résoudre"
+  },
+  "lblTryAgain": {
+    "message": "Réessayer"
+  },
+  "stStuck": {
+    "message": "Grille trouvée, mais aucune solution n'existe"
+  },
+  "stWaiting": {
+    "message": "Grille trouvée · lancez la partie pour la résoudre"
+  },
+  "lblWaiting": {
+    "message": "En attente de la partie"
+  },
+  "errNoFinish": {
+    "message": "La résolution ne s'est pas terminée."
+  },
+  "errNoFrame": {
+    "message": "Aucune grille n'a répondu."
+  },
+  "errBusy": {
+    "message": "Une résolution est déjà en cours sur cette grille."
+  },
+  "errFailed": {
+    "message": "La résolution a échoué : $1"
+  },
+  "errNoBoard": {
+    "message": "Grille introuvable ou en cours de chargement."
+  },
+  "errNoSolution": {
+    "message": "Cette grille n'a pas de solution."
+  },
+  "errUnsolved": {
+    "message": "La grille n'est toujours pas résolue. Réessayez."
+  },
+  "errClick": {
+    "message": "Un clic n'a pas été pris en compte. Réessayez."
+  },
+  "errColours": {
+    "message": "$1 couleurs lues sur une grille $2×$3."
+  },
+  "errCluesGuesses": {
+    "message": "Impossible de distinguer les indices de vos essais sur cette grille."
+  },
+  "errNoPad": {
+    "message": "Pavé numérique introuvable. Lancez d'abord la partie."
+  },
+  "errDigit": {
+    "message": "Un chiffre n'a pas été pris en compte. Réessayez."
+  },
+  "errFocus": {
+    "message": "Impossible de sélectionner la grille."
+  },
+  "errCursor": {
+    "message": "Le déplacement du curseur a échoué."
+  },
+  "errClearPatches": {
+    "message": "Impossible d'effacer les rectangles déjà présents sur la grille."
+  },
+  "errPatchDraw": {
+    "message": "Le rectangle $1 sur $2 n'a pas pu être dessiné. Réessayez."
+  },
+  "errNoTiling": {
+    "message": "Aucun pavage en rectangles trouvé pour cette grille."
+  },
+  "errPathTime": {
+    "message": "Aucun chemin trouvé à temps. La grille a peut-être été mal lue."
+  },
+  "errNoPath": {
+    "message": "Aucun chemin n'existe pour cette grille."
+  },
+  "errClearPath": {
+    "message": "Impossible d'effacer le chemin déjà tracé. Annulez-le et réessayez."
+  },
+  "errInternalStep": {
+    "message": "Erreur interne : étape du chemin non adjacente."
+  },
+  "errPathStopped": {
+    "message": "Le chemin s'est arrêté après $1 cases sur $2. Réessayez."
+  }
+}

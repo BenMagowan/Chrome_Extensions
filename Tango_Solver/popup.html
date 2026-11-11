@@ -32,6 +32,7 @@
           class="cog"
           type="button"
           aria-label="Settings and more"
+          data-i18n-aria-label="menuAria"
           aria-haspopup="menu"
           aria-expanded="false"
           aria-controls="menu"
@@ -60,10 +61,11 @@
           </svg>
         </button>
 
-        <div id="menu" class="menu" role="menu" aria-label="Settings and more" hidden>
+        <div id="menu" class="menu" role="menu" aria-label="Settings and more"
+          data-i18n-aria-label="menuAria" hidden>
           <!-- role="presentation": a bare <p> isn't a valid child of role="menu".
                It still names the group below via aria-labelledby. -->
-          <p class="menu__label" id="settings-label" role="presentation">
+          <p class="menu__label" id="settings-label" role="presentation" data-i18n="settings">
             Settings
           </p>
           <div role="group" aria-labelledby="settings-label">
@@ -79,7 +81,7 @@
               role="menuitemcheckbox"
               aria-checked="true"
             >
-              <span class="menu__item-text">Auto-solve</span>
+              <span class="menu__item-text" data-i18n="autoSolve">Auto-solve</span>
               <span class="switch" aria-hidden="true">
                 <span class="switch__knob"></span>
               </span>
@@ -93,7 +95,7 @@
                  carries a menu role, and both are exempt from the menu's own
                  arrow-key roving while focused. -->
             <div class="menu__field">
-              <label class="menu__field-label" for="target-time">Solve time</label>
+              <label class="menu__field-label" for="target-time" data-i18n="solveTime">Solve time</label>
               <span class="menu__field-control">
                 <input
                   id="target-time"
@@ -104,6 +106,7 @@
                   maxlength="3"
                   value="5"
                   aria-label="Solve time in seconds, 1 to 999"
+                  data-i18n-aria-label="solveTimeAria"
                 />
                 <span class="menu__field-unit" aria-hidden="true">s</span>
               </span>
@@ -117,13 +120,14 @@
               step="1"
               value="5"
               aria-label="Solve time slider, 1 to 60 seconds"
+              data-i18n-aria-label="solveTimeSliderAria"
             />
           </div>
 
           <!-- role="separator" is a valid child of role="menu", unlike a bare <hr>. -->
           <div class="menu__sep" role="separator"></div>
 
-          <p class="menu__label" id="more-solvers-label" role="presentation">
+          <p class="menu__label" id="more-solvers-label" role="presentation" data-i18n="moreSolvers">
             More solvers
           </p>
           <!-- role="group" keeps the heading associated with the links below it. -->
@@ -174,7 +178,7 @@
             rel="noopener noreferrer"
           >
             <img src="images/crown.png" alt="" class="menu__icon" />
-            Unlimited puzzles
+            <span data-i18n="unlimitedPuzzles">Unlimited puzzles</span>
           </a>
         </div>
       </div>
@@ -186,17 +190,17 @@
            the live region keeps announcing state changes to screen readers. -->
       <p class="status" id="status" role="status" aria-live="polite">
         <span class="status__dot" aria-hidden="true"></span>
-        <span class="status__text" id="status-text">Looking for a board…</span>
+        <span class="status__text" id="status-text" data-i18n="stChecking">Looking for a board…</span>
       </p>
 
       <!-- Board preview: the grid with the solution's Suns and Moons on it.
            Filled in by popup.js from the detect snapshot and shown instead of the
            status line whenever there's a board. -->
-      <div id="board" class="board" role="img" aria-label="Board preview"></div>
+      <div id="board" class="board" role="img" aria-label="Board preview" data-i18n-aria-label="boardPreview"></div>
 
       <button id="action" class="action" type="button" disabled>
         <span class="action__spinner" aria-hidden="true"></span>
-        <span class="action__label" id="action-label">Solve puzzle</span>
+        <span class="action__label" id="action-label" data-i18n="lblSolve">Solve puzzle</span>
       </button>
 
       <!-- Completion timer: counts up live while symbols go down, then freezes at
@@ -213,10 +217,11 @@
         <span id="timer-value">0.0s</span>
       </p>
 
-      <p class="hint" id="hint"><a class="hint__link" id="hint-link" href="https://puzzle-site-lyart.vercel.app/" target="_blank" rel="noopener noreferrer">Play unlimited puzzles, no daily limit →</a></p>
+      <p class="hint" id="hint"><a class="hint__link" id="hint-link" data-i18n="hintAny" href="https://puzzle-site-lyart.vercel.app/" target="_blank" rel="noopener noreferrer">Play unlimited puzzles, no daily limit →</a></p>
     </main>
 
     <script src="site.js"></script>
+    <script src="i18n.js"></script>
     <script src="injected.js"></script>
     <script src="popup.js"></script>
   </body>

@@ -1,17 +1,18 @@
 {
   "manifest_version": 3,
+  "default_locale": "en",
   "name": "Queens Puzzle Solver",
-  "version": "1.6.3",
+  "version": "1.6.4",
   "icons": {
     "16": "images/icon-16.png",
     "32": "images/icon-32.png",
     "48": "images/icon-48.png",
     "128": "images/icon-128.png"
   },
-  "description": "Solves the daily LinkedIn Queens puzzle for you. Places every queen in one click, or on its own as soon as the board loads.",
+  "description": "__MSG_extDescription__",
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Solve Queens"
+    "default_title": "__MSG_actionTitle__"
   },
   "background": {
     "service_worker": "background.js"

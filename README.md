@@ -45,6 +45,29 @@ game-specific details and verified DOM selectors):
   and a cog menu linking the other four solvers.
   Queens additionally draws a live board preview in place of its status line.
 
+## Languages
+
+The popups, toolbar titles and store summaries are in English, Spanish, Portuguese,
+French and German; Chrome picks one from the browser's language and uses English for
+any other. All of the text lives in `scripts/build_locales.py`. Run it after changing
+a string:
+
+```
+python3 scripts/build_locales.py
+```
+
+It writes each solver's `_locales/<locale>/messages.json` and `i18n.js` (the popup's
+`t()` helper, copied from `scripts/i18n.js`) and the translated store descriptions in
+`store_listings/`. In `popup.html`, `data-i18n="key"` translates an element's text and
+`data-i18n-aria-label="key"` its aria-label; `popup.js` calls `t("key", …)`. The
+engines run in the page, where `chrome.i18n` doesn't exist, so they report errors in
+English and the popup translates them with `tError()`. The script refuses to build if
+an engine reports an error it has no translation for, if a language is missing a
+string, or if a store summary is over 132 characters.
+
+The solvers themselves read the board without relying on LinkedIn's wording, so they
+work whatever language LinkedIn is shown in (see each solver's README).
+
 ## Install (any solver)
 
 1. Open `chrome://extensions` and enable **Developer mode**.
