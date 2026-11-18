@@ -1,0 +1,133 @@
+<!--
+  Popup UI for Puzzle Solver.
+  The <head>/<body> wrapper is real here — this is a normal extension popup
+  document. Logic lives in popup.js (no inline scripts, per MV3 CSP).
+
+  Two attributes drive what the user sees, both set by popup.js:
+    <html data-game>   the game in the active tab ("" off a game page). styles.css
+                       scopes each game's colours and board preview to it.
+    <body data-state>  the popup's state; see the STATES table in popup.js.
+  The game rows (strip, list, settings) are built by popup.js from GAMES in games.js.
+-->
+<!DOCTYPE html>
+<html lang="en" data-game="">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="base.css" />
+    <link rel="stylesheet" href="games/games.css" />
+    <link rel="stylesheet" href="popup.css" />
+    <link rel="stylesheet" href="games/looks.css" />
+    <title>Puzzle Solver</title>
+  </head>
+  <body data-state="checking">
+    <header class="brand">
+      <img id="brand-icon" class="brand__icon" src="" alt="" width="32" height="32" />
+
+      <span class="brand__text">
+        <h1 class="brand__title">Puzzle Solver</h1>
+        <p class="brand__sub">LinkedIn Games</p>
+      </span>
+
+      <div class="menu-wrap">
+        <button
+          id="menu-btn"
+          class="cog"
+          type="button"
+          aria-label="Settings"
+          data-i18n-aria-label="settings"
+          aria-haspopup="dialog"
+          aria-expanded="false"
+          aria-controls="menu"
+        >
+          <!-- 8 identical teeth rotated about (12,12) and a ring centred there. -->
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <g class="cog__gear">
+              <rect x="10.4" y="1.9" width="3.2" height="4.6" rx="1.1" />
+              <rect x="10.4" y="1.9" width="3.2" height="4.6" rx="1.1" transform="rotate(45 12 12)" />
+              <rect x="10.4" y="1.9" width="3.2" height="4.6" rx="1.1" transform="rotate(90 12 12)" />
+              <rect x="10.4" y="1.9" width="3.2" height="4.6" rx="1.1" transform="rotate(135 12 12)" />
+              <rect x="10.4" y="1.9" width="3.2" height="4.6" rx="1.1" transform="rotate(180 12 12)" />
+              <rect x="10.4" y="1.9" width="3.2" height="4.6" rx="1.1" transform="rotate(225 12 12)" />
+              <rect x="10.4" y="1.9" width="3.2" height="4.6" rx="1.1" transform="rotate(270 12 12)" />
+              <rect x="10.4" y="1.9" width="3.2" height="4.6" rx="1.1" transform="rotate(315 12 12)" />
+              <path
+                d="M12 5a7 7 0 1 0 0 14 7 7 0 0 0 0-14zm0 4.4a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 0 1 0-5.2z"
+              />
+            </g>
+          </svg>
+        </button>
+
+        <!-- Settings: one row per game, so any game's Auto-solve and Solve time is
+             one click away from wherever the popup is opened. A dialog, not a
+             menu: it holds form controls, and Tab moves through them in order. -->
+        <div id="menu" class="menu settings" role="dialog" tabindex="-1" aria-label="Settings"
+          data-i18n-aria-label="settings" hidden>
+          <div class="settings__head" aria-hidden="true">
+            <span data-i18n="colGame">Game</span>
+            <span data-i18n="colTime">Time</span>
+            <span data-i18n="colAuto">Auto</span>
+          </div>
+          <div id="settings-rows" class="settings__rows"></div>
+          <div class="menu__sep" role="separator"></div>
+          <a
+            id="site-link"
+            class="menu__item"
+            href="https://puzzle-site-lyart.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span data-i18n="unlimitedPuzzles">Unlimited puzzles</span>
+            <span class="badge" data-i18n="badgeNew" data-site-badge hidden>New</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- On a game page: every game, the active one marked. The others open their
+         game on LinkedIn. -->
+    <nav id="strip" class="strip" aria-label="Games" data-i18n-aria-label="gamesNav"></nav>
+
+    <main class="panel">
+      <!-- Stays in the DOM in every state. Once a board is on screen the preview
+           below takes its place visually, but this is only *visually* hidden, so
+           the live region keeps announcing state changes to screen readers. -->
+      <p class="status" id="status" role="status" aria-live="polite">
+        <span class="status__dot" aria-hidden="true"></span>
+        <span class="status__text" id="status-text" data-i18n="stChecking">Looking for a board…</span>
+      </p>
+
+      <div class="board-card">
+        <div id="board" class="board" role="img" aria-label="Board preview" data-i18n-aria-label="boardPreview"></div>
+      </div>
+
+      <button id="action" class="action" type="button" disabled>
+        <span class="action__spinner" aria-hidden="true"></span>
+        <span class="action__label" id="action-label" data-i18n="lblSolve">Solve puzzle</span>
+      </button>
+
+      <!-- Off a game page the board and button give way to this list. -->
+      <ul id="list" class="list" aria-label="Open a game" data-i18n-aria-label="openAGame"></ul>
+
+      <p class="hint" id="hint"><a class="hint__link" id="hint-link" href="https://puzzle-site-lyart.vercel.app/" target="_blank" rel="noopener noreferrer"><span class="badge" data-i18n="badgeNew" data-site-badge hidden>New</span><span id="hint-text" data-i18n="hintAny">Play unlimited puzzles</span></a></p>
+    </main>
+
+    <script src="games.js"></script>
+    <script src="site.js"></script>
+    <script src="i18n.js"></script>
+    <script src="games/zip/injected.js"></script>
+    <script src="games/queens/injected.js"></script>
+    <script src="games/tango/injected.js"></script>
+    <script src="games/sudoku/injected.js"></script>
+    <script src="games/patches/injected.js"></script>
+    <script src="games/sumbreak/injected.js"></script>
+    <script src="previews.js"></script>
+    <script src="games/zip/preview.js"></script>
+    <script src="games/queens/preview.js"></script>
+    <script src="games/tango/preview.js"></script>
+    <script src="games/sudoku/preview.js"></script>
+    <script src="games/patches/preview.js"></script>
+    <script src="games/sumbreak/preview.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,674 @@
+/*
+ * Popup styling for the Zip Solver. Adapts to light/dark.
+ *
+ * Shared across all five LinkedIn Games solvers. Everything between BEGIN TOKENS
+ * and END TOKENS is byte-identical in all five; the game block after it is the
+ * only per-solver palette. The tokens are the puzzle site's (globals.css), except
+ * --brand, which stays LinkedIn blue: the solvers are one family, so navigation
+ * and focus look the same throughout. --accent is the matching game's accent on
+ * the site and is spent on one thing, the button that actually solves, so the
+ * primary action is unmistakable. Success/danger stay conventional green/red.
+ *
+ * Every visual difference between UI states hangs off [data-state] on <body>.
+ * popup.js sets that attribute and the copy; it never touches styles.
+ */
+
+/* BEGIN TOKENS */
+
+/* Fraunces (SIL OFL 1.1, see fonts/OFL.txt), bundled so the title never depends
+   on the network. Latin subset, bold only: it is used for the title alone. */
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url("fonts/fraunces-bold.woff2") format("woff2");
+}
+
+:root {
+  color-scheme: light dark;
+
+  /* Shared family colour: LinkedIn blue, not the site's. */
+  --brand: #0072b1;
+  /* Fill behind white text. Stays #0072b1 in dark too: white on the dark
+     theme's #2b9fdb is under 4.5:1. */
+  --brand-fill: #0072b1;
+
+  /* Semantic */
+  --ok: #1a9e63;
+  --err: #d1372f;
+
+  /* The solved state: the crown's gold (the Crowns accent on the site), but as a
+     pale tint with a gold rim rather than a solid fill, so a finished board never
+     looks like a button waiting to be pressed. Light ink on the light tint, gold
+     ink on the dark one. */
+  --gold: #ffbb00;
+  --solved-fill: color-mix(in srgb, var(--gold) 22%, var(--surface));
+  --solved-ink: #2a2000;
+  --solved-line: #b08100;
+  /* NEW badges: the light theme's red behind white text, in both themes, since
+     white on the dark theme's lighter red is under 4.5:1. */
+  --new-fill: #d1372f;
+
+  /* Surfaces */
+  --surface: #ffffff;
+  --surface-sunk: #f3f7fa;
+  --line: #dde6ee;
+  --text: #10243a;
+  --text-muted: #5c748c;
+
+  --ring: color-mix(in srgb, var(--brand) 45%, transparent);
+  --shadow: 0 1px 2px rgb(16 36 58 / 0.06), 0 4px 12px rgb(16 36 58 / 0.05);
+  --shadow-pop: 0 6px 20px rgb(16 36 58 / 0.14), 0 2px 6px rgb(16 36 58 / 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --brand: #2b9fdb;
+    --ok: #3ecf8e;
+    --err: #ff7a70;
+
+    --solved-fill: color-mix(in srgb, var(--gold) 16%, var(--surface));
+    --solved-ink: #ffbb00;
+    --solved-line: #937311;
+
+    --surface: #0f1b26;
+    --surface-sunk: #0a141d;
+    --line: #21323f;
+    --text: #e6edf3;
+    --text-muted: #8ea3b5;
+
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 12px rgb(0 0 0 / 0.25);
+    --shadow-pop: 0 6px 20px rgb(0 0 0 / 0.45), 0 2px 6px rgb(0 0 0 / 0.3);
+  }
+}
+
+/* END TOKENS */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  width: 300px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* The site's page: a sunk backdrop with the content on cards. */
+  background: var(--surface-sunk);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- brand header ---------- */
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 16px;
+  background: var(--surface-sunk);
+  border-bottom: 1px solid var(--line);
+}
+
+/* The extension's own icon, so the popup matches the toolbar button exactly.
+   The art is already a rounded tile, so it needs no backdrop of its own. */
+.brand__icon {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.brand__text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  /* Takes the slack so the cog is pushed to the far right. */
+  flex: 1;
+}
+
+/* The one serif in the popup, as on the site's headings. */
+.brand__title {
+  margin: 0;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.005em;
+}
+
+.brand__sub {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ---------- panel ---------- */
+
+.panel {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ---------- status ---------- */
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-sunk);
+  font-size: 12.5px;
+  font-weight: 550;
+  min-height: 34px;
+}
+
+.status__dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: background 0.2s ease;
+}
+
+.status__text {
+  min-width: 0;
+}
+
+/* Dot colour + halo. Only the error states style these: everywhere else the
+   board stands in for the status line and this whole row is visually hidden. */
+body:is([data-state="error"], [data-state="stuck"]) .status__dot {
+  background: var(--err);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--err) 20%, transparent);
+}
+
+body:is([data-state="error"], [data-state="stuck"]) .status {
+  border-color: color-mix(in srgb, var(--err) 35%, var(--line));
+}
+
+body:is([data-state="error"], [data-state="stuck"]) .status__text {
+  color: var(--err);
+}
+
+/* The empty board breathing while we look for a real one. */
+@keyframes board-breathe {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* A quiet nod to the win: the icon lifts once when WE solved the board.
+   Deliberately not applied to `done` — that win wasn't ours to celebrate. */
+body[data-state="solved"] .brand__icon {
+  animation: icon-pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+@keyframes icon-pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.18) translateY(-1.5px);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ---------- action button ---------- */
+
+/* A full-width pill in every state, like the site's buttons. */
+.action {
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0 14px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  color: var(--on-accent);
+  background: var(--accent);
+  box-shadow: var(--shadow);
+  transition: background 0.15s ease, transform 0.08s ease, box-shadow 0.15s ease,
+    color 0.15s ease;
+}
+
+.action:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.action:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.action:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.action:disabled {
+  cursor: default;
+  box-shadow: none;
+}
+
+/* No board yet: the button navigates rather than solves, so it drops to brand
+   blue — the accent stays reserved for actually solving. --brand-fill, not
+   --brand: the white label needs the light theme's blue in both themes. */
+body[data-state="idle"] .action {
+  background: var(--brand-fill);
+  color: #fff;
+}
+
+body[data-state="idle"] .action:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--brand-fill) 85%, #000);
+}
+
+body[data-state="checking"] .action:disabled,
+body[data-state="stuck"] .action:disabled {
+  background: var(--surface-sunk);
+  border-color: var(--line);
+  color: var(--text-muted);
+}
+
+/* Fading the real accent pairing (rather than mixing the background toward the
+   surface) keeps the label legible whether --on-accent is dark or white. */
+body[data-state="solving"] .action:disabled {
+  opacity: 0.6;
+}
+
+/* Gold means solved, whether we just solved the board or it was already
+   finished when we looked (the label tells the two apart). A tint with a rim,
+   not a solid fill: it is an end state, not something to press. */
+body:is([data-state="solved"], [data-state="done"]) .action:disabled {
+  background: var(--solved-fill);
+  border-color: var(--solved-line);
+  color: var(--solved-ink);
+}
+
+/* ---------- spinner (solving only) ---------- */
+
+.action__spinner {
+  display: none;
+  width: 13px;
+  height: 13px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--on-accent) 25%, transparent);
+  border-top-color: var(--on-accent);
+  animation: spin 0.7s linear infinite;
+}
+
+body[data-state="solving"] .action__spinner {
+  display: block;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- hint ---------- */
+
+.hint {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  text-align: center;
+  text-wrap: balance;
+  min-height: 17px;
+}
+
+/* The hint is a link to the puzzle site in every state. */
+.hint__link {
+  color: var(--brand);
+  font-weight: 550;
+  text-decoration: none;
+  border-radius: 3px;
+}
+
+.hint__link:hover {
+  text-decoration: underline;
+}
+
+.hint__link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* A small red "NEW" pill flagging the puzzle site: in front of the hint link's
+   text, and after the menu link's. Inline-block, so the link's hover underline
+   skips it. */
+.badge {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--new-fill);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+}
+
+/* Shipped hidden; popup.js shows it until the puzzle site has been opened from
+   this popup once. Needed because display above beats the [hidden] attribute. */
+.badge[hidden] {
+  display: none;
+}
+
+/* The menu row's own gap spaces it there. */
+.menu__item .badge {
+  margin-right: 0;
+}
+
+/* Under the button the badge hangs off the text's left edge rather than taking
+   up room in the line, so the text itself stays centred. */
+.hint__link {
+  position: relative;
+}
+
+.hint__link .badge {
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* ---------- settings menu ---------- */
+
+/* Positioning context for the dropdown, which is anchored to the cog. */
+.menu-wrap {
+  position: relative;
+  flex: none;
+}
+
+/* Round, on a surface chip, like the site's round header buttons. Open or
+   hovered it only darkens its glyph: no square fill. */
+.cog {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.cog svg {
+  width: 17px;
+  height: 17px;
+  fill: currentColor;
+  transition: transform 0.25s ease;
+}
+
+.cog:hover,
+.cog[aria-expanded="true"] {
+  color: var(--text);
+}
+
+/* Small affordance that the cog is what opened the menu. */
+.cog[aria-expanded="true"] svg {
+  transform: rotate(45deg);
+}
+
+/* Hover gives the gear a quick half-turn: 180° in 0.2s, a flick rather than a
+   spin. The teeth are laid out symmetrically about (12,12) and the svg box is
+   square, so the default 50% 50% origin is the true centre — an off-centre gear
+   would visibly wobble here. Hover wins over the 45° tilt while hovering (an
+   animation beats a static transform), so the open cog still flicks. */
+.cog:hover svg {
+  animation: cog-spin 0.2s linear 1;
+}
+
+@keyframes cog-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(180deg);
+  }
+}
+
+.cog:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow), 0 0 0 3px var(--ring);
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 10;
+  min-width: 172px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-pop);
+  animation: menu-in 0.13s ease-out;
+}
+
+/* [hidden] must beat the display used above. */
+.menu[hidden] {
+  display: none;
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.menu__item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--text);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.menu__item:hover,
+.menu__item:focus-visible {
+  outline: none;
+  background: var(--surface-sunk);
+}
+
+.menu__item:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--ring);
+}
+
+
+/* Auto-solve toggle: a <button role="menuitemcheckbox"> that has to reset the
+   button defaults to sit flush with the anchor items around it, then push its
+   pill switch to the far right. */
+.menu__item--toggle {
+  width: 100%;
+  justify-content: space-between;
+  appearance: none;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 550;
+  text-align: left;
+}
+
+/* The pill. The knob slides right and the track turns brand-blue when checked —
+   both driven off aria-checked, so the visual and the a11y state can't disagree. */
+.switch {
+  position: relative;
+  width: 30px;
+  height: 18px;
+  flex: none;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-muted) 45%, var(--line));
+  transition: background 0.15s ease;
+}
+
+.switch__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(16 36 58 / 0.35);
+  transition: transform 0.15s ease;
+}
+
+.menu__item--toggle[aria-checked="true"] .switch {
+  background: var(--brand);
+}
+
+.menu__item--toggle[aria-checked="true"] .switch__knob {
+  transform: translateX(12px);
+}
+
+/* Target-time field, sitting under the toggle in the same Settings group: a label
+   on the left, a small "N s" text box on the right, matching the toggle's layout. */
+.menu__field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 9px 6px;
+}
+
+.menu__field-label {
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--text);
+}
+
+.menu__field-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.menu__number {
+  width: 40px;
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.menu__number:focus-visible {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.menu__field-unit {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Slider for the common 1–60 s range, sitting just under the field row and sharing
+   its value with the text box. A slim track with a brand-blue thumb; appearance is
+   reset on both so it reads as part of this UI rather than the OS default control. */
+.menu__range {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  width: calc(100% - 18px);
+  height: 4px;
+  margin: 2px 9px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-muted) 45%, var(--line));
+  cursor: pointer;
+}
+
+.menu__range:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.menu__range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--brand);
+  border: 2px solid var(--surface);
+  box-shadow: 0 1px 2px rgb(16 36 58 / 0.35);
+}
+
+.menu__range::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+/* Group heading ("More solvers"). Sits under a separator, which gives it its
+   top edge. */
+.menu__label {
+  margin: 1px 0 2px;
+  padding: 3px 9px 0;
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Divides the solver list from the Unlimited puzzles link below it. */
+.menu__sep {
+  height: 1px;
+  margin: 5px 4px;
+  background: var(--line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+

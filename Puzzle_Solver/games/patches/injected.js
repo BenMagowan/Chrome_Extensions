@@ -1,0 +1,700 @@
+/*
+ * injected.js — the whole Patches engine as ONE self-contained function.
+ *
+ * The popup injects it on demand into every frame of the LinkedIn games tab via
+ *   chrome.scripting.executeScript({ target:{tabId, allFrames:true}, world:'MAIN', func: runPatches, args:[mode, opts] })
+ * (See Queens_Solver for why on-demand MAIN-world injection is used for the popup
+ *  instead of a pre-injected content script.) The same file is ALSO loaded as a
+ *  content script, ahead of content.js, which drives auto-solve on page load — so
+ *  the engine never forks.
+ *
+ * MUST stay fully self-contained — executeScript serializes it with
+ * Function.prototype.toString, so every helper is nested and nothing outside is
+ * referenced except the `mode` / `opts` arguments.
+ *
+ * PATCHES RULES: partition the grid into rectangular regions ("patches"), one per clue,
+ * tiling every cell — i.e. a Shikaku tiling. EVERY patch is a rectangle; a clue merely
+ * constrains it, and BOTH constraints are optional (per the in-game legend: "Complete
+ * each shape to fill the grid — Square / Tall rectangle / Wide rectangle / Any of the
+ * above. If a shape has a number, it must be that size."):
+ *   - shape: SQUARE (h == w), HORIZONTAL_RECT (wide, w > h), VERTICAL_RECT (tall, h > w),
+ *     or ANY — the game's `PatchesShapeConstraint_UNKNOWN`, labelled "freeform clue" in
+ *     aria text and "Any of the above" in the legend. ANY is *not* a freeform polyomino:
+ *     the patch is still a rectangle, just unconstrained in shape.
+ *   - area: the clue's number, or null when the clue shows no number (any size).
+ * Harder boards lean on both — No. 122 (HARD) was 10/12 clues ANY, two with no number —
+ * so neither may be treated as a parse failure or an unsupported board. (See README.)
+ *
+ * FILL MECHANISM (verified live on the guest board): the drag the game advertises only
+ * responds to TRUSTED events, which an extension cannot produce — but the keyboard path
+ * works with synthetic events:
+ *   - focus the gameboard + press Enter  → enters grid mode (a cursor cell gains focus)
+ *   - Arrow keys                          → move the cursor one cell
+ *   - Enter on a corner, move, Enter again → fills the bounding-box rectangle between the
+ *                                            two presses, auto-coloured by the clue inside
+ * So the solver computes each patch's rectangle and draws it corner→corner with keys.
+ *
+ * @param {'detect'|'solve'} mode
+ * @param {{targetMs?:number}} [opts] pacing for 'solve': aim the whole solve at
+ *        this total time (see the press-delay maths in fill()). Omit for the
+ *        default cadence. Ignored by 'detect'.
+ * @returns {{solvable:boolean,present:boolean,rows:number,cols:number,solved:boolean,
+ *            cells:object[]|null}} for 'detect',
+ *          {{ok:boolean, placed?:number, alreadySolved?:boolean, error?:string,
+ *            busy?:boolean, board?:boolean}} for 'solve' — `busy` when another solve
+ *          already holds this board, `board` from the frame that has the board.
+ *          (Unlike the other engines, 'detect' ignores `opts.preview`: whether a board
+ *          is solvable here means finding a tiling, so the solve always runs.)
+ */
+async function runPatches(mode, opts) {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  // When this call started: fill() paces its drawing against the time left of it.
+  const startedAt = performance.now();
+
+  // Optional pacing. When a target total time is supplied, fill() spreads its key
+  // presses to land near it; null keeps the default, verified-safe cadence.
+  const targetMs =
+    opts && typeof opts.targetMs === "number" && opts.targetMs > 0
+      ? opts.targetMs
+      : null;
+
+  // --- parse the board into {rows, cols, clues, boardEl} ---
+  // Grid-agnostic: keys off [data-cell-idx]. Nothing here may depend on the WORDS in
+  // an aria-label: LinkedIn translates them ("Ligne 1, colonne 1, indice de forme
+  // libre, 6 cellules"), so every read has a language-neutral source — layout,
+  // data-testid, data-shape — and the English wording is kept only as a fallback.
+  function parseBoard() {
+    // Patches signature so a Zip board (which also uses [data-trail-grid]) never
+    // mis-parses as Patches.
+    const boardEl = document.querySelector(
+      '[data-testid="patches-game-board"], [aria-label="Gameboard"]'
+    );
+    const isPatches =
+      !!document.querySelector(
+        '[data-testid="patches-game-container"], [data-testid="patches-game-board"]'
+      ) || !!document.querySelector('[data-shape^="PatchesShapeConstraint"]');
+    if (!isPatches || !boardEl) return null;
+
+    const all = Array.from(document.querySelectorAll("[data-cell-idx]"));
+    if (all.length < 9) return null; // not rendered yet
+    // Keep the largest set of cells sharing one parent (the real grid).
+    const byParent = new Map();
+    for (const el of all) {
+      const p = el.parentElement;
+      if (!p) continue;
+      if (!byParent.has(p)) byParent.set(p, []);
+      byParent.get(p).push(el);
+    }
+    let els = all;
+    let best = 0;
+    for (const [, arr] of byParent) {
+      if (arr.length > best) {
+        best = arr.length;
+        els = arr;
+      }
+    }
+
+    // rows/cols from the layout: the cells sharing the first cell's top edge are one
+    // row. If the grid isn't laid out (zero-size), fall back on the two numbers every
+    // label opens with — "Row R, column C" in English, the same pair in the same
+    // order in translation — taking the largest of each.
+    let rows = 0,
+      cols = 0;
+    const firstRect = els[0].getBoundingClientRect();
+    if (firstRect.height > 0) {
+      for (const el of els) {
+        if (Math.abs(el.getBoundingClientRect().top - firstRect.top) < firstRect.height / 2) cols++;
+      }
+      rows = cols ? els.length / cols : 0;
+    } else {
+      for (const el of els) {
+        const m = /(\d+)\D+(\d+)/.exec(el.getAttribute("aria-label") || "");
+        if (m) {
+          rows = Math.max(rows, parseInt(m[1], 10));
+          cols = Math.max(cols, parseInt(m[2], 10));
+        }
+      }
+    }
+    if (!Number.isInteger(rows) || rows < 2 || cols < 2 || rows * cols !== els.length) return null;
+
+    // Clues: any cell carrying a [data-shape] marker (or an "…clue…" aria-label).
+    // Both constraints are optional; absent means unconstrained, never unsupported:
+    // an unrecognised shape falls back to "ANY", an unreadable number to null.
+    //
+    // The membership phrases are stripped BEFORE the "…clue…" test, and that is not a
+    // nicety. Drawing a patch rewrites its cells' labels to "Row 1, column 1, in region
+    // with clue at row 2, column 2" — which contains the word "clue", so a bare
+    // /clue/i test promotes every filled cell into a phantom unnumbered clue. On a
+    // part-drawn board that inflates the clue list (verified live: 10 real clues read
+    // as 13), the arithmetic guard in solve() then rejects the board, and the whole
+    // thing surfaces as "no board / no solution" — see README.
+    const drawnPhrase = /,?\s*in region with clue at[^,]*,[^,]*/i;
+    const drawnSelf = /,?\s*in drawn region/i;
+    const clues = [];
+    for (const el of els) {
+      const idx = parseInt(el.getAttribute("data-cell-idx"), 10);
+      const shapeEl = el.querySelector("[data-shape]");
+      // `aria` describes the cell itself; membership in someone's patch is not part of
+      // that, so it goes before any of the shape/area/clue reads below.
+      const aria = (el.getAttribute("aria-label") || "")
+        .replace(drawnPhrase, "")
+        .replace(drawnSelf, "");
+      if (!shapeEl && !/clue/i.test(aria)) continue;
+      const rawShape = shapeEl ? shapeEl.getAttribute("data-shape") || "" : "";
+      const shape = /SQUARE/.test(rawShape) || /square clue/i.test(aria)
+        ? "SQUARE"
+        : /HORIZONTAL_RECT/.test(rawShape) || /wide rectangle/i.test(aria)
+        ? "HORIZONTAL_RECT"
+        : /VERTICAL_RECT/.test(rawShape) || /tall rectangle/i.test(aria)
+        ? "VERTICAL_RECT"
+        : "ANY";
+      const numEl = el.querySelector('[data-testid^="patches-clue-number"]');
+      let area = numEl ? parseInt(numEl.textContent.trim(), 10) : NaN;
+      if (!Number.isInteger(area)) {
+        const am = /(\d+)\s*cells?/i.exec(aria);
+        area = am ? parseInt(am[1], 10) : NaN;
+      }
+      clues.push({ idx, shape, area: Number.isInteger(area) ? area : null });
+    }
+    if (clues.length < 2) return null;
+
+    return { rows, cols, clues, boardEl };
+  }
+
+  // --- which patch, if any, each cell is drawn into ---
+  // Returns one entry per cell index: -1 = not drawn, a clue's index = drawn into that
+  // clue's patch, -2 = drawn, but into a patch that doesn't hold exactly one clue.
+  //
+  // The game draws each committed patch as a `[data-testid="region-overlay-…"]` box
+  // laid over the grid, so a cell is drawn when its centre sits inside one. That is
+  // the primary read because it is the same in every language. (The box for a patch
+  // still being dragged out is `patches-drawing-region`, which the selector skips.)
+  //
+  // The cells themselves only say so in their aria-label, in translated words: an
+  // ordinary cell reads "…, in region with clue at row R, column C" and a clue cell
+  // inside a patch "…, in drawn region" ("dans la région dessinée" in French). That
+  // English text is kept as the fallback for markup without the overlay boxes.
+  function drawnOwners(board) {
+    const { rows, cols, clues } = board;
+    const clueIndexAt = new Map(clues.map((c, i) => [c.idx, i]));
+    const owner = new Array(rows * cols).fill(-1);
+
+    const boxes = Array.from(board.boardEl.querySelectorAll('[data-testid^="region-overlay"]'))
+      .map((o) => o.getBoundingClientRect())
+      .filter((r) => r.width > 0 && r.height > 0);
+    if (boxes.length) {
+      const inBox = boxes.map(() => []);
+      for (const el of board.boardEl.querySelectorAll("[data-cell-idx]")) {
+        const r = el.getBoundingClientRect();
+        const x = r.left + r.width / 2;
+        const y = r.top + r.height / 2;
+        const b = boxes.findIndex((o) => x > o.left && x < o.right && y > o.top && y < o.bottom);
+        if (b !== -1) inBox[b].push(parseInt(el.getAttribute("data-cell-idx"), 10));
+      }
+      for (const idxs of inBox) {
+        const held = idxs.filter((i) => clueIndexAt.has(i));
+        const o = held.length === 1 ? clueIndexAt.get(held[0]) : -2;
+        for (const i of idxs) owner[i] = o;
+      }
+    }
+
+    for (const el of board.boardEl.querySelectorAll("[data-cell-idx]")) {
+      const idx = parseInt(el.getAttribute("data-cell-idx"), 10);
+      if (owner[idx] !== -1) continue;
+      const aria = el.getAttribute("aria-label") || "";
+      const m = /in region with clue at row\s+(\d+),\s*column\s+(\d+)/i.exec(aria);
+      if (m) {
+        const at = (parseInt(m[1], 10) - 1) * cols + (parseInt(m[2], 10) - 1);
+        owner[idx] = clueIndexAt.has(at) ? clueIndexAt.get(at) : -2;
+      } else if (/in drawn region/i.test(aria)) {
+        owner[idx] = clueIndexAt.has(idx) ? clueIndexAt.get(idx) : -2;
+      }
+    }
+    return owner;
+  }
+
+  // --- rectangle exact-cover solver (Shikaku with optional shape/area constraints) ---
+  // Returns an array (one per clue) of {tl, br, cells}, or null if unsolvable.
+  function solve(board) {
+    const { rows, cols, clues } = board;
+    const total = rows * cols;
+
+    // Cheap arithmetic guard. Clues with no number contribute an unknown area of >= 1,
+    // so only an all-numbered board can be checked for an exact fit.
+    let known = 0,
+      unnumbered = 0;
+    for (const c of clues) {
+      if (c.area == null) unnumbered++;
+      else known += c.area;
+    }
+    if (unnumbered === 0 ? known !== total : known + unnumbered > total) return null;
+
+    const clueAt = new Array(total).fill(-1);
+    clues.forEach((c, i) => (clueAt[c.idx] = i));
+
+    // The h×w rectangles a clue permits. A null area allows every size, so this walks
+    // the dimension grid rather than factorising, and shape 'ANY' filters nothing.
+    function dimensions(area, shape) {
+      const out = [];
+      for (let h = 1; h <= rows; h++) {
+        for (let w = 1; w <= cols; w++) {
+          if (area != null && h * w !== area) continue;
+          if (shape === "SQUARE" && h !== w) continue;
+          if (shape === "HORIZONTAL_RECT" && w <= h) continue;
+          if (shape === "VERTICAL_RECT" && h <= w) continue;
+          out.push([h, w]);
+        }
+      }
+      return out;
+    }
+
+    // candidate rectangles per clue: right size/shape, covering the clue, no other clue
+    const candidates = clues.map((cl, ci) => {
+      const r = Math.floor(cl.idx / cols),
+        c = cl.idx % cols;
+      const list = [];
+      for (const [h, w] of dimensions(cl.area, cl.shape)) {
+        for (let r0 = Math.max(0, r - h + 1); r0 <= Math.min(rows - h, r); r0++) {
+          for (let c0 = Math.max(0, c - w + 1); c0 <= Math.min(cols - w, c); c0++) {
+            const cells = [];
+            let ok = true;
+            for (let rr = r0; rr < r0 + h && ok; rr++)
+              for (let cc = c0; cc < c0 + w; cc++) {
+                const id = rr * cols + cc;
+                if (clueAt[id] !== -1 && clueAt[id] !== ci) {
+                  ok = false;
+                  break;
+                }
+                cells.push(id);
+              }
+            if (ok)
+              list.push({
+                tl: r0 * cols + c0,
+                br: (r0 + h - 1) * cols + (c0 + w - 1),
+                cells,
+              });
+          }
+        }
+      }
+      return list;
+    });
+    if (candidates.some((l) => l.length === 0)) return null;
+
+    // Exact cover: pick one candidate per clue, non-overlapping, covering every cell —
+    // which is what pins down the unconstrained clues. A fixed fewest-first order is too
+    // weak once a clue can be any size (~48 candidates on a 7×7), so pick the most
+    // constrained clue afresh at each step and fail early when one runs out.
+    const occupied = new Array(total).fill(false);
+    const chosen = new Array(clues.length).fill(null);
+    function bt(placed) {
+      if (placed === clues.length) return occupied.every(Boolean);
+      let bi = -1,
+        bestFits = null;
+      for (let i = 0; i < clues.length; i++) {
+        if (chosen[i]) continue;
+        const fits = candidates[i].filter((cand) => !cand.cells.some((id) => occupied[id]));
+        if (fits.length === 0) return false;
+        if (!bestFits || fits.length < bestFits.length) {
+          bestFits = fits;
+          bi = i;
+        }
+      }
+      for (const cand of bestFits) {
+        cand.cells.forEach((id) => (occupied[id] = true));
+        chosen[bi] = cand;
+        if (bt(placed + 1)) return true;
+        cand.cells.forEach((id) => (occupied[id] = false));
+        chosen[bi] = null;
+      }
+      return false;
+    }
+    if (!bt(0)) return null;
+    return chosen;
+  }
+
+  // --- keyboard fill ---
+  /** The indices of every cell that is already part of a drawn patch. */
+  function drawnIdxs(board) {
+    const out = [];
+    drawnOwners(board).forEach((o, idx) => {
+      if (o !== -1) out.push(idx);
+    });
+    return out;
+  }
+  function cursorIdx() {
+    const a = document.activeElement;
+    return a && a.getAttribute && a.hasAttribute("data-cell-idx")
+      ? parseInt(a.getAttribute("data-cell-idx"), 10)
+      : null;
+  }
+  function pressKeyOn(el, key, kc) {
+    for (const type of ["keydown", "keyup"])
+      el.dispatchEvent(
+        new KeyboardEvent(type, {
+          key, code: key, keyCode: kc, which: kc,
+          bubbles: true, cancelable: true, composed: true, view: window,
+        })
+      );
+  }
+  async function fill(board, solution) {
+    const boardEl = board.boardEl;
+    const { rows, cols } = board;
+    const press = (key, kc) => {
+      const a = document.activeElement;
+      const el = a && a.hasAttribute && a.hasAttribute("data-cell-idx") ? a : boardEl;
+      pressKeyOn(el, key, kc);
+    };
+    // Enter grid mode (a cursor cell gains focus) from a known-clean state.
+    //
+    // The Escape first is load-bearing. "Anchor placed, not yet committed" is a live
+    // mode we can't read from the DOM, and it is easy to arrive in: the game refuses
+    // to draw across cells that already belong to a patch, so a player whose draw was
+    // rejected — or who simply pressed Enter and wandered off — leaves an anchor
+    // dangling. With one live, our next keypress commits a rectangle instead of doing
+    // what we asked, which is how an erase pass ends up *adding* a drawn cell
+    // (observed: 8 drawn cells became 9). Escape drops grid mode and the anchor with
+    // it; re-entering then gives a cursor with nothing pending.
+    async function ensureGrid() {
+      press("Escape", 27);
+      await sleep(200);
+      for (let t = 0; t < 4; t++) {
+        if (cursorIdx() != null) return true;
+        boardEl.focus();
+        pressKeyOn(boardEl, "Enter", 13);
+        await sleep(150);
+      }
+      return cursorIdx() != null;
+    }
+    // The verified default cadence: the pause after each Arrow press, after the
+    // anchoring Enter, and after the committing Enter. A Solve time replaces all
+    // three for the drawing pass below; the erase pass always keeps these.
+    const ARROW_MS = 70;
+    const ANCHOR_MS = 120;
+    const COMMIT_MS = 150;
+
+    // move the cursor to a target cell by reading its current position each step,
+    // pausing `delay` after each Arrow press
+    async function goto(target, delay = ARROW_MS) {
+      for (let g = 0; g < rows + cols + 4; g++) {
+        const f = cursorIdx();
+        if (f === target) return true;
+        if (f == null) return false;
+        const fr = Math.floor(f / cols), fc = f % cols;
+        const tr = Math.floor(target / cols), tc = target % cols;
+        if (fr < tr) press("ArrowDown", 40);
+        else if (fr > tr) press("ArrowUp", 38);
+        else if (fc < tc) press("ArrowRight", 39);
+        else if (fc > tc) press("ArrowLeft", 37);
+        await sleep(delay);
+      }
+      return cursorIdx() === target;
+    }
+
+    // How long a press gets to show its effect before it counts as refused — well
+    // above a normal render, so a slow one is never mistaken for a refusal.
+    const SETTLE_MS = 600;
+
+    if (!(await ensureGrid())) return { ok: false, error: "Could not focus the gameboard." };
+
+    // Erase every drawn patch that has a cell outside `keep`.
+    //
+    // The erase is **Backspace with the cursor on a drawn cell**, which removes that
+    // cell's whole patch in one press (verified live: a 2×2 patch went from 4 drawn
+    // cells to 0; a messier board went 9 -> 6 -> 2 -> 0 in three presses). So each pass
+    // targets any still-drawn cell and clears its entire region — bounded by the clue
+    // count, not the cell count.
+    //
+    // A header "Undo" button does exist (it renders once play starts), but it unwinds
+    // move history step by step: the depth needed is unknown, it can't target a
+    // specific patch, and on a resumed game the history may not reach back to the
+    // patches already on the board. Backspace addresses a region directly, so it works
+    // regardless of how the board got into its current state.
+    //
+    // A press that removes nothing is most likely a dangling anchor eating it (see
+    // ensureGrid), so it's retried from a fresh grid mode. A board that still won't
+    // clear fails the solve: drawing on top of a stray patch would only have the
+    // rectangles that overlap it refused.
+    async function eraseExcept(keep) {
+      let erased = 0;
+      let stalls = 0;
+      for (let guard = 0; guard <= rows * cols + 4; guard++) {
+        const drawn = drawnIdxs(board);
+        const stray = drawn.find((i) => !keep.has(i));
+        if (stray == null) return { ok: true, erased };
+        if (!(await goto(stray))) return { ok: false, error: "Cursor navigation failed." };
+        press("Backspace", 8);
+        await sleep(180);
+        if (await waitFor(() => drawnIdxs(board).length < drawn.length, SETTLE_MS)) {
+          erased++;
+          stalls = 0;
+        } else if (++stalls > 2 || !(await ensureGrid())) {
+          break;
+        }
+      }
+      return { ok: false, error: "Couldn't clear the patches already on the board." };
+    }
+
+    // Erase whatever is already on the board before drawing the solution. This is
+    // mandatory, not tidiness: the game will not draw a rectangle across cells that
+    // already belong to a patch, so a single stray patch left in place blocks every
+    // solution rectangle that overlaps it.
+    const wiped = await eraseExcept(new Set());
+    if (!wiped.ok) return wiped;
+    const cleared = wiped.erased;
+
+    // Work out how fast to press. Drawing a patch is Arrows to its top-left, Enter
+    // (anchor), Arrows to its bottom-right, Enter (commit), each press followed by
+    // one sleep — so the drawing takes (presses × delay). goto() steps vertically
+    // then horizontally, so its presses are the Manhattan distance, and the whole
+    // route can be counted up front from where the cursor sits now.
+    //
+    // Unlike Queens/Tango, getting here takes a variable while — entering grid mode
+    // and erasing a part-drawn board — so the drawing is budgeted with whatever is
+    // LEFT of (target + BUFFER), not the whole of it. The buffer lands the real time
+    // comfortably OVER the target (a 5s target finishes ~5.5s). The floor stops a
+    // very short target pressing faster than the game reliably registers; goto()
+    // re-reads the cursor every step and each patch is checked once committed, so a
+    // lagging render costs extra presses rather than a wrong rectangle.
+    const MIN_PRESS_MS = 50;
+    const BUFFER_MS = 500;
+    const dist = (a, b) =>
+      Math.abs(Math.floor(a / cols) - Math.floor(b / cols)) + Math.abs((a % cols) - (b % cols));
+    const from = cursorIdx();
+    let at = from == null ? solution[0].tl : from;
+    let presses = 0;
+    for (const rect of solution) {
+      presses += dist(at, rect.tl) + 1 + dist(rect.tl, rect.br) + 1;
+      at = rect.br;
+    }
+    const pressMs = targetMs
+      ? Math.max(
+          MIN_PRESS_MS,
+          Math.round((targetMs + BUFFER_MS - (performance.now() - startedAt)) / presses)
+        )
+      : null;
+    const arrowMs = pressMs == null ? ARROW_MS : pressMs;
+    const anchorMs = pressMs == null ? ANCHOR_MS : pressMs;
+    const commitMs = pressMs == null ? COMMIT_MS : pressMs;
+
+    // Draw each patch, then check the board shows exactly the patches drawn so far
+    // plus this one before moving on. A commit can fail two ways: refused outright,
+    // which leaves its anchor dangling — so the next Enter would commit where it
+    // should anchor, and every patch after it would come out wrong — or drawn as the
+    // wrong rectangle. Either way: Escape drops the anchor (ensureGrid), anything
+    // that isn't a confirmed patch is erased, and the patch is drawn once more.
+    const confirmed = new Set(); // cells of the patches already drawn and checked
+    const showsExactly = (want) => {
+      const drawn = drawnIdxs(board);
+      return drawn.length === want.size && drawn.every((i) => want.has(i));
+    };
+    let placed = 0;
+    for (const rect of solution) {
+      const want = new Set([...confirmed, ...rect.cells]);
+      let drew = false;
+      for (let attempt = 0; attempt < 2 && !drew; attempt++) {
+        if (attempt > 0) {
+          if (!(await ensureGrid())) break;
+          const tidy = await eraseExcept(confirmed);
+          if (!tidy.ok) return { ...tidy, placed, cleared };
+        }
+        if (!(await goto(rect.tl, arrowMs))) return { ok: false, error: "Cursor navigation failed." };
+        press("Enter", 13); // anchor
+        await sleep(anchorMs);
+        if (!(await goto(rect.br, arrowMs))) return { ok: false, error: "Cursor navigation failed." };
+        press("Enter", 13); // commit — fills the bounding-box rectangle
+        await sleep(commitMs);
+        drew = await waitFor(() => showsExactly(want), SETTLE_MS);
+      }
+      if (!drew) {
+        return {
+          ok: false,
+          error: `Patch ${placed + 1} of ${solution.length} wouldn't draw. Try again.`,
+          placed,
+          cleared,
+        };
+      }
+      rect.cells.forEach((i) => confirmed.add(i));
+      placed++;
+    }
+    return { ok: true, placed, cleared };
+  }
+
+  // --- is the board ALREADY finished? ---
+  // The win condition, checked in full against the patches on the board: every cell
+  // in a patch, and each clue's patch a solid rectangle around that clue, of the
+  // size and shape it asks for. Full coverage alone is not enough — the game draws
+  // any rectangle it's given, so a board can be completely covered by patches of the
+  // wrong sizes, and reading that as won left the solver refusing to fix it.
+  function isSolved(board) {
+    const { cols, clues } = board;
+    const patchOf = drawnPatchOf(board);
+    if (patchOf.some((p) => p === -1)) return false; // a cell outside every clue's patch
+    const box = clues.map(() => ({ r0: Infinity, c0: Infinity, r1: -1, c1: -1, n: 0 }));
+    patchOf.forEach((p, idx) => {
+      const b = box[p];
+      const r = Math.floor(idx / cols);
+      const c = idx % cols;
+      b.r0 = Math.min(b.r0, r);
+      b.c0 = Math.min(b.c0, c);
+      b.r1 = Math.max(b.r1, r);
+      b.c1 = Math.max(b.c1, c);
+      b.n++;
+    });
+    return clues.every((cl, i) => {
+      const b = box[i];
+      if (patchOf[cl.idx] !== i) return false; // the clue sits outside its own patch
+      const h = b.r1 - b.r0 + 1;
+      const w = b.c1 - b.c0 + 1;
+      if (h * w !== b.n) return false; // not a solid rectangle
+      if (cl.area != null && b.n !== cl.area) return false;
+      if (cl.shape === "SQUARE" && h !== w) return false;
+      if (cl.shape === "HORIZONTAL_RECT" && w <= h) return false;
+      if (cl.shape === "VERTICAL_RECT" && h <= w) return false;
+      return true;
+    });
+  }
+
+  /** Resolve true as soon as cond() holds, or false once `ms` has passed without. */
+  async function waitFor(cond, ms) {
+    const until = performance.now() + ms;
+    while (!cond()) {
+      if (performance.now() >= until) return false;
+      await sleep(25);
+    }
+    return true;
+  }
+
+  // --- did the solve actually work? ---
+  // Every patch drawing still isn't the puzzle being won, so judge the result by the
+  // win condition on the live board, with a moment for a slow render to catch up.
+  // true = solved; false = still unsolved when the wait ran out; null = the board is
+  // no longer on the page (the game swapping in a results screen, or the player
+  // navigating away), so there's nothing left to check — neither is a refused
+  // patch, so the caller doesn't report it as one.
+  async function confirmSolved(b) {
+    const until = performance.now() + 1500;
+    for (;;) {
+      // isSolved reads the cells live off boardEl, so the parsed board is good —
+      // unless the game re-rendered it, when the old element no longer says anything.
+      if (!b.boardEl.isConnected) b = parseBoard();
+      if (!b) return null;
+      if (isSolved(b)) return true;
+      if (performance.now() >= until) return false;
+      await sleep(25);
+    }
+  }
+
+  // --- one solve per board, visible to the popup ---
+  // Every solve path ends up here — content.js's auto-solve, and the popup's Solve
+  // in the page's MAIN world — so this is where the board is claimed. The claim is a
+  // marker on this frame's <html>: DOM attributes are shared across worlds, and the
+  // check and the claim run with no await between them, so two solves racing for one
+  // board can't both get in. The popup reads the same marker (readAutoSolve in
+  // popup.js) to show a solve in progress — whoever started it — and then its result.
+  async function exclusive(run) {
+    const marker = document.documentElement.dataset;
+    if (marker.autosolve === "solving") {
+      return { ok: false, busy: true, board: true, error: "A solve is already running on this board." };
+    }
+    const claimedAt = Date.now();
+    marker.autosolveStart = String(claimedAt);
+    delete marker.autosolveResult;
+    marker.autosolve = "solving";
+    let r;
+    try {
+      r = await run();
+    } catch (e) {
+      r = { ok: false, error: "Solve failed: " + ((e && e.message) || e) };
+    }
+    // `board` tells the popup this frame held the board, so its error is the one to show.
+    r = { ...r, board: true };
+    // Result first, then state, so the popup never sees a finished state without one.
+    marker.autosolveResult = JSON.stringify({ ...r, ms: Date.now() - claimedAt });
+    marker.autosolve = r.ok ? (r.alreadySolved ? "done" : "solved") : "failed";
+    return r;
+  }
+
+  /** Map cell index -> clue index, for the patches the PLAYER has already drawn. */
+  // The same read the erase pass keys off (drawnOwners), with a patch that has no
+  // single owning clue counted as no patch at all — it can't be part of a win.
+  function drawnPatchOf(board) {
+    return drawnOwners(board).map((o) => (o < 0 ? -1 : o));
+  }
+
+  /** Map cell index -> clue index, for a tiling solve() came up with. */
+  function solutionPatchOf(board, solution) {
+    const patchOf = new Array(board.rows * board.cols).fill(-1);
+    solution.forEach((rect, i) => rect.cells.forEach((id) => (patchOf[id] = i)));
+    return patchOf;
+  }
+
+  // A serialisable picture of the board for the popup to draw. Deliberately plain
+  // data — executeScript has to structured-clone this back, so no elements.
+  // `patchOf` may be all -1 (a board we couldn't tile), in which case the popup
+  // draws the clues on a bare grid, which is the honest picture of that case.
+  function snapshot(board, patchOf) {
+    const { rows, cols, clues } = board;
+    const clueAt = new Map(clues.map((c) => [c.idx, c]));
+    const cells = [];
+    for (let idx = 0; idx < rows * cols; idx++) {
+      const cl = clueAt.get(idx);
+      cells.push({
+        row: Math.floor(idx / cols),
+        col: idx % cols,
+        patch: patchOf[idx],
+        clue: cl ? { area: cl.area, shape: cl.shape } : null,
+      });
+    }
+    return cells;
+  }
+
+  // --- dispatch ---
+  const board = parseBoard();
+  if (mode === "detect") {
+    if (!board) {
+      return { solvable: false, present: false, rows: 0, cols: 0, solved: false, cells: null };
+    }
+    // A finished board is its own answer, so show the player's own tiling rather
+    // than an equally valid alternative we'd have gone and computed.
+    const done = isSolved(board);
+    const solution = done ? null : solve(board);
+    const patchOf = done ? drawnPatchOf(board) : solution ? solutionPatchOf(board, solution) : [];
+    const cells = snapshot(board, patchOf.length ? patchOf : new Array(board.rows * board.cols).fill(-1));
+    return {
+      // A solved board counts as solvable even though we skipped solving it —
+      // otherwise the popup would read "no tiling exists" for a finished puzzle.
+      solvable: done || !!solution,
+      present: true,
+      rows: board.rows,
+      cols: board.cols,
+      solved: done,
+      cells,
+    };
+  }
+
+  // mode === 'solve'
+  if (!board) return { ok: false, error: "Board not found or still loading." };
+  return exclusive(async () => {
+    // Already finished (e.g. completed between the popup's last poll and the click) —
+    // report it instead of erasing a won board just to redraw it.
+    if (isSolved(board)) {
+      return { ok: true, placed: board.clues.length, alreadySolved: true, rows: board.rows, cols: board.cols };
+    }
+    const solution = solve(board);
+    if (!solution) return { ok: false, error: "No rectangle tiling found for this board." };
+    const filled = await fill(board, solution);
+    if (!filled.ok) return filled;
+    // Only the board can say it's won: report success on its word, not ours.
+    if ((await confirmSolved(board)) === false) {
+      return { ok: false, error: "The board still isn't solved. Try again.", placed: filled.placed };
+    }
+    return { ...filled, rows: board.rows, cols: board.cols };
+  });
+}
+
+// Expose the engine on the (isolated-world) global so the auto-solve content
+// script — content.js, listed after this file in the same content_scripts entry —
+// can call it whatever scope Chrome gives each file. This runs only when the file
+// is loaded as a script (content script or the popup's <script>); it is NOT part
+// of runPatches, so the popup's executeScript({func: runPatches}) never carries it.
+if (typeof self !== "undefined") self.runPatches = runPatches;
