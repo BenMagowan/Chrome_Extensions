@@ -771,6 +771,14 @@ PUZZLE = {
         "Résoudre $1 automatiquement",
         "$1 automatisch lösen",
     ),
+    # The game grid and Solve all.
+    "solvedToday": ("Solved today", "Resuelto hoy", "Resolvido hoje", "Résolu aujourd'hui", "Heute gelöst"),
+    "notSolved": ("Not solved yet", "Aún sin resolver", "Ainda não resolvido", "Pas encore résolu", "Noch nicht gelöst"),
+    "puzzleNumber": ("#$1", "#$1", "#$1", "#$1", "#$1"),  # as LinkedIn writes it, "Zip #611"
+    "solveAll": ("Solve all", "Resolver todos", "Resolver todos", "Tout résoudre", "Alle lösen"),
+    "solvingOf": ("Solving $1 of $2…", "Resolviendo $1 de $2…", "Resolvendo $1 de $2…", "Résolution $1 sur $2…", "Löse $1 von $2…"),
+    "stopSolving": ("Stop", "Detener", "Parar", "Arrêter", "Stoppen"),
+    "checkingGames": ("Checking today's games…", "Comprobando los juegos de hoy…", "Verificando os jogos de hoje…", "Vérification des jeux du jour…", "Prüfe die heutigen Spiele…"),
 }
 # Errors only Sumbreak's engine reports. Puzzle Solver's i18n.js and messages carry
 # these on top of ERRORS; the single-game solvers never see them.

@@ -20,6 +20,17 @@
   "content_scripts": [
     {
       "matches": [
+        "*://*.linkedin.com/games/",
+        "*://*.linkedin.com/games/?*"
+      ],
+      "js": [
+        "games.js",
+        "hub.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
         "*://*.linkedin.com/games/zip*",
         "*://*.linkedin.com/games/view/zip*"
       ],

@@ -28,6 +28,10 @@ const listEl = document.getElementById("list");
 const menuBtn = document.getElementById("menu-btn");
 const menuEl = document.getElementById("menu");
 const rowsEl = document.getElementById("settings-rows");
+const solveAllEl = document.getElementById("solve-all");
+const solveAllBtn = document.getElementById("solve-all-btn");
+const solveAllLabel = document.getElementById("solve-all-label");
+const solveAllStop = document.getElementById("solve-all-stop");
 
 let pollTimer = null;
 
@@ -94,6 +98,8 @@ function setState(next, data = {}) {
   hintLink.href = siteUrl(next, null, game);
   actionBtn.disabled = spec.act === null;
   actionBtn.setAttribute("aria-busy", String(next === "solving"));
+  // A finished board, whoever finished it, is today's puzzle solved.
+  if (game && (next === "solved" || next === "done")) markSolvedToday(game.id);
 }
 
 /** Rows and columns of a detect or solve result: Patches and Sumbreak report both. */
@@ -216,6 +222,13 @@ function buildStrip() {
       btn.title = t("openGame", g.name);
       btn.addEventListener("click", () => openGame(g));
     }
+    if (solved.has(g.id)) {
+      const check = checkMark("strip__check");
+      check.setAttribute("aria-label", t("solvedToday"));
+      check.removeAttribute("aria-hidden");
+      check.setAttribute("role", "img");
+      btn.appendChild(check);
+    }
     if (isNewToUser(g) && g !== game) {
       const dot = document.createElement("span");
       dot.className = "strip__new";
@@ -228,27 +241,152 @@ function buildStrip() {
   stripEl.replaceChildren(frag);
 }
 
-/** Off a game page: every game, each opening its page on LinkedIn. */
+/** LinkedIn's green check, as a span holding an SVG tick. */
+function checkMark(className) {
+  const span = document.createElement("span");
+  span.className = className;
+  span.setAttribute("aria-hidden", "true");
+  span.innerHTML =
+    '<svg viewBox="0 0 24 24" focusable="false"><path d="M7 12.4l3.2 3.2L17.2 8.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  return span;
+}
+
+/**
+ * Off a game page: every game as a card, two across, each opening its page on
+ * LinkedIn. Like LinkedIn's games page, a card shows the game's art on a wash of its colour,
+ * "Zip #611", and whether today's puzzle is solved.
+ */
 function buildList() {
   const frag = document.createDocumentFragment();
   for (const g of GAMES) {
+    const done = solved.has(g.id);
     const li = document.createElement("li");
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "list__game";
-    const name = document.createElement("span");
-    name.className = "list__name";
-    name.textContent = g.name;
-    if (isNewToUser(g)) name.appendChild(newBadge(g));
-    const open = document.createElement("span");
-    open.className = "list__open";
-    open.textContent = t("open");
-    btn.append(gameIcon(g), name, open);
+    btn.dataset.game = g.id;
+    btn.dataset.solved = String(done);
+    btn.style.setProperty("--game", g.accent);
+    btn.style.setProperty("--shade", g.shade || g.accent);
+
+    const art = document.createElement("span");
+    art.className = "card__art";
+    const icon = gameIcon(g);
+    icon.width = icon.height = 40;
+    art.appendChild(icon);
+    if (done) art.appendChild(checkMark("card__check"));
+    if (isNewToUser(g)) art.appendChild(newBadge(g));
+
+    const text = document.createElement("span");
+    text.className = "card__text";
+    const title = document.createElement("span");
+    title.className = "card__title";
+    const num = document.createElement("span");
+    num.className = "card__num";
+    num.textContent = " " + t("puzzleNumber", puzzleNumber(g, numbers[g.id]));
+    title.append(g.name, num);
+    const status = document.createElement("span");
+    status.className = "card__status";
+    status.textContent = done ? t("solvedToday") : t("notSolved");
+    text.append(title, status);
+
+    btn.append(art, text);
     btn.addEventListener("click", () => openGame(g));
     li.appendChild(btn);
     frag.appendChild(li);
   }
   listEl.replaceChildren(frag);
+}
+
+/* --------------------------------------------------------------- solve all */
+
+// Which games today's puzzle is solved for (see markSolvedToday in games.js), and
+// the background worker's Solve all run, if one is going. Both are kept current
+// from storage while the popup is open.
+let solved = new Set();
+let solveRun = null;
+/** Today's puzzle numbers as read off LinkedIn's games page, by game id. */
+let numbers = {};
+
+function sendToWorker(msg) {
+  try {
+    return chrome.runtime.sendMessage(msg).catch(() => null);
+  } catch {
+    return Promise.resolve(null);
+  }
+}
+
+/** The Solve all button: ready, or the run's progress. */
+function renderSolveAll() {
+  const running = !!solveRun;
+  solveAllEl.dataset.running = String(running);
+  solveAllStop.hidden = !running;
+  solveAllBtn.setAttribute("aria-busy", String(running));
+  if (running) {
+    solveAllLabel.textContent =
+      solveRun.phase === "hub" ? t("checkingGames") : t("solvingOf", solveRun.index + 1, solveRun.queue.length);
+    solveAllBtn.disabled = true;
+  } else {
+    // Always on: the run asks LinkedIn's games page what's left, which knows better
+    // than this browser's records (a puzzle solved elsewhere, or a different account).
+    solveAllLabel.textContent = t("solveAll");
+    solveAllBtn.disabled = false;
+  }
+}
+
+solveAllBtn.addEventListener("click", async () => {
+  if (solveRun) return;
+  // Every game: the games page, the run's first stop, drops the solved ones.
+  const ids = GAMES.map((g) => g.id);
+  for (const g of GAMES) markGameSeen(g);
+  // The run happens in the tab this popup was opened on: changing its page doesn't
+  // take focus, so the popup stays open and follows the run through storage.
+  const tab = await getActiveTab().catch(() => null);
+  solveRun = await sendToWorker({ type: "solveAll:start", ids, tabId: tab ? tab.id : undefined });
+  renderSolveAll();
+});
+
+solveAllStop.addEventListener("click", async () => {
+  await sendToWorker({ type: "solveAll:stop" });
+  solveRun = null;
+  renderSolveAll();
+  solveAllBtn.focus();
+});
+
+/**
+ * Read the solved days and the run. The first read asks the worker, which clears a
+ * run that died (its tab closed, the browser quit mid-run) rather than showing it
+ * as still going; later reads, on a storage change, take the run as stored.
+ */
+async function loadSolved(first = false) {
+  solved = await solvedToday();
+  numbers = await storedNumbers();
+  if (first) {
+    solveRun = (await sendToWorker({ type: "solveAll:status" })) || null;
+    return;
+  }
+  try {
+    solveRun = (await chrome.storage.local.get(RUN_KEY))[RUN_KEY] || null;
+  } catch {
+    solveRun = null;
+  }
+}
+
+/** Redraw what depends on the solved days and the run. */
+function renderSolved() {
+  if (game) buildStrip();
+  else buildList();
+  renderSolveAll();
+}
+
+try {
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "local") return;
+    if (!Object.keys(changes).some((k) => k === RUN_KEY || k.includes("solved:") || k.startsWith("number:"))) return;
+    loadSolved().then(renderSolved);
+  });
+} catch {
+  /* no storage events — the popup shows what it read on opening */
 }
 
 /* ---------------------------------------------------------------- settings */
@@ -314,7 +452,9 @@ function settingsRow(g) {
   const s = settings[g.id];
   const row = document.createElement("div");
   row.className = "settings__row";
-  row.style.setProperty("--game", g.accent);
+  // The row's colour (its switch, focus ring and "this page" tint) trades like the
+  // grid's dark backdrops: Queens/Tango and Patches/Sumbreak swap.
+  row.style.setProperty("--game", g.shade || g.accent);
   if (g === game) row.classList.add("settings__row--here");
   row.dataset.off = String(!s.autosolve);
 
@@ -710,9 +850,17 @@ async function init() {
   document.documentElement.dataset.game = game ? game.id : "";
   siteLink.href = siteUrl("menu", null, game);
   buildSettings();
+  // An incognito window's popup reads incognito's own solved days (see games.js).
+  try {
+    setIncognito((await chrome.windows.getCurrent()).incognito);
+  } catch {
+    /* no window info — keep what the context says */
+  }
+  await loadSolved(true);
 
   if (!game) {
     buildList();
+    renderSolveAll();
     setState("list");
     return;
   }
