@@ -105,6 +105,35 @@ try {
     check(ok, "per-game settings: Zip off doesn't stop Sumbreak", `${Date.now() - t0} ms`);
     await page.close();
   }
+
+  // 4. The other five games: each page loads its own engine with the shared
+  //    content.js. The mock isn't their board, so all this proves is the wiring:
+  //    content.js found the right engine and read that game's setting.
+  await setSettings({});
+  for (const [p, name] of [["zip", "Zip"], ["queens", "Queens"], ["tango", "Tango"], ["mini-sudoku", "Mini Sudoku"], ["patches", "Patches"]]) {
+    const page = await context.newPage();
+    const logs = [];
+    page.on("console", (m) => logs.push(m.text()));
+    await page.goto(`https://www.linkedin.com/games/${p}/`);
+    await page.waitForTimeout(1500);
+    check(logs.some((l) => l.startsWith(`[${name} auto-solve] on`)), `${name} page runs its own engine`);
+    await page.close();
+  }
+
+  // 5. The popup inside the real extension, opened as a tab: the active tab is the
+  //    popup itself, not a game, so it should show the game list without errors.
+  {
+    const id = new URL(worker.url()).host;
+    const page = await context.newPage();
+    const errors = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.goto(`chrome-extension://${id}/popup.html`);
+    await page.waitForTimeout(800);
+    const state = await page.evaluate(() => document.body.dataset.state);
+    const rows = await page.locator(".list__game").count();
+    check(state === "list" && rows === 6 && !errors.length, "popup loads in the extension", `state=${state}, ${rows} games${errors.length ? ", errors: " + errors.join("; ") : ""}`);
+    await page.close();
+  }
 } finally {
   await context.close();
   fs.rmSync(profile, { recursive: true, force: true });
