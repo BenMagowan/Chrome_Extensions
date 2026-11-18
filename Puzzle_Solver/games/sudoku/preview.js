@@ -1,7 +1,8 @@
 /*
- * Board preview for Mini Sudoku, moved here verbatim from
- * Mini_Sudoku_Solver/popup.js. It draws into `boardEl` and returns the two calls popup.js makes.
- * Its styles are the `[data-game="sudoku"]` block in styles.css.
+ * Board preview for Mini Sudoku, from Mini_Sudoku_Solver/popup.js, drawn to look like
+ * LinkedIn's finished board. It draws into `boardEl` and returns the two calls
+ * popup.js makes. Styles: the `[data-game="sudoku"]` blocks in games.css
+ * (from the single-game solver) and looks.css (the LinkedIn look).
  */
 registerPreview("sudoku", (boardEl) => {
   // Every Mini Sudoku is 6×6, so the empty grid can be drawn at the real size and

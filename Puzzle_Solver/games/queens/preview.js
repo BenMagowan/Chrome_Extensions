@@ -1,7 +1,8 @@
 /*
- * Board preview for Queens, moved here verbatim from
- * Queens_Solver/popup.js. It draws into `boardEl` and returns the two calls popup.js makes.
- * Its styles are the `[data-game="queens"]` block in styles.css.
+ * Board preview for Queens, from Queens_Solver/popup.js, drawn to look like
+ * LinkedIn's finished board. It draws into `boardEl` and returns the two calls
+ * popup.js makes. Styles: the `[data-game="queens"]` blocks in games.css
+ * (from the single-game solver) and looks.css (the LinkedIn look).
  */
 registerPreview("queens", (boardEl) => {
   /**
@@ -14,16 +15,29 @@ registerPreview("queens", (boardEl) => {
     return `hsl(${hue} 62% 78%)`;
   }
 
-  const QUEEN_PATH =
-    "M4.4 16.6 3.6 9.1l4.6 3.2L12 6.2l3.8 6.1 4.6-3.2-.8 7.5z M4.2 18.3h15.6v3.1H4.2z";
+  // A gold crown like LinkedIn's: three points tipped with jewels, a body that
+  // dips between them, and a band across the bottom. Each part has a class so
+  // looks.css can shade it.
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  const CROWN_PARTS = [
+    ["path", { class: "crown__body", d: "M4.6 17.2 3.2 8.9l4.9 4.2L12 6.6l3.9 6.5 4.9-4.2-1.4 8.3Z" }],
+    ["path", { class: "crown__shine", d: "M6.1 15.6 5.4 11.6l2.8 2.4" }],
+    ["rect", { class: "crown__band", x: 4.4, y: 17.4, width: 15.2, height: 3, rx: 1.2 }],
+    ["circle", { class: "crown__jewel", cx: 3.2, cy: 8.1, r: 1.55 }],
+    ["circle", { class: "crown__jewel", cx: 12, cy: 5.4, r: 1.7 }],
+    ["circle", { class: "crown__jewel", cx: 20.8, cy: 8.1, r: 1.55 }],
+  ];
 
   function queenSvg() {
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    const svg = document.createElementNS(SVG_NS, "svg");
     svg.setAttribute("viewBox", "0 0 24 24");
     svg.setAttribute("aria-hidden", "true");
-    const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    p.setAttribute("d", QUEEN_PATH);
-    svg.appendChild(p);
+    svg.setAttribute("class", "crown");
+    for (const [tag, attrs] of CROWN_PARTS) {
+      const el = document.createElementNS(SVG_NS, tag);
+      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+      svg.appendChild(el);
+    }
     return svg;
   }
 
@@ -102,6 +116,20 @@ registerPreview("queens", (boardEl) => {
         ? c.color
         : fallbackColor(regions.indexOf(c.region), regions.length);
       if (c.state === "queen") cell.appendChild(queenSvg());
+      // As LinkedIn shows a finished board: every other cell crossed out, and a
+      // thick line wherever two regions meet.
+      else {
+        const x = document.createElement("span");
+        x.className = "board__x";
+        x.textContent = "×";
+        cell.appendChild(x);
+      }
+      const regionAt = (r, col) => {
+        const n = ordered[r * N + col];
+        return n && n.row === r && n.col === col ? n.region : null;
+      };
+      if (c.col < N - 1 && regionAt(c.row, c.col + 1) !== c.region) cell.classList.add("board__cell--wall-right");
+      if (c.row < N - 1 && regionAt(c.row + 1, c.col) !== c.region) cell.classList.add("board__cell--wall-bottom");
       frag.appendChild(cell);
     }
     boardEl.replaceChildren(frag);

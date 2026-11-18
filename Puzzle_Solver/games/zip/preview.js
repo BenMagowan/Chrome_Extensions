@@ -1,7 +1,8 @@
 /*
- * Board preview for Zip, moved here verbatim from
- * Zip_Solver/popup.js. It draws into `boardEl` and returns the two calls popup.js makes.
- * Its styles are the `[data-game="zip"]` block in styles.css.
+ * Board preview for Zip, from Zip_Solver/popup.js, drawn to look like
+ * LinkedIn's finished board. It draws into `boardEl` and returns the two calls
+ * popup.js makes. Styles: the `[data-game="zip"]` blocks in games.css
+ * (from the single-game solver) and looks.css (the LinkedIn look).
  */
 registerPreview("zip", (boardEl) => {
   // Zip boards are 6×6, so the empty grid can be drawn at the real size and the
@@ -89,11 +90,23 @@ registerPreview("zip", (boardEl) => {
       svg.appendChild(svgEl("line", { ...line, class: "board__wall" }));
     }
 
+    // The path as LinkedIn draws a finished one: thick, and shading from light at
+    // the 1 to dark at the end. SVG can't run a gradient along a line, so each step
+    // is its own segment in its own shade, drawn on in order (see --i in looks.css).
     if (Array.isArray(path) && path.length > 1) {
-      const points = path
-        .map((idx) => `${(idx % N) + 0.5},${Math.floor(idx / N) + 0.5}`)
-        .join(" ");
-      svg.appendChild(svgEl("polyline", { points, class: "board__path" }));
+      const at = (idx) => [(idx % N) + 0.5, Math.floor(idx / N) + 0.5];
+      const g = svgEl("g", { class: "board__path" });
+      const steps = path.length - 1;
+      for (let i = 0; i < steps; i++) {
+        const [x1, y1] = at(path[i]);
+        const [x2, y2] = at(path[i + 1]);
+        const seg = svgEl("line", { x1, y1, x2, y2, class: "board__step" });
+        seg.style.setProperty("--t", (i / Math.max(steps - 1, 1)).toFixed(3));
+        seg.style.setProperty("--i", i);
+        seg.style.setProperty("--n-steps", steps);
+        g.appendChild(seg);
+      }
+      svg.appendChild(g);
     }
     return svg;
   }
@@ -130,10 +143,7 @@ registerPreview("zip", (boardEl) => {
     frag.appendChild(overlaySvg(cells, path, N));
     boardEl.replaceChildren(frag);
 
-    // Dash the path to its own length so it can be drawn on rather than appearing
-    // all at once. Needs to be in the document — getTotalLength measures layout.
-    const line = boardEl.querySelector(".board__path");
-    if (line) line.style.setProperty("--len", line.getTotalLength());
+    boardEl.classList.toggle("board--has-path", Array.isArray(path) && path.length > 1);
 
     // A real board is worth describing, unlike the placeholder it replaces.
     boardEl.removeAttribute("aria-hidden");

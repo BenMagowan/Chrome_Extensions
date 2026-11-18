@@ -1,7 +1,8 @@
 /*
- * Board preview for Tango, moved here verbatim from
- * Tango_Solver/popup.js. It draws into `boardEl` and returns the two calls popup.js makes.
- * Its styles are the `[data-game="tango"]` block in styles.css.
+ * Board preview for Tango, from Tango_Solver/popup.js, drawn to look like
+ * LinkedIn's finished board. It draws into `boardEl` and returns the two calls
+ * popup.js makes. Styles: the `[data-game="tango"]` blocks in games.css
+ * (from the single-game solver) and looks.css (the LinkedIn look).
  */
 registerPreview("tango", (boardEl) => {
   const SVG_NS = "http://www.w3.org/2000/svg";
@@ -105,7 +106,23 @@ registerPreview("tango", (boardEl) => {
    * snapshot in injected.js). Replaces the "Board detected · N×N" line: the grid
    * says the same thing and shows the answer besides.
    */
-  function renderBoard(cells, N) {
+  /** The = and × markers, each centred on the line between its two cells. */
+  function edgeMarks(edges, N) {
+    const frag = document.createDocumentFragment();
+    for (const e of edges || []) {
+      const [r1, c1] = [Math.floor(e.a / N), e.a % N];
+      const [r2, c2] = [Math.floor(e.b / N), e.b % N];
+      const mark = document.createElement("span");
+      mark.className = "board__edge";
+      mark.textContent = e.eq ? "=" : "×";
+      mark.style.left = `${((c1 + c2 + 1) / 2 / N) * 100}%`;
+      mark.style.top = `${((r1 + r2 + 1) / 2 / N) * 100}%`;
+      frag.appendChild(mark);
+    }
+    return frag;
+  }
+
+  function renderBoard(cells, N, edges) {
     if (!Array.isArray(cells) || !cells.length) return;
 
     boardEl.style.setProperty("--n", N);
@@ -127,6 +144,7 @@ registerPreview("tango", (boardEl) => {
       }
       frag.appendChild(cell);
     }
+    frag.appendChild(edgeMarks(edges, N));
     boardEl.replaceChildren(frag);
 
     // A real board is worth describing, unlike the placeholder it replaces.
@@ -136,6 +154,6 @@ registerPreview("tango", (boardEl) => {
 
   return {
     renderPlaceholder,
-    renderBoard: (b) => renderBoard(b.cells, b.N),
+    renderBoard: (b) => renderBoard(b.cells, b.N, b.edges),
   };
 });

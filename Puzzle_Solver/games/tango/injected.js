@@ -389,6 +389,8 @@ async function runTango(mode, opts) {
       N: board.N,
       solved: done,
       cells: snapshot(board, done ? null : solve(board)),
+      // The = and × markers between cells, for the preview: [{ a, b, eq }] by cell index.
+      edges: board.edges.map(({ a, b, eq }) => ({ a, b, eq })),
     };
   }
 

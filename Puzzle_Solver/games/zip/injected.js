@@ -515,11 +515,11 @@ async function runZip(mode, opts) {
 
   if (mode === "detect") {
     if (!board) return { solvable: false, N: 0, solved: false, cells: null, path: null };
-    // A finished board is its own answer — the player's path is already on screen,
-    // so don't overlay a solved route that may differ from the one they drew.
+    // The path is sent for a finished board too, so "Already solved" still shows the
+    // answer. A Zip board has exactly one solution, so it's the path the player drew.
     const done = isSolved(board);
     if (!preview) return { solvable: true, N: board.N, solved: done, cells: null, path: null };
-    const path = done ? null : solveCached(board);
+    const path = solveCached(board);
     return {
       solvable: true,
       N: board.N,

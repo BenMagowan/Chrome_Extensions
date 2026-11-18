@@ -1,10 +1,11 @@
 /*
- * Board preview for Sumbreak: the tiles as they are now, in the game's own colour
- * for each value, with the next merge outlined. Its styles are the `[data-game="sumbreak"]` block in
+ * Board preview for Sumbreak: the finished board (the last tile, in the game's own
+ * colour for its value, and a dot in each emptied cell). Its styles are the `[data-game="sumbreak"]` block in
  * popup.css.
  *
  * `b` is runSumbreak's detect result: { rows, cols, cells: [{ idx, value }],
- * moves: [[from, to], …] }, where value 0 is an empty cell.
+ * moves: [[from, to], …] }, where value 0 is an empty cell and each move puts
+ * the sum on `to`.
  */
 registerPreview("sumbreak", (boardEl) => {
   const DEFAULT_ROWS = 3;
@@ -49,13 +50,25 @@ registerPreview("sumbreak", (boardEl) => {
     boardEl.setAttribute("aria-hidden", "true");
   }
 
+  /** The board after every merge in `moves`: what the finished game looks like. */
+  function finalCells(cells, moves) {
+    const value = new Map(cells.map((c) => [c.idx, c.value]));
+    for (const [from, to] of moves || []) {
+      value.set(to, (value.get(to) || 0) + (value.get(from) || 0));
+      value.set(from, 0);
+    }
+    return cells.map((c) => ({ idx: c.idx, value: value.get(c.idx) || 0 }));
+  }
+
+  // Like the other games, the preview shows the answer: the one tile left once
+  // every merge is made, where it ends up, with dots for the emptied cells, as
+  // LinkedIn shows a finished board.
   function renderBoard(b) {
     if (!b || !Array.isArray(b.cells) || !b.cells.length) return;
     const rows = b.rows;
     const cols = b.cols;
     const { frag, cellEls } = grid(rows, cols);
-    const next = Array.isArray(b.moves) && b.moves.length ? b.moves[0] : null;
-    for (const c of b.cells) {
+    for (const c of finalCells(b.cells, b.moves)) {
       const el = cellEls[c.idx];
       if (!el || !c.value) continue;
       const tile = document.createElement("span");
@@ -64,7 +77,6 @@ registerPreview("sumbreak", (boardEl) => {
       tile.style.setProperty("--fill", fill);
       tile.style.setProperty("--ink", ink);
       tile.textContent = String(c.value);
-      if (next && (c.idx === next[0] || c.idx === next[1])) tile.classList.add("board__tile--next");
       el.appendChild(tile);
     }
     boardEl.replaceChildren(frag);

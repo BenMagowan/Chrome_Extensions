@@ -1,0 +1,242 @@
+/*
+ * The board previews made to look like LinkedIn's own finished boards. Loaded last,
+ * after games.css (each game's preview styles from its single-game solver) and
+ * popup.css (Sumbreak's), which these rules build on and override. The pieces keep LinkedIn's colours in both themes;
+ * lines and backgrounds follow the popup's light/dark tokens.
+ */
+
+/* ================================================================ zip */
+/* A thick path shading from light at the 1 to dark at the end (in the extension's
+   orange, where LinkedIn's is green), black numbered dots, and no grid lines once
+   the path covers every cell. */
+
+:root[data-game="zip"] {
+  --path-from: #ff9a5e;
+  --path-to: #e7621d;
+}
+
+:root[data-game="zip"] .board--has-path .board__cell {
+  box-shadow: none;
+}
+
+:root[data-game="zip"] .board__path {
+  opacity: 1;
+}
+
+:root[data-game="zip"] .board__step {
+  stroke: color-mix(in oklab, var(--path-from), var(--path-to) calc(var(--t) * 100%));
+  stroke-width: 0.62;
+  stroke-linecap: round;
+}
+
+:root[data-game="zip"] .board__num {
+  width: 62%;
+  background: #0b0b0b;
+  color: #fff;
+  box-shadow: 0 0 0 1.5px rgb(255 255 255 / 0.12);
+}
+
+:root[data-game="zip"] body[data-state="solved"] .board__step {
+  animation: zip-step 0.18s ease-out backwards;
+  animation-delay: calc(var(--i) * 900ms / var(--n-steps));
+}
+
+@keyframes zip-step {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ================================================================ queens */
+/* Dark grid lines, thick ones where regions meet, gold crowns, × everywhere else. */
+
+:root[data-game="queens"] .board {
+  gap: 1px;
+  padding: 2px;
+  background: #1b1b1b;
+}
+
+:root[data-game="queens"] .board__cell {
+  --wr: 0px;
+  --wb: 0px;
+  box-shadow: inset calc(-1 * var(--wr)) 0 0 0 #1b1b1b, inset 0 calc(-1 * var(--wb)) 0 0 #1b1b1b;
+}
+
+:root[data-game="queens"] .board__cell--wall-right {
+  --wr: 1.5px;
+}
+
+:root[data-game="queens"] .board__cell--wall-bottom {
+  --wb: 1.5px;
+}
+
+:root[data-game="queens"] .board__cell svg.crown {
+  width: 78%;
+  height: 78%;
+  fill: #f5b82e;
+  stroke: #9a6410;
+  stroke-width: 1.1;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+  overflow: visible;
+}
+
+:root[data-game="queens"] .crown__band {
+  fill: #e9a01c;
+}
+
+:root[data-game="queens"] .crown__jewel {
+  fill: #ffd25e;
+}
+
+/* A soft highlight down the left of the body. */
+:root[data-game="queens"] .crown__shine {
+  fill: none;
+  stroke: #ffe39a;
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+:root[data-game="queens"] .board__x {
+  color: #2b2b2b;
+  font-size: calc(110px / var(--n, 8));
+  font-weight: 400;
+  line-height: 1;
+  opacity: 0.8;
+}
+
+/* ================================================================ tango */
+/* Beige grid lines, beige locked cells, and the = / × markers between cells. */
+
+:root[data-game="tango"] {
+  --tango-line: #e6e0d6;
+  --tango-locked: #eeebe5;
+  --tango-mark: #8a7a5c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-game="tango"] {
+    --tango-line: #2a3742;
+    --tango-locked: #17242f;
+    --tango-mark: #b9a98a;
+  }
+}
+
+:root[data-game="tango"] .board {
+  position: relative;
+  overflow: visible;
+  background: var(--tango-line);
+  box-shadow: 0 0 0 1px var(--tango-line);
+}
+
+:root[data-game="tango"] .board__cell--locked {
+  background: var(--tango-locked);
+}
+
+:root[data-game="tango"] .board__edge {
+  position: absolute;
+  z-index: 1;
+  transform: translate(-50%, -50%);
+  padding: 0 1px;
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--tango-mark);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* ================================================================ sudoku */
+/* No cell fills: the starting clues in black, the solved digits in grey, thin grey
+   lines and thick dark ones round each box and the board. */
+
+:root[data-game="sudoku"] {
+  --sudoku-thin: #9c9c9c;
+  --sudoku-thick: #666;
+  --sudoku-solved: #8e8e8e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-game="sudoku"] {
+    --sudoku-thin: #4a5763;
+    --sudoku-thick: #8a96a3;
+    --sudoku-solved: #8a96a3;
+  }
+}
+
+:root[data-game="sudoku"] .board {
+  background: var(--sudoku-thin);
+  box-shadow: 0 0 0 2px var(--sudoku-thick);
+}
+
+:root[data-game="sudoku"] .board__cell {
+  color: var(--sudoku-solved);
+  font-weight: 600;
+}
+
+:root[data-game="sudoku"] .board__cell--given {
+  background: var(--surface);
+  color: var(--text);
+}
+
+:root[data-game="sudoku"] .board__cell--wall-right {
+  border-right: 2px solid var(--sudoku-thick);
+}
+
+:root[data-game="sudoku"] .board__cell--wall-bottom {
+  border-bottom: 2px solid var(--sudoku-thick);
+}
+
+/* ================================================================ patches */
+/* Each patch one rounded block with a darker rim, a little apart from the next,
+   over a faint grid. */
+
+:root[data-game="patches"] .board {
+  gap: 0;
+  padding: 2px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--board-line);
+}
+
+:root[data-game="patches"] .board__cell {
+  background: none;
+  box-shadow: inset -1px -1px 0 0 color-mix(in srgb, var(--board-line) 60%, transparent);
+}
+
+:root[data-game="patches"] .board__block {
+  position: relative;
+  z-index: 1;
+  margin: 2px;
+  border: 2px solid var(--line);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--fill) 92%, #fff);
+}
+
+:root[data-game="patches"] body[data-state="solved"] .board__block {
+  animation: patch-in 0.36s ease-out backwards;
+}
+
+/* ================================================================ sumbreak */
+/* The last tile filling its cell, and a small dot in every emptied cell. */
+
+:root[data-game="sumbreak"] .board__cell {
+  background: none;
+  box-shadow: none;
+}
+
+:root[data-game="sumbreak"] .board__cell:empty::before {
+  content: "";
+  width: 22%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 12%, var(--surface));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-game] .board__step,
+  :root[data-game] .board__block {
+    animation: none !important;
+  }
+}

@@ -34,54 +34,54 @@ const zip = {
   }).sort((a, b) => a.row - b.row || a.col - b.col),
 };
 
-// Queens: 8 regions, one crown in each row, column and region.
-const qRegions = [
-  "00011122", "00011122", "33011222", "33344225", "63344455", "66644755", "66777755", "66777555",
-];
-const qCrowns = [[0, 0], [1, 3], [2, 6], [3, 4], [4, 7], [5, 1], [6, 5], [7, 2]];
-const qColors = ["#b9a3ef", "#ffc992", "#97bdf7", "#b3dfa0", "#dfdfdf", "#ff7b60", "#e6f388", "#bbe5ef"];
+// Queens: the 7×7 board from LinkedIn's finished-board screenshot in the PR.
+const qRegions = ["POBBGGG", "POBBGWW", "POBBBWR", "POBBBRR", "POOYYYY", "POOYYYY", "PPPPPYY"];
+const qCrowns = [[0, 4], [1, 6], [2, 2], [3, 5], [4, 1], [5, 3], [6, 0]];
+const qColors = { P: "#b9a3e3", O: "#f7cb9b", B: "#a3bffa", G: "#bedea7", W: "#dfdfdf", R: "#ee8a6f", Y: "#e6f28f" };
 const queens = {
-  solvable: true, solved: false, N: 8,
-  cells: [...Array(64).keys()].map((i) => {
-    const { row, col } = rc(i, 8);
-    const region = Number(qRegions[row][col]);
+  solvable: true, solved: false, N: 7,
+  cells: [...Array(49).keys()].map((i) => {
+    const { row, col } = rc(i, 7);
+    const region = qRegions[row][col];
     const queen = qCrowns.some(([r, c]) => r === row && c === col);
     return { row, col, region, color: qColors[region], state: queen ? "queen" : "" };
   }),
 };
 
-// Tango: a filled 6×6 with a few given cells.
-const tRows = ["SMSMMS", "MSMSSM", "SSMMSM", "MMSSMS", "SMMSMS", "MSSMSM"];
+// Tango: the finished board from the same screenshots, with its = markers and
+// four locked cells.
+const tRows = ["MMSSMS", "MMSSMS", "SSMMSM", "MSMMSS", "SMSSMM", "SSMMSM"];
+const tEq = [[0, 1], [0, 6], [1, 7], [6, 7], [14, 15], [14, 20], [15, 21], [20, 21]];
 const tango = {
   solvable: true, solved: false, N: 6,
   cells: N6.map((i) => {
     const { row, col } = rc(i, 6);
-    return { row, col, symbol: tRows[row][col] === "S" ? "Sun" : "Moon", locked: [0, 7, 14, 22, 29, 33].includes(i) };
+    return { row, col, symbol: tRows[row][col] === "S" ? "Sun" : "Moon", locked: [28, 29, 34, 35].includes(i) };
   }),
+  edges: tEq.map(([a, b]) => ({ a, b, eq: true })),
 };
 
-// Mini Sudoku: 6×6 with 2×3 boxes.
-const sRows = ["123456", "456123", "231564", "564231", "312645", "645312"];
+// Mini Sudoku: the finished board from the same screenshots. "g" marks a clue.
+const sRows = ["623154", "514362", "356421", "142635", "465213", "231546"];
+const sGiven = ["......", "gg....", "gggg..", "..gggg", "....gg", "......"];
 const sudoku = {
   solvable: true, solved: false, playable: true, N: 6,
   cells: N6.map((i) => {
     const { row, col } = rc(i, 6);
     return {
-      row, col, value: Number(sRows[row][col]), given: (i * 7) % 5 === 0,
+      row, col, value: Number(sRows[row][col]), given: sGiven[row][col] === "g",
       walls: { right: col === 2, left: col === 3, bottom: row === 1 || row === 3, top: row === 2 || row === 4 },
     };
   }),
 };
 
-// Patches: a 6×6 tiled with rectangles, a clue in each.
-const pMap = ["001122", "001122", "334455", "334455", "667788", "667788"];
+// Patches: the tiling from the same screenshots.
+const pMap = ["AAAAAA", "BBCCCF", "BBCCCF", "BBDDDF", "BBEEEF", "BBEEEF"];
 const patches = {
   solvable: true, solved: false, rows: 6, cols: 6,
   cells: N6.map((i) => {
     const { row, col } = rc(i, 6);
-    const patch = Number(pMap[row][col]);
-    const first = pMap.flatMap((r, ri) => [...r].map((ch, ci) => ({ ch, i: ri * 6 + ci }))).find((x) => Number(x.ch) === patch).i;
-    return { row, col, patch, clue: first === i ? { area: 4 } : null };
+    return { row, col, patch: pMap[row].charCodeAt(col) - 65, clue: null };
   }),
 };
 
@@ -90,7 +90,7 @@ const sumVals = [1, 1, 64, 4, 2, 32, 4, 4, 16];
 const sumbreak = {
   solvable: true, solved: false, rows: 3, cols: 3,
   cells: sumVals.map((value, idx) => ({ idx, value })),
-  moves: [[0, 1], [1, 4], [4, 3], [6, 7], [3, 6], [6, 8], [8, 5], [5, 2]],
+  moves: [[0, 1], [1, 4], [4, 7], [3, 6], [6, 7], [7, 8], [8, 5], [5, 2]],
 };
 
 const BOARDS = { runZip: zip, runQueens: queens, runTango: tango, runSudoku: sudoku, runPatches: patches, runSumbreak: sumbreak };
@@ -125,13 +125,13 @@ function stub({ url, boards, messages, store }) {
 const browser = await chromium.launch();
 const page0 = path.join(ext, "popup.html");
 
-async function shot(name, { url, store, act, scheme = "light" }) {
+async function shot(name, { url, store, act, scheme = "light", boards = BOARDS }) {
   const ctx = await browser.newContext({ viewport: { width: 300, height: 600 }, deviceScaleFactor: 2, colorScheme: scheme });
   const page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
-  await page.addInitScript(stub, { url, boards: BOARDS, messages, store });
+  await page.addInitScript(stub, { url, boards, messages, store });
   await page.goto("file://" + page0);
   await page.waitForTimeout(400);
   if (act) await act(page);
@@ -150,6 +150,8 @@ async function shot(name, { url, store, act, scheme = "light" }) {
 
 const li = "https://www.linkedin.com/games/";
 await shot("zip", { url: li + "zip/" });
+// A board the player had already finished: "Already solved", still with the path.
+await shot("zip-already-solved", { url: li + "zip/", boards: { ...BOARDS, runZip: { ...zip, solved: true } } });
 await shot("zip-settings", { url: li + "zip/", act: (p) => p.click("#menu-btn") });
 await shot("queens", { url: li + "queens/" });
 await shot("tango", { url: li + "tango/" });
