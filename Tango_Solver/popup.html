@@ -202,19 +202,6 @@
         <span class="action__label" id="action-label" data-i18n="lblSolve">Solve puzzle</span>
       </button>
 
-      <!-- Completion timer: counts up live while symbols go down, then freezes at
-           the total once the board is solved. Shown only in the solving/solved
-           states (styles.css). aria-hidden because the same figure is folded into
-           the live status line for screen readers — a chip ticking every 100ms
-           would otherwise spam the a11y tree. -->
-      <p class="timer" id="timer" aria-hidden="true">
-        <svg class="timer__icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm0 2a7 7 0 1 1 0 14 7 7 0 0 1 0-14zm-.95 2.4v5.2l4.2 2.5.75-1.3-3.45-2.05V7.4z"
-          />
-        </svg>
-        <span id="timer-value">0.0s</span>
-      </p>
 
       <p class="hint" id="hint"><a class="hint__link" id="hint-link" data-i18n="hintAny" href="https://puzzle-site-lyart.vercel.app/" target="_blank" rel="noopener noreferrer">Play unlimited puzzles, no daily limit →</a></p>
     </main>

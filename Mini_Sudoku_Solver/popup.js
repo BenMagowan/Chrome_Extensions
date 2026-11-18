@@ -29,7 +29,6 @@ const menuEl = document.getElementById("menu");
 const autoToggle = document.getElementById("autosolve-toggle");
 const targetInput = document.getElementById("target-time");
 const targetRange = document.getElementById("target-range");
-const timerValueEl = document.getElementById("timer-value");
 
 let pollTimer = null;
 
@@ -495,11 +494,10 @@ targetInput.addEventListener("keydown", (e) => {
 
 /* -------------------------------------------------------------------- timer */
 
-// How long the last solve took: counts up live while digits are placed, frozen
-// at the total once the board is complete. `elapsedMs` is read back by runSolve
-// to hand the final figure to the solved state.
+// How long the last solve took. Not shown on screen: the figure goes only into
+// the solved status line, which screen readers announce. `elapsedMs` is read
+// back by runSolve to hand it to the solved state.
 let timerStart = 0;
-let timerTick = null;
 let elapsedMs = 0;
 
 function fmtTime(ms) {
@@ -509,20 +507,10 @@ function fmtTime(ms) {
 function startTimer() {
   timerStart = performance.now();
   elapsedMs = 0;
-  timerValueEl.textContent = fmtTime(0);
-  timerTick = setInterval(() => {
-    elapsedMs = performance.now() - timerStart;
-    timerValueEl.textContent = fmtTime(elapsedMs);
-  }, 100);
 }
 
 function stopTimer() {
-  if (timerTick) {
-    clearInterval(timerTick);
-    timerTick = null;
-  }
   elapsedMs = performance.now() - timerStart;
-  timerValueEl.textContent = fmtTime(elapsedMs);
 }
 
 /* ------------------------------------------------------------------ solving */
@@ -653,7 +641,6 @@ function showAutoSolve(auto, boardSolved, data) {
   if (auto.state === "solved" && (wasWatching || boardSolved)) {
     // Quote the solve's own figure, which covers the whole of it.
     elapsedMs = auto.result.ms;
-    timerValueEl.textContent = fmtTime(elapsedMs);
     setState("solved", { ...data, ...auto.result });
     stopPolling();
     return true;
@@ -741,7 +728,7 @@ async function runSolve() {
   startTimer();
 
   // Pace the solve to the target time set in the menu (the engine spreads its
-  // clicks to land near it), so the completion timer settles around that figure.
+  // clicks to land near it), so the solve settles around that figure.
   const results = await runInFrames("solve", { targetMs });
 
   // Another solve already holds this board (see exclusive() in injected.js) —
