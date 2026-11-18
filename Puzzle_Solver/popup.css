@@ -7,6 +7,54 @@
 
 /* ---------- tokens with no game in the tab ---------- */
 
+/* LinkedIn's own palette, from its games page: the warm grey page, white cards
+   edged with a faint grey ring rather than a border, near-black text, LinkedIn
+   blue for the primary action and its green for a solved puzzle's check. Dark is
+   LinkedIn's dark theme. Both blocks live here, after base.css, so neither is
+   overridden by base's own dark-mode block. */
+:root {
+  --brand: #0a66c2;
+  --brand-fill: #0a66c2;
+  --surface: #ffffff;
+  --surface-sunk: #f4f2ee;
+  --line: #e8e6e1;
+  --text: #191919;
+  --text-muted: #666666;
+  --card-edge: 0 0 0 1px rgb(140 140 140 / 0.2);
+  --card-lift: 0 0 0 1px rgb(140 140 140 / 0.3), 0 4px 12px rgb(0 0 0 / 0.08);
+  --primary: #0a66c2;
+  --primary-hover: #004182;
+  --on-primary: #ffffff;
+  --check: #047642;
+  --shade-mix: 16%;
+  --ring: color-mix(in srgb, var(--brand) 45%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --brand: #71b7fb;
+    --surface: #1b1f23;
+    --surface-sunk: #000000;
+    --line: #38434f;
+    --text: #e9e9e9;
+    --text-muted: #a8a8a8;
+    --card-edge: 0 0 0 1px rgb(255 255 255 / 0.12);
+    --card-lift: 0 0 0 1px rgb(255 255 255 / 0.22), 0 4px 12px rgb(0 0 0 / 0.5);
+    --primary: #71b7fb;
+    --primary-hover: #a8d4ff;
+    --on-primary: #000000;
+    --check: #1f8f5a;
+    --shade-mix: 22%;
+  }
+}
+
+/* LinkedIn sets everything, its titles included, in the system sans. */
+.brand__title {
+  font-family: inherit;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
 :root {
   --accent: var(--brand-fill);
   --accent-hi: color-mix(in srgb, var(--brand-fill) 85%, #fff);
@@ -29,7 +77,15 @@
 }
 
 body[data-state="list"] .list {
-  display: block;
+  display: grid;
+}
+
+.solve-all {
+  display: none;
+}
+
+body[data-state="list"] .solve-all {
+  display: flex;
 }
 
 body[data-state="list"] :is(.strip, .board-card, .action) {
@@ -59,8 +115,15 @@ body[data-state="list"] .brand {
   width: 24px;
   height: 24px;
   flex: none;
-  border-radius: 7px;
+  /* 12% of the side: the same corner as the extension's own icons. */
+  border-radius: 12%;
   object-fit: cover;
+}
+
+/* The header icon's corners are drawn into the PNG (12% of the side). Match them
+   here instead of base.css's 8px, which would cut a deeper curve. */
+.brand__icon {
+  border-radius: 12%;
 }
 
 /* ---------- game strip ---------- */
@@ -153,73 +216,232 @@ body[data-state="list"] .brand {
   display: none;
 }
 
-/* ---------- game list (off a game page) ---------- */
+/* ---------- game grid (off a game page) ---------- */
 
+/* Two across, three down: LinkedIn's games-page card, stood on end to fit the
+   popup. The game's art sits on a wash of its colour at the top; a green check over it
+   says today's puzzle is solved. */
 .list {
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface);
-  box-shadow: var(--shadow);
-  overflow: hidden;
-}
-
-.list li + li {
-  border-top: 1px solid var(--line);
 }
 
 .list__game {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
   width: 100%;
-  padding: 9px 12px;
+  padding: 0;
   border: 0;
-  background: none;
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--card-edge);
   color: var(--text);
   font: inherit;
-  font-size: 13px;
-  font-weight: 600;
   text-align: left;
+  overflow: hidden;
   cursor: pointer;
+  transition: box-shadow 0.15s ease;
 }
 
 .list__game:hover {
-  background: var(--surface-sunk);
+  box-shadow: var(--card-lift);
 }
 
 .list__game:focus-visible {
   outline: none;
-  box-shadow: inset 0 0 0 2px var(--ring);
+  box-shadow: var(--card-edge), 0 0 0 3px var(--ring);
 }
 
-.list__name {
-  flex: 1;
+.card__art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 66px;
+  /* The game's colour washed into the card: pale on white, deep on dark. */
+  background: color-mix(in srgb, var(--shade) var(--shade-mix), var(--surface));
+}
+
+.card__art .game-icon {
+  width: 40px;
+  height: 40px;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.08);
+}
+
+/* As on LinkedIn: the check sits over the middle of the game's art. */
+.card__check {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--check);
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.card__check[hidden] {
+  display: none;
+}
+
+.card__art .badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  margin: 0;
+  padding: 1px 5px;
+  font-size: 9px;
+}
+
+.card__text {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px 10px 9px;
   min-width: 0;
 }
 
-.list__name .badge,
-.settings__name .badge {
-  margin: 0;
+.card__title {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-.list__open {
-  flex: none;
+.card__num {
+  font-weight: 400;
+}
+
+.card__status {
   font-size: 11.5px;
-  font-weight: 550;
+  line-height: 1.3;
   color: var(--text-muted);
 }
 
-.list__game:hover .list__open {
-  color: var(--brand);
+/* ---------- solve all ---------- */
+
+.solve-all {
+  align-items: center;
+  gap: 8px;
+}
+
+.solve-all__btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--on-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.solve-all__btn:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.solve-all__btn:focus-visible,
+.solve-all__stop:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+/* Nothing left to solve: LinkedIn's disabled button, grey on grey. */
+.solve-all__btn:disabled {
+  cursor: default;
+  background: color-mix(in srgb, var(--text) 8%, var(--surface-sunk));
+  color: var(--text-muted);
+}
+
+/* Running: still blue, so it reads as busy rather than finished. */
+.solve-all[data-running="true"] .solve-all__btn:disabled {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.solve-all__spinner {
+  display: none;
+  width: 13px;
+  height: 13px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--on-primary) 30%, transparent);
+  border-top-color: var(--on-primary);
+  animation: spin 0.7s linear infinite;
+}
+
+.solve-all[data-running="true"] .solve-all__spinner {
+  display: block;
+}
+
+.solve-all__stop {
+  flex: none;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--text-muted);
+  border-radius: 999px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.solve-all__stop:hover {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  box-shadow: inset 0 0 0 1px var(--text-muted);
+}
+
+.solve-all__stop[hidden] {
+  display: none;
+}
+
+/* The strip's check: today's puzzle is solved. */
+.strip__check {
+  position: absolute;
+  top: 1px;
+  right: calc(50% - 18px);
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--check);
+  box-shadow: 0 0 0 1.5px var(--surface);
+}
+
+.card__check svg,
+.strip__check svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .solve-all__spinner {
+    animation-duration: 2s;
+  }
 }
 
 /* ---------- settings ---------- */
+
+.settings__name .badge {
+  margin: 0;
+}
 
 .settings {
   width: 268px;

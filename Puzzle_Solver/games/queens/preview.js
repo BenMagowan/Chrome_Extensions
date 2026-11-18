@@ -41,6 +41,17 @@ registerPreview("queens", (boardEl) => {
     return svg;
   }
 
+  function crossSvg() {
+    const svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("class", "board__x");
+    const path = document.createElementNS(SVG_NS, "path");
+    path.setAttribute("d", "M8.5 8.5l7 7M15.5 8.5l-7 7");
+    svg.appendChild(path);
+    return svg;
+  }
+
   // Queens boards vary in size, so the empty grid just uses the most common one.
   // It's a placeholder, and renderBoard resizes to the real N the moment we know it.
   const DEFAULT_N = 8;
@@ -111,19 +122,13 @@ registerPreview("queens", (boardEl) => {
       const corner = cornerClass(c.row, c.col, N);
       if (corner) cell.classList.add(corner);
       if (c.state === "queen") cell.classList.add("board__cell--queen");
-      if (c.state === "cross") cell.classList.add("board__cell--cross");
       cell.style.background = usePageColors
         ? c.color
         : fallbackColor(regions.indexOf(c.region), regions.length);
       if (c.state === "queen") cell.appendChild(queenSvg());
       // As LinkedIn shows a finished board: every other cell crossed out, and a
       // thick line wherever two regions meet.
-      else {
-        const x = document.createElement("span");
-        x.className = "board__x";
-        x.textContent = "×";
-        cell.appendChild(x);
-      }
+      else cell.appendChild(crossSvg());
       const regionAt = (r, col) => {
         const n = ordered[r * N + col];
         return n && n.row === r && n.col === col ? n.region : null;

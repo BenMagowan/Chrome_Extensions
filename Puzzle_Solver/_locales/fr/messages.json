@@ -41,6 +41,27 @@
   "autoSolveFor": {
     "message": "Résoudre $1 automatiquement"
   },
+  "solvedToday": {
+    "message": "Résolu aujourd'hui"
+  },
+  "notSolved": {
+    "message": "Pas encore résolu"
+  },
+  "puzzleNumber": {
+    "message": "#$1"
+  },
+  "solveAll": {
+    "message": "Tout résoudre"
+  },
+  "solvingOf": {
+    "message": "Résolution $1 sur $2…"
+  },
+  "stopSolving": {
+    "message": "Arrêter"
+  },
+  "checkingGames": {
+    "message": "Vérification des jeux du jour…"
+  },
   "localeTag": {
     "message": "fr"
   },

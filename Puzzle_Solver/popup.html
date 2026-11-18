@@ -106,8 +106,20 @@
         <span class="action__label" id="action-label" data-i18n="lblSolve">Solve puzzle</span>
       </button>
 
-      <!-- Off a game page the board and button give way to this list. -->
+      <!-- Off a game page the board and button give way to this grid of games, laid
+           out like LinkedIn's own games page: each card opens its game and says
+           whether today's puzzle is solved. -->
       <ul id="list" class="list" aria-label="Open a game" data-i18n-aria-label="openAGame"></ul>
+
+      <!-- Solve all: the background worker walks one tab through every game not
+           solved today. While it runs, the button shows progress and Stop ends it. -->
+      <div class="solve-all" id="solve-all">
+        <button id="solve-all-btn" class="solve-all__btn" type="button">
+          <span class="solve-all__spinner" aria-hidden="true"></span>
+          <span id="solve-all-label" data-i18n="solveAll">Solve all</span>
+        </button>
+        <button id="solve-all-stop" class="solve-all__stop" type="button" data-i18n="stopSolving" hidden>Stop</button>
+      </div>
 
       <p class="hint" id="hint"><a class="hint__link" id="hint-link" href="https://puzzle-site-lyart.vercel.app/" target="_blank" rel="noopener noreferrer"><span class="badge" data-i18n="badgeNew" data-site-badge hidden>New</span><span id="hint-text" data-i18n="hintAny">Play unlimited puzzles</span></a></p>
     </main>

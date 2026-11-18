@@ -97,7 +97,7 @@ const BOARDS = { runZip: zip, runQueens: queens, runTango: tango, runSudoku: sud
 
 /* ------------------------------------------------------------------ the stub */
 
-function stub({ url, boards, messages, store }) {
+function stub({ url, boards, messages, store, solvedIds = [], run = null }) {
   const msg = (key, subs = []) => {
     const m = messages[key];
     if (!m) return "";
@@ -105,9 +105,21 @@ function stub({ url, boards, messages, store }) {
   };
   window.chrome = {
     i18n: { getMessage: (k, subs) => msg(k, subs) },
-    runtime: { getURL: (p) => p },
-    storage: { local: { set() {}, get: async () => ({}) } },
-    tabs: { query: async () => [{ id: 1, url }], create() {} },
+    runtime: { getURL: (p) => p, sendMessage: async (m) => (m && m.type === "solveAll:status" ? run : null) },
+    // chrome.storage.local: the games solved today (puzzleDay() is games.js's, loaded
+    // by the time the popup reads) and a Solve all run, if the shot has one.
+    storage: {
+      local: {
+        set() {},
+        get: async () => ({
+          ...Object.fromEntries(solvedIds.map((id) => [`solved:${id}`, puzzleDay()])),
+          ...(run ? { solveAllRun: run } : {}),
+        }),
+      },
+      onChanged: { addListener() {} },
+    },
+    tabs: { query: async () => [{ id: 1, url }], update: async (_, { url: u }) => ({ id: 1, url: (url = u) }), create() {} },
+    windows: { getCurrent: async () => ({ id: 1, incognito: false }) },
     scripting: {
       executeScript: async ({ func, args }) => {
         const board = boards[func.name];
@@ -125,13 +137,13 @@ function stub({ url, boards, messages, store }) {
 const browser = await chromium.launch();
 const page0 = path.join(ext, "popup.html");
 
-async function shot(name, { url, store, act, scheme = "light", boards = BOARDS }) {
+async function shot(name, { url, store, act, scheme = "light", boards = BOARDS, solvedIds, run }) {
   const ctx = await browser.newContext({ viewport: { width: 300, height: 600 }, deviceScaleFactor: 2, colorScheme: scheme });
   const page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
-  await page.addInitScript(stub, { url, boards, messages, store });
+  await page.addInitScript(stub, { url, boards, messages, store, solvedIds, run });
   await page.goto("file://" + page0);
   await page.waitForTimeout(400);
   if (act) await act(page);
@@ -158,10 +170,21 @@ await shot("tango", { url: li + "tango/" });
 await shot("mini-sudoku", { url: li + "mini-sudoku/" });
 await shot("patches", { url: li + "patches/" });
 await shot("sumbreak", { url: li + "sumbreak/" });
-await shot("other-page", { url: "https://www.linkedin.com/feed/" });
+// Off a game page: the game grid. Some solved today, so Solve all offers the rest.
+const feed = "https://www.linkedin.com/feed/";
+const someSolved = ["zip", "queens", "patches"];
+await shot("other-page", { url: feed, solvedIds: someSolved });
+await shot("other-page-none-solved", { url: feed });
+await shot("other-page-all-solved", { url: feed, solvedIds: ["zip", "queens", "tango", "sudoku", "patches", "sumbreak"] });
+await shot("other-page-solving-all", {
+  url: feed,
+  solvedIds: ["zip", "queens"],
+  run: { tabId: 2, queue: ["queens", "tango", "sudoku", "patches"], index: 1, started: true, solved: ["queens"] },
+});
+await shot("queens-strip-checks", { url: li + "queens/", solvedIds: someSolved });
 await shot("other-page-settings", { url: "https://www.linkedin.com/feed/", act: (p) => p.click("#menu-btn") });
 await shot("zip-dark", { url: li + "zip/", scheme: "dark" });
-await shot("other-page-dark", { url: "https://www.linkedin.com/feed/", scheme: "dark" });
+await shot("other-page-dark", { url: feed, scheme: "dark", solvedIds: someSolved });
 // An existing Zip Solver user: their old settings (auto-solve off, 12s) become Zip's.
 await shot("migrated-zip-settings", {
   url: li + "zip/",
