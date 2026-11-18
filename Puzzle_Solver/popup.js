@@ -83,7 +83,7 @@ const STATES = {
 };
 
 let state = "checking";
-const openedAt = Date.now();
+let openedAt = Date.now();
 
 const resolve = (v, d) => (typeof v === "function" ? v(d) : v);
 
@@ -197,10 +197,38 @@ for (const link of [hintLink, siteLink]) {
 
 /* ------------------------------------------------------- strip and game list */
 
-function openGame(g) {
+async function openGame(g) {
   markGameSeen(g);
+  const tab = await getActiveTab().catch(() => null);
+  if (tab && tab.id != null) {
+    try {
+      await chrome.tabs.update(tab.id, { url: gameUrl(g) });
+      showGame(g);
+      return;
+    } catch {
+      /* privileged tab — fall back to a new tab */
+    }
+  }
   chrome.tabs.create({ url: gameUrl(g) });
   window.close();
+}
+
+/** Switch the popup to `g`'s board view and start polling its tab. */
+function showGame(g) {
+  stopPolling();
+  watchingAuto = false;
+  openedAt = Date.now();
+  game = g;
+  document.documentElement.dataset.game = g.id;
+  siteLink.href = siteUrl("menu", null, game);
+  markGameSeen(game);
+  buildSettings();
+  buildStrip();
+  preview = makePreview(game.id, boardEl);
+  if (preview) preview.renderPlaceholder();
+  setState("checking");
+  refresh();
+  pollTimer = setInterval(refresh, POLL_MS);
 }
 
 /** The row of games under the header, on a game page. The tab's game is marked. */
@@ -743,24 +771,26 @@ function showAutoSolve(auto, boardSolved, data) {
 
 /** Detect a board; move to `ready` only when one is present & solvable. */
 async function refresh() {
-  if (superseded()) return;
-  const autoSolve = settings[game.id].autosolve;
+  if (!game || superseded()) return;
+  const forGame = game;
+  const autoSolve = settings[forGame.id].autosolve;
 
   // Following a solve in the page, or holding a found board while Auto-solve is due
   // to start on it: only the marker can move things on from here, and reading it is
   // far cheaper than a detect.
   if (watchingAuto || (state === "ready" && autoSolve)) {
     const auto = await readAutoSolve();
-    if (superseded()) return;
+    if (game !== forGame || superseded()) return;
     if (watchingAuto ? auto && auto.state === "solving" : !auto) return;
   }
 
   const results = await runInFrames("detect");
+  if (game !== forGame) return;
   const board = results.find((r) => r.solvable);
 
   if (board) {
     const auto = await readAutoSolve();
-    if (superseded()) return;
+    if (game !== forGame || superseded()) return;
     // Draw before switching state: the board element is revealed by the state
     // change, so filling it first avoids a frame of empty grid.
     if (preview) preview.renderBoard(board);
@@ -795,16 +825,20 @@ async function refresh() {
  * so the timer and result handling live in one place.
  */
 async function runSolve() {
+  if (!game) return;
+  const forGame = game;
   stopPolling();
   setState("solving");
   startTimer();
 
-  const results = await runInFrames("solve", { targetMs: settings[game.id].targetMs });
+  const results = await runInFrames("solve", { targetMs: settings[forGame.id].targetMs });
+  if (game !== forGame) return;
 
   // Another solve already holds this board — usually content.js's auto-solve,
   // started between our last poll and the click. Follow it instead.
   if (results.some((r) => r.busy)) {
     const auto = await readAutoSolve();
+    if (game !== forGame) return;
     watchingAuto = true;
     if (auto) timerStart = performance.now() - (Date.now() - auto.startedAt);
     pollTimer = setInterval(refresh, POLL_MS);
@@ -831,8 +865,7 @@ async function runSolve() {
 actionBtn.addEventListener("click", () => {
   const act = STATES[state].act;
   if (act === "open") {
-    chrome.tabs.create({ url: gameUrl(game) });
-    window.close();
+    openGame(game);
     return;
   }
   if (act === "solve") runSolve();
@@ -845,11 +878,6 @@ async function init() {
   loadSettings();
   siteLink.href = siteUrl("menu", null, game);
 
-  const tab = await getActiveTab().catch(() => null);
-  game = gameForUrl(tab && tab.url);
-  document.documentElement.dataset.game = game ? game.id : "";
-  siteLink.href = siteUrl("menu", null, game);
-  buildSettings();
   // An incognito window's popup reads incognito's own solved days (see games.js).
   try {
     setIncognito((await chrome.windows.getCurrent()).incognito);
@@ -858,22 +886,18 @@ async function init() {
   }
   await loadSolved(true);
 
-  if (!game) {
+  const tab = await getActiveTab().catch(() => null);
+  const g = gameForUrl(tab && tab.url);
+  if (!g) {
+    document.documentElement.dataset.game = "";
+    buildSettings();
     buildList();
     renderSolveAll();
     setState("list");
     return;
   }
 
-  markGameSeen(game);
-  buildStrip();
-  preview = makePreview(game.id, boardEl);
-  // Draw the empty grid before the first paint so the popup opens as a board rather
-  // than snapping into one a moment later.
-  if (preview) preview.renderPlaceholder();
-  setState("checking");
-  refresh();
-  pollTimer = setInterval(refresh, POLL_MS);
+  showGame(g);
 }
 
 init();

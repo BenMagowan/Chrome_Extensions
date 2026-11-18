@@ -148,6 +148,21 @@ try {
     const state = await page.evaluate(() => document.body.dataset.state);
     const rows = await page.locator(".list__game").count();
     check(state === "list" && rows === 6 && !errors.length, "popup loads in the extension", `state=${state}, ${rows} games${errors.length ? ", errors: " + errors.join("; ") : ""}`);
+
+    // Clicking a game navigates the active tab and switches the popup to that
+    // game's view without closing the popup.
+    const activeTab = await context.newPage();
+    await activeTab.goto("https://www.linkedin.com/games/");
+    await activeTab.bringToFront();
+    await page.locator('.list__game[data-game="zip"]').click();
+    await page.waitForFunction(() => document.documentElement.dataset.game === "zip");
+    await activeTab.waitForURL("**/games/zip/**");
+    check(
+      !page.isClosed() && /\/games\/zip\/$/.test(activeTab.url()),
+      "clicking a game opens it in the active tab and keeps the popup open",
+      activeTab.url()
+    );
+    await activeTab.close();
     await page.close();
   }
 
@@ -231,6 +246,14 @@ try {
     const left = await worker.evaluate(() => chrome.storage.local.get("solveAllRun"));
     check(status === null && !left.solveAllRun, "a run whose tab is gone is cleared");
     await popup.close();
+  }
+
+  // 8. A run started from a tab that can't be navigated (e.g. a chrome:// page)
+  //    falls back to opening a new tab rather than failing silently.
+  {
+    const run = await worker.evaluate(() => startRun(["sumbreak"], 999999));
+    check(!!run && run.tabId !== 999999, "a run started on an un-navigable tab falls back to a new tab", run ? `tabId=${run.tabId}` : "null");
+    await worker.evaluate(() => setRun(null));
   }
 } finally {
   await context.close();

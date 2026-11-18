@@ -102,18 +102,27 @@ async function startRun(ids, tabId) {
   if (existing) return existing;
   const queue = ids.filter((id) => GAME_BY_ID[id]);
   if (!queue.length) return null;
+  const makeBlankTab = async () => (await chrome.tabs.create({ url: "about:blank", active: true })).id;
   if (tabId == null) {
     // Open the tab blank and store the run before loading the games page, so
     // nothing in it can report before the run exists.
-    tabId = (await chrome.tabs.create({ url: "about:blank", active: true })).id;
+    tabId = await makeBlankTab();
   }
-  const run = { tabId, phase: "hub", queue, index: 0, started: false, solved: [] };
+  let run = { tabId, phase: "hub", queue, index: 0, started: false, solved: [] };
   await setRun(run);
   try {
     await chrome.tabs.update(tabId, { url: HUB_URL });
   } catch {
-    await setRun(null);
-    return null;
+    // A privileged tab (chrome://, the web store) can't be navigated: fall back
+    // to a fresh tab so Solve all still works from there.
+    try {
+      run = { ...run, tabId: await makeBlankTab() };
+      await setRun(run);
+      await chrome.tabs.update(run.tabId, { url: HUB_URL });
+    } catch {
+      await setRun(null);
+      return null;
+    }
   }
   return run;
 }
@@ -144,11 +153,13 @@ async function openCurrent(run) {
 /**
  * The games page reported while the run was on a game: LinkedIn sent the game's
  * URL back there (a signed-out visit with ?skipStartScreen=true does that). Try the
- * game once more by its plain URL, then give up on it and move on.
+ * game once more by its plain URL (and keep skipStart off for the rest of the run),
+ * then give up on it and move on.
  */
 async function bouncedToHub(run) {
-  if (!run.retried) {
-    const next = { ...run, retried: true, started: false };
+  if (run.started) return;
+  if (run.skipStart && !run.retried) {
+    const next = { ...run, skipStart: false, retried: true, started: false };
     await setRun(next);
     await openCurrent(next);
   } else {

@@ -118,7 +118,7 @@ function stub({ url, boards, messages, store, solvedIds = [], run = null }) {
       },
       onChanged: { addListener() {} },
     },
-    tabs: { query: async () => [{ id: 1, url }], create() {} },
+    tabs: { query: async () => [{ id: 1, url }], update: async (_, { url: u }) => ({ id: 1, url: (url = u) }), create() {} },
     windows: { getCurrent: async () => ({ id: 1, incognito: false }) },
     scripting: {
       executeScript: async ({ func, args }) => {

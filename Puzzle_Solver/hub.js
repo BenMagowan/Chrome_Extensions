@@ -52,13 +52,7 @@
     const found = [];
     signedIn = false;
     for (const a of document.querySelectorAll('a[href*="/games/"]')) {
-      let path;
-      try {
-        path = new URL(a.getAttribute("href"), location.href).pathname;
-      } catch {
-        continue;
-      }
-      const g = GAMES.find((x) => path.replace(/\/+$/, "") === `/games/${x.path}`);
+      const g = gameForUrl(a.href);
       if (!g || found.some((f) => f.id === g.id)) continue;
       // Signed in, the art is img.ps-game-entrypoint-card__bg-img ("Zip graphic");
       // signed out, img.game-entrypoint-card__bg-img ("Zip"). Both end the same.
