@@ -1,0 +1,457 @@
+/*
+ * injected.js — the whole Tango engine as ONE self-contained function.
+ *
+ * The popup injects it on demand into every frame of the LinkedIn games tab via
+ *   chrome.scripting.executeScript({ target:{tabId, allFrames:true}, world:'MAIN', func: runTango, args:[mode, opts] })
+ * (See Queens_Solver for why on-demand MAIN-world injection is used for the popup
+ *  instead of a pre-injected content script: no reload-after-install gotcha, immune
+ *  to when the game iframe loaded, and exempt from the page CSP that blocks in-page
+ *  eval.) The same file is ALSO loaded as a content script, ahead of content.js,
+ *  which drives auto-solve on page load — so the engine never forks.
+ *
+ * MUST stay fully self-contained — executeScript serializes it with
+ * Function.prototype.toString, so every helper is nested and nothing outside is
+ * referenced except the `mode` / `opts` arguments.
+ *
+ * TANGO RULES (constraint satisfaction):
+ *   - Each cell is a Sun or a Moon.
+ *   - Each row and each column has an equal number of Suns and Moons (N/2 each).
+ *   - No 3 identical symbols consecutively in any row or column.
+ *   - Cells joined by "=" must match; joined by "×" must be opposite.
+ *   - Some cells are pre-filled (locked) clues. The solution is unique.
+ *
+ * @param {'detect'|'solve'} mode
+ * @param {{targetMs?:number, preview?:boolean}} [opts] `targetMs` paces 'solve': aim
+ *        the whole solve at this total time (see the click-delay maths in the solve
+ *        branch); omit for the default cadence. `preview:false` makes 'detect' skip
+ *        the solve that builds the popup's preview (`cells` comes back null).
+ * @returns {{solvable:boolean,N:number,solved:boolean,cells:object[]|null}} for 'detect',
+ *          {{ok:boolean, placed?:number, alreadySolved?:boolean, error?:string,
+ *            busy?:boolean, board?:boolean}} for 'solve' — `busy` when another solve
+ *          already holds this board, `board` from the frame that has the board
+ */
+async function runTango(mode, opts) {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  // Optional pacing. When a target total time is supplied the solve branch spreads
+  // its clicks to land near it; null keeps the default, verified-safe cadence.
+  const targetMs =
+    opts && typeof opts.targetMs === "number" && opts.targetMs > 0
+      ? opts.targetMs
+      : null;
+
+  // --- read a cell's current symbol: "Sun" | "Moon" | "Empty" ---
+  // The symbol svg's data-testid (cell-zero = Sun, cell-one = Moon, cell-empty) comes
+  // first because it is the same in every language. The aria-label is TRANSLATED
+  // ("Soleil" / "Lune" / "Vide" in French), so it is only the fallback for the older
+  // markup that has no data-testid, where it is known in English alone.
+  const SYMBOL_SEL = '[data-testid="cell-zero"], [data-testid="cell-one"], [data-testid="cell-empty"]';
+  function symbolOf(cellEl) {
+    const marked = cellEl.querySelector(SYMBOL_SEL);
+    if (marked) {
+      const id = marked.getAttribute("data-testid");
+      return id === "cell-zero" ? "Sun" : id === "cell-one" ? "Moon" : "Empty";
+    }
+    const svg = cellEl.querySelector("svg[aria-label]");
+    const l = svg ? svg.getAttribute("aria-label") : "";
+    if (l === "Sun" || l === "Moon") return l;
+    return "Empty";
+  }
+
+  // --- parse the board into {N, cells:[{idx,row,col,locked,symbol,el}], edges} ---
+  // Grid-agnostic: keys off [data-cell-idx], present and stable in both the guest
+  // (div.lotka-cell) and signed-in (#tango-cell-N) DOMs, rather than ids/classes
+  // that differ or are hashed between them.
+  function parseBoard() {
+    const all = Array.from(document.querySelectorAll("[data-cell-idx]"));
+    if (all.length < 16) return null; // not rendered yet
+    // Keep the largest set of cells sharing one parent (the real grid).
+    const byParent = new Map();
+    for (const el of all) {
+      const p = el.parentElement;
+      if (!p) continue;
+      if (!byParent.has(p)) byParent.set(p, []);
+      byParent.get(p).push(el);
+    }
+    let gridEl = all[0].parentElement;
+    let els = all;
+    let best = 0;
+    for (const [p, arr] of byParent) {
+      if (arr.length > best) {
+        best = arr.length;
+        els = arr;
+        gridEl = p;
+      }
+    }
+    const N = Math.round(Math.sqrt(els.length));
+    if (N * N !== els.length || N % 2 !== 0) return null; // Tango grids are square & even
+
+    const cells = els.map((el) => {
+      const idx = parseInt(el.getAttribute("data-cell-idx"), 10);
+      return {
+        idx,
+        row: Math.floor(idx / N),
+        col: idx % N,
+        locked: el.getAttribute("aria-disabled") === "true",
+        symbol: symbolOf(el),
+        el,
+      };
+    });
+
+    // Tango signature: cells must carry Sun/Moon/Empty svgs (so a Queens board,
+    // which also uses [data-cell-idx], never mis-parses as Tango). data-testid in any
+    // language; the English aria-label for the older markup without one.
+    const looksTango = els.some((el) => {
+      if (el.querySelector(SYMBOL_SEL)) return true;
+      const svg = el.querySelector("svg[aria-label]");
+      return svg && /^(Sun|Moon|Empty)$/.test(svg.getAttribute("aria-label") || "");
+    });
+    if (!looksTango) return null;
+
+    // Edges: "=" (Equal) and "×" (Cross) markers, scoped to the grid so the
+    // how-to-play legend's Cross icon is ignored. Found by data-testid (edge-equal /
+    // edge-cross, the same in every language), or by the English aria-label in the
+    // older markup. Direction from the wrapper class (guest:
+    // lotka-cell-edge--right/--down) or geometry (signed-in: hashed classes).
+    const edges = [];
+    const isEqual = (svg) =>
+      svg.getAttribute("data-testid") === "edge-equal" || svg.getAttribute("aria-label") === "Equal";
+    gridEl
+      .querySelectorAll(
+        '[data-testid="edge-equal"], [data-testid="edge-cross"], svg[aria-label="Equal"], svg[aria-label="Cross"]'
+      )
+      .forEach((svg) => {
+        const cell = svg.closest("[data-cell-idx]");
+        if (!cell) return;
+        const idx = parseInt(cell.getAttribute("data-cell-idx"), 10);
+        const wrapCls = (svg.parentElement.getAttribute("class") || "");
+        let dir = /--right/.test(wrapCls) ? "right" : /--down/.test(wrapCls) ? "down" : null;
+        if (!dir) {
+          const cr = cell.getBoundingClientRect();
+          const sr = svg.getBoundingClientRect();
+          const toRight = Math.abs(sr.left + sr.width / 2 - cr.right);
+          const toBottom = Math.abs(sr.top + sr.height / 2 - cr.bottom);
+          dir = toRight < toBottom ? "right" : "down";
+        }
+        const b = dir === "right" ? idx + 1 : idx + N;
+        edges.push({ a: idx, b, eq: isEqual(svg) });
+      });
+
+    return { N, cells, edges };
+  }
+
+  // --- CSP backtracking solver. Symbols: 0 = Sun, 1 = Moon. ---
+  function solve(board) {
+    const { N, cells, edges } = board;
+    const HALF = N / 2;
+    const SYM = { Sun: 0, Moon: 1 };
+
+    const locked = {}; // idx -> 0/1
+    for (const c of cells) if (c.locked && c.symbol !== "Empty") locked[c.idx] = SYM[c.symbol];
+
+    // edges indexed by cell for O(1) neighbour lookup during search
+    const edgeByCell = new Map();
+    for (const e of edges) {
+      if (!edgeByCell.has(e.a)) edgeByCell.set(e.a, []);
+      if (!edgeByCell.has(e.b)) edgeByCell.set(e.b, []);
+      edgeByCell.get(e.a).push(e);
+      edgeByCell.get(e.b).push(e);
+    }
+
+    const g = new Array(N * N).fill(-1);
+    const at = (r, c) => g[r * N + c];
+    const rowCount = (r, v) => {
+      let n = 0;
+      for (let c = 0; c < N; c++) if (at(r, c) === v) n++;
+      return n;
+    };
+    const colCount = (c, v) => {
+      let n = 0;
+      for (let r = 0; r < N; r++) if (at(r, c) === v) n++;
+      return n;
+    };
+
+    function canPlace(r, c, v) {
+      // no 3 identical consecutively (row & column) using the two cells before this
+      if (c >= 2 && at(r, c - 1) === v && at(r, c - 2) === v) return false;
+      if (r >= 2 && at(r - 1, c) === v && at(r - 2, c) === v) return false;
+      // balance: never exceed N/2 of a symbol per row/column
+      if (rowCount(r, v) + 1 > HALF) return false;
+      if (colCount(c, v) + 1 > HALF) return false;
+      // edge constraints against already-placed neighbours
+      const idx = r * N + c;
+      const es = edgeByCell.get(idx);
+      if (es) {
+        for (const e of es) {
+          const other = e.a === idx ? e.b : e.a;
+          if (g[other] === -1) continue;
+          if (e.eq && g[other] !== v) return false;
+          if (!e.eq && g[other] === v) return false;
+        }
+      }
+      return true;
+    }
+
+    function backtrack(pos) {
+      if (pos === N * N) return true;
+      const r = Math.floor(pos / N);
+      const c = pos % N;
+      if (locked[pos] !== undefined) {
+        const v = locked[pos];
+        if (!canPlace(r, c, v)) return false;
+        g[pos] = v;
+        if (backtrack(pos + 1)) return true;
+        g[pos] = -1;
+        return false;
+      }
+      for (const v of [0, 1]) {
+        if (!canPlace(r, c, v)) continue;
+        g[pos] = v;
+        if (backtrack(pos + 1)) return true;
+        g[pos] = -1;
+      }
+      return false;
+    }
+
+    if (!backtrack(0)) return null;
+    // map back to per-cell target symbols keyed by idx
+    const target = {};
+    for (const c of cells) target[c.idx] = g[c.idx] === 0 ? "Sun" : "Moon";
+    return target;
+  }
+
+  // --- is the board ALREADY finished? ---
+  // Tests the game's win condition against the symbols currently on the board,
+  // rather than comparing to solve()'s output: that keeps the answer honest even
+  // if a board somehow admits more than one solution, and it still works when the
+  // solver itself can't crack it.
+  function isSolved(board) {
+    const { N, cells, edges } = board;
+    const HALF = N / 2;
+    const g = new Array(N * N).fill(null);
+    for (const c of cells) {
+      if (c.symbol === "Empty") return false; // an unfilled cell is never a win
+      g[c.idx] = c.symbol;
+    }
+    const at = (r, c) => g[r * N + c];
+    for (let i = 0; i < N; i++) {
+      let rowSuns = 0;
+      let colSuns = 0;
+      for (let j = 0; j < N; j++) {
+        if (at(i, j) === "Sun") rowSuns++;
+        if (at(j, i) === "Sun") colSuns++;
+        // No 3 identical consecutively, along the row and down the column.
+        if (j >= 2 && at(i, j) === at(i, j - 1) && at(i, j) === at(i, j - 2)) return false;
+        if (j >= 2 && at(j, i) === at(j - 1, i) && at(j, i) === at(j - 2, i)) return false;
+      }
+      if (rowSuns !== HALF || colSuns !== HALF) return false; // equal Suns and Moons
+    }
+    for (const e of edges) {
+      const same = g[e.a] === g[e.b];
+      if (e.eq !== same) return false; // "=" wants a match, "×" wants opposites
+    }
+    return true;
+  }
+
+  // A serialisable picture of the board for the popup to draw. Deliberately plain
+  // data — executeScript has to structured-clone this back, so no elements.
+  //
+  // The symbols shown are the SOLUTION's, not the player's current attempt: the
+  // preview exists to show what the solver will do, so a part-filled grid would be
+  // the wrong thing to draw. `target` null means we couldn't solve it (or the board
+  // is already finished) — fall back to what's on screen.
+  function snapshot(board, target) {
+    return board.cells.map((c) => ({
+      row: c.row,
+      col: c.col,
+      locked: c.locked,
+      symbol: target ? target[c.idx] : c.symbol,
+    }));
+  }
+
+  // --- the click sequence the game accepts (same framework as Queens) ---
+  function fireOneClick(el) {
+    const r = el.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    const base = {
+      bubbles: true, cancelable: true, composed: true, view: window,
+      clientX: cx, clientY: cy, screenX: cx, screenY: cy,
+      button: 0, isPrimary: true, pointerId: 1, pointerType: "mouse",
+    };
+    el.dispatchEvent(new PointerEvent("pointerdown", { ...base, buttons: 1 }));
+    el.dispatchEvent(new MouseEvent("mousedown", { ...base, buttons: 1 }));
+    el.dispatchEvent(new PointerEvent("pointerup", { ...base, buttons: 0 }));
+    el.dispatchEvent(new MouseEvent("mouseup", { ...base, buttons: 0 }));
+    el.dispatchEvent(new MouseEvent("click", { ...base, buttons: 0 }));
+  }
+  // How long a click gets to show before it counts as dropped. Far above a normal
+  // render, because the cost of guessing wrong is lopsided: these clicks CYCLE a
+  // symbol, so repeating one that did land (just slowly) walks the cell past its
+  // target, while waiting a little longer on one that really was dropped only costs
+  // time.
+  const SETTLE_MS = 600;
+  // How long the finished board gets to show the win before we call it unsolved.
+  const CONFIRM_MS = 1500;
+
+  /** Resolve true as soon as cond() holds, or false once `ms` has passed without. */
+  async function waitFor(cond, ms) {
+    const until = performance.now() + ms;
+    while (!cond()) {
+      if (performance.now() >= until) return false;
+      await sleep(25);
+    }
+    return true;
+  }
+
+  // Cycle a cell (Empty -> Sun -> Moon -> Empty) to the target symbol, one click at
+  // a time. State updates asynchronously, so each click is given up to SETTLE_MS to
+  // show before the next one is decided from a fresh read; deciding off a render
+  // that merely lagged would click once too often. Two clicks reach any symbol; the
+  // spare tries cover a click that really was dropped. Returns whether it got there.
+  // `delay` is the pause after each click — the one lever the pacing turns, and it
+  // sleeps after the click that lands the target too, so consecutive cells stay
+  // spaced without a separate between-cell wait.
+  async function clickUntil(el, targetSymbol, delay) {
+    for (let i = 0; i < 4; i++) {
+      const from = symbolOf(el);
+      if (from === targetSymbol) return true;
+      fireOneClick(el);
+      await sleep(delay);
+      await waitFor(() => symbolOf(el) !== from, SETTLE_MS);
+    }
+    return symbolOf(el) === targetSymbol;
+  }
+
+  // --- did the solve actually work? ---
+  // Every click landing still isn't the puzzle being won, so judge the result by the
+  // game's own win condition on a fresh read of the board, with a moment for a slow
+  // render to catch up. true = solved; false = still unsolved when the wait ran out;
+  // null = the board is no longer on the page (the game swapping in a results
+  // screen, or the player navigating away), so there's nothing left to check —
+  // neither is a missed click, so the caller doesn't report it as one.
+  async function confirmSolved() {
+    const until = performance.now() + CONFIRM_MS;
+    for (;;) {
+      const b = parseBoard(); // re-read: isSolved judges the symbols a parse captured
+      if (!b) return null;
+      if (isSolved(b)) return true;
+      if (performance.now() >= until) return false;
+      await sleep(25);
+    }
+  }
+
+  // --- one solve per board, visible to the popup ---
+  // Every solve path ends up here — content.js's auto-solve, and the popup's Solve
+  // in the page's MAIN world — so this is where the board is claimed. The claim is a
+  // marker on this frame's <html>: DOM attributes are shared across worlds, and the
+  // check and the claim run with no await between them, so two solves racing for one
+  // board can't both get in. The popup reads the same marker (readAutoSolve in
+  // popup.js) to show a solve in progress — whoever started it — and then its result.
+  async function exclusive(run) {
+    const marker = document.documentElement.dataset;
+    if (marker.autosolve === "solving") {
+      return { ok: false, busy: true, board: true, error: "A solve is already running on this board." };
+    }
+    const claimedAt = Date.now();
+    marker.autosolveStart = String(claimedAt);
+    delete marker.autosolveResult;
+    marker.autosolve = "solving";
+    let r;
+    try {
+      r = await run();
+    } catch (e) {
+      r = { ok: false, error: "Solve failed: " + ((e && e.message) || e) };
+    }
+    // `board` tells the popup this frame held the board, so its error is the one to show.
+    r = { ...r, board: true };
+    // Result first, then state, so the popup never sees a finished state without one.
+    marker.autosolveResult = JSON.stringify({ ...r, ms: Date.now() - claimedAt });
+    marker.autosolve = r.ok ? (r.alreadySolved ? "done" : "solved") : "failed";
+    return r;
+  }
+
+  // --- dispatch ---
+  const board = parseBoard();
+
+  if (mode === "detect") {
+    if (!board) return { solvable: false, N: 0, solved: false, cells: null };
+    // An already-finished board is its own answer; keep the player's symbols so the
+    // preview matches what's on screen.
+    const done = isSolved(board);
+    // content.js only asks whether there's a board to solve, so it skips the
+    // preview and the solve that building one costs.
+    if (opts && opts.preview === false) {
+      return { solvable: true, N: board.N, solved: done, cells: null };
+    }
+    return {
+      solvable: true,
+      N: board.N,
+      solved: done,
+      cells: snapshot(board, done ? null : solve(board)),
+    };
+  }
+
+  // mode === 'solve'
+  if (!board) return { ok: false, error: "Board not found or still loading." };
+  return exclusive(async () => {
+    // Already finished (e.g. completed between the popup's last poll and the click) —
+    // report it instead of clicking a won board back out of its win state.
+    if (isSolved(board)) return { ok: true, placed: 0, alreadySolved: true, N: board.N };
+    const solution = solve(board);
+    if (!solution) return { ok: false, error: "No solution exists for this board." };
+
+    // Work out how fast to click. Each cell that has to change costs a known number
+    // of clicks to walk the Empty->Sun->Moon cycle to its target, and clickUntil
+    // sleeps exactly once per click — so the click loop takes (total clicks × delay).
+    //
+    // We deliberately budget that loop at (target + BUFFER), not target: the rest of
+    // the solve (parse, the final state settle) adds a little, and the buffer means
+    // the real time lands comfortably OVER the target rather than under — e.g. a 1s
+    // target finishes ~1.5s, a 10s target ~10.5s. The floor is only there to stop a
+    // very short target clicking faster than the game reliably registers.
+    const DEFAULT_CLICK_MS = 200;
+    const MIN_CLICK_MS = 50;
+    const BUFFER_MS = 500;
+    const SYMBOL_NUM = { Empty: 0, Sun: 1, Moon: 2 };
+    const clicksBetween = (from, to) =>
+      (((SYMBOL_NUM[to] - SYMBOL_NUM[from]) % 3) + 3) % 3;
+
+    let totalClicks = 0;
+    for (const c of board.cells) {
+      if (c.locked) continue; // locked clues don't move, so they cost nothing
+      totalClicks += clicksBetween(c.symbol, solution[c.idx]);
+    }
+    const clickDelay =
+      targetMs && totalClicks > 0
+        ? Math.max(MIN_CLICK_MS, Math.round((targetMs + BUFFER_MS) / totalClicks))
+        : DEFAULT_CLICK_MS;
+
+    // Drive every non-locked cell to its solution symbol. No separate reset needed —
+    // clickUntil reaches the target from any current state, so this is idempotent.
+    // clickUntil already spaces the clicks (it sleeps after the landing click too),
+    // so no extra between-cell wait is needed.
+    let placed = 0;
+    for (const c of board.cells) {
+      if (c.locked) continue;
+      // A cell that won't take its symbol leaves the board unsolved, so stop rather
+      // than click on and still call it solved.
+      if (!(await clickUntil(c.el, solution[c.idx], clickDelay))) {
+        return { ok: false, error: "A click didn't register. Try again.", placed };
+      }
+      placed++;
+    }
+    // Only the board can say it's won: report success on its word, not ours.
+    if ((await confirmSolved()) === false) {
+      return { ok: false, error: "The board still isn't solved. Try again.", placed };
+    }
+    return { ok: true, placed, N: board.N };
+  });
+}
+
+// Expose the engine on the (isolated-world) global so the auto-solve content
+// script — content.js, listed after this file in the same content_scripts entry —
+// can call it whatever scope Chrome gives each file. This runs only when the file
+// is loaded as a script (content script or the popup's <script>); it is NOT part
+// of runTango, so the popup's executeScript({func: runTango}) never carries it.
+if (typeof self !== "undefined") self.runTango = runTango;

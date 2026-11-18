@@ -1,0 +1,451 @@
+/*
+ * Puzzle Solver's own styles, on top of base.css (the shared popup styles, from the
+ * single-game solvers) and games/games.css (each game's colours and board preview,
+ * scoped to <html data-game>). This file adds what only the combined popup has:
+ * the game strip, the game list, the per-game settings, and Sumbreak's board.
+ */
+
+/* ---------- tokens with no game in the tab ---------- */
+
+:root {
+  --accent: var(--brand-fill);
+  --accent-hi: color-mix(in srgb, var(--brand-fill) 85%, #fff);
+  --accent-lo: color-mix(in srgb, var(--brand-fill) 85%, #000);
+  --on-accent: #fff;
+  --accent-hover: var(--accent-hi);
+  --board-line: color-mix(in srgb, var(--text) 16%, transparent);
+}
+
+/* The header no longer carries a bottom rule: the strip below it does. */
+.brand {
+  border-bottom: 0;
+}
+
+/* ---------- which parts show ---------- */
+
+/* On a game page: strip, board, button. Off one: the list instead. */
+.list {
+  display: none;
+}
+
+body[data-state="list"] .list {
+  display: block;
+}
+
+body[data-state="list"] :is(.strip, .board-card, .action) {
+  display: none;
+}
+
+/* The list says what the status line would, so the line is for screen readers. */
+body[data-state="list"] .status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+:root[data-game=""] .brand,
+body[data-state="list"] .brand {
+  border-bottom: 1px solid var(--line);
+}
+
+.game-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 7px;
+  object-fit: cover;
+}
+
+/* ---------- game strip ---------- */
+
+.strip {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 2px;
+  padding: 10px 8px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.strip:empty {
+  display: none;
+}
+
+.strip__game {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 6px 0 5px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.strip__game .game-icon {
+  opacity: 0.85;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.strip__game:hover {
+  background: var(--surface-sunk);
+  color: var(--text);
+}
+
+.strip__game:hover .game-icon {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.strip__game:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.strip__game[aria-current="page"] {
+  cursor: default;
+  color: var(--text);
+  background: color-mix(in srgb, var(--game) 12%, var(--surface));
+  box-shadow: inset 0 0 0 1.5px var(--game);
+}
+
+.strip__game[aria-current="page"] .game-icon {
+  opacity: 1;
+  transform: none;
+}
+
+.strip__name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.strip__new {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--new-fill);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+.strip__new[hidden] {
+  display: none;
+}
+
+/* ---------- game list (off a game page) ---------- */
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.list li + li {
+  border-top: 1px solid var(--line);
+}
+
+.list__game {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.list__game:hover {
+  background: var(--surface-sunk);
+}
+
+.list__game:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--ring);
+}
+
+.list__name {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.list__name .badge,
+.settings__name .badge {
+  margin: 0;
+}
+
+.list__open {
+  flex: none;
+  font-size: 11.5px;
+  font-weight: 550;
+  color: var(--text-muted);
+}
+
+.list__game:hover .list__open {
+  color: var(--brand);
+}
+
+/* ---------- settings ---------- */
+
+.settings {
+  width: 268px;
+  min-width: 0;
+}
+
+.settings:focus {
+  outline: none;
+}
+
+.settings__head,
+.settings__row {
+  display: grid;
+  grid-template-columns: 24px 1fr 46px 34px;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings__head {
+  padding: 5px 9px 3px;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* The header has no icon column of its own: "Game" heads icon and name. */
+.settings__head span:first-child {
+  grid-column: 1 / 3;
+}
+
+.settings__head span:not(:first-child) {
+  text-align: center;
+}
+
+.settings__row {
+  padding: 5px 9px;
+  border-radius: 9px;
+}
+
+.settings__row--here {
+  background: color-mix(in srgb, var(--game) 10%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--game) 35%, transparent);
+}
+
+.settings__name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  column-gap: 6px;
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.settings__here {
+  flex-basis: 100%;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.settings__time {
+  position: relative;
+  display: block;
+}
+
+.settings__input {
+  width: 100%;
+  height: 26px;
+  padding: 0 14px 0 4px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  transition: opacity 0.15s ease;
+}
+
+.settings__unit {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.settings__input:focus-visible {
+  outline: none;
+  border-color: var(--game);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--game) 35%, transparent);
+}
+
+/* Time only matters while Auto-solve is on (the Solve button paces itself too,
+   but that's one click and the setting is about hands-off solves). */
+.settings__row[data-off="true"] .settings__time {
+  opacity: 0.5;
+}
+
+/* The switch is the button itself here (role="switch"), unlike the single-game
+   menus where it was decoration inside a menuitemcheckbox. */
+button.switch {
+  justify-self: center;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+}
+
+button.switch[aria-checked="true"] {
+  background: var(--game);
+}
+
+button.switch[aria-checked="true"] .switch__knob {
+  transform: translateX(12px);
+}
+
+button.switch:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--game) 35%, transparent);
+}
+
+.settings .menu__item {
+  justify-content: space-between;
+}
+
+/* ================================================================ sumbreak */
+/* Written for this extension; the other games' blocks are in games/games.css. */
+
+:root[data-game="sumbreak"] {
+  /* Accent: the violet of the Sumbreak icon. Dark ink, as Zip and Tango use,
+     for 4.5:1 on the fill. */
+  --accent: #9b5cff;
+  --accent-hi: #b488ff;
+  --accent-lo: #7a3ae6;
+  --on-accent: #1d0838;
+  --accent-hover: var(--accent-hi);
+  --board-line: color-mix(in srgb, var(--text) 16%, transparent);
+}
+
+:root[data-game="sumbreak"] .board-card {
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+:root[data-game="sumbreak"] .board {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 3), 1fr);
+  grid-template-rows: repeat(var(--rows, 3), 1fr);
+  aspect-ratio: var(--cols, 3) / var(--rows, 3);
+  gap: 8px;
+  width: 100%;
+  max-width: 216px;
+  margin: 0 auto;
+}
+
+:root[data-game="sumbreak"] .board__cell {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface-sunk);
+  box-shadow: inset 0 0 0 1px var(--board-line);
+}
+
+:root[data-game="sumbreak"] .board__tile {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--fill);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The next merge: the two tiles to join, ringed in the accent. */
+:root[data-game="sumbreak"] .board__tile--next {
+  box-shadow: 0 0 0 2.5px var(--surface), 0 0 0 5px var(--accent);
+}
+
+:root[data-game="sumbreak"] body[data-state="checking"] .board {
+  animation: board-breathe 1.4s ease-in-out infinite;
+}
+
+:root[data-game="sumbreak"] body[data-state="idle"] .board {
+  opacity: 0.55;
+}
+
+:root[data-game="sumbreak"] body[data-state="solved"] .board__tile {
+  animation: sumbreak-in 0.32s cubic-bezier(0.2, 1.5, 0.4, 1) backwards;
+}
+
+@keyframes sumbreak-in {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+
+/* As in every game: the board stands in for the status line, except on errors. */
+:root[data-game="sumbreak"] body:not([data-state="error"]) .status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-game="sumbreak"] .board__tile {
+    animation: none !important;
+  }
+}

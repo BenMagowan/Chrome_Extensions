@@ -13,6 +13,7 @@ folder and loads as a standalone unpacked extension.
 | [Mini_Sudoku_Solver](Mini_Sudoku_Solver/) | [Mini Sudoku](https://www.linkedin.com/games/mini-sudoku/) — one of each digit per row, column, and region | ✅ Working |
 | [Patches_Solver](Patches_Solver/) | [Patches](https://www.linkedin.com/games/patches/) — tile the grid with the clued patches | ✅ Working |
 | [Zip_Solver](Zip_Solver/) | [Zip](https://www.linkedin.com/games/zip/) — draw one path through every cell, hitting the numbers in order | ✅ Working |
+| [Puzzle_Solver](Puzzle_Solver/) | All six above plus [Sumbreak](https://www.linkedin.com/games/sumbreak/) — merge identical neighbours until one number remains. Replaces the five single-game solvers on the Zip listing. | 🧪 New |
 
 ## Shared design
 

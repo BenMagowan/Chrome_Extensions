@@ -724,6 +724,108 @@ def name_in(game, lang):
     return NAMES[lang].format(game=word)
 
 
+# ------------------------------------------------------------------ Puzzle Solver
+# The combined extension. Its messages.json holds UI and ERRORS, PUZZLE below, and
+# each game's own popup text from GAMES under a `<id>_` prefix (zip_stSolved, …),
+# so one popup can speak for whichever game is in the tab. Its name is the brand,
+# the same in every language.
+PUZZLE_DIR = "Puzzle_Solver"
+PUZZLE_NAME = "Puzzle Solver - Zip, Queens, Tango, Sudoku, Patches & Sumbreak"
+PUZZLE_IDS = {
+    "Zip_Solver": "zip",
+    "Queens_Solver": "queens",
+    "Tango_Solver": "tango",
+    "Mini_Sudoku_Solver": "sudoku",
+    "Patches_Solver": "patches",
+}
+PUZZLE_GAME_KEYS = ("lblOpen", "stSolving", "stSolved", "stSolvedCleared")
+PUZZLE = {
+    "extDescription": (
+        "Solves the daily LinkedIn Zip, Queens, Tango, Mini Sudoku, Patches and Sumbreak puzzles in one click, or on its own as they load.",
+        "Resuelve los puzles diarios de LinkedIn: Zip, Queens, Tango, Mini Sudoku, Patches y Sumbreak. Con un clic, o solo al cargar.",
+        "Resolve os jogos diários do LinkedIn: Zip, Queens, Tango, Mini Sudoku, Patches e Sumbreak. Com um clique, ou sozinho ao carregar.",
+        "Résout les puzzles quotidiens LinkedIn Zip, Queens, Tango, Mini Sudoku, Patches et Sumbreak, en un clic ou tout seul au chargement.",
+        "Löst die täglichen LinkedIn-Rätsel Zip, Queens, Tango, Mini Sudoku, Patches und Sumbreak mit einem Klick oder von selbst beim Laden.",
+    ),
+    "actionTitle": ("Solve LinkedIn puzzles", "Resolver puzles de LinkedIn", "Resolver jogos do LinkedIn", "Résoudre les puzzles LinkedIn", "LinkedIn-Rätsel lösen"),
+    "stList": ("Open a game to solve it", "Abre un juego para resolverlo", "Abra um jogo para resolvê-lo", "Ouvrez un jeu pour le résoudre", "Öffne ein Spiel, um es zu lösen"),
+    "gamesNav": ("Games", "Juegos", "Jogos", "Jeux", "Spiele"),
+    "openAGame": ("Open a game", "Abrir un juego", "Abrir um jogo", "Ouvrir un jeu", "Ein Spiel öffnen"),
+    "open": ("Open ↗", "Abrir ↗", "Abrir ↗", "Ouvrir ↗", "Öffnen ↗"),
+    "openGame": ("Open $1", "Abrir $1", "Abrir $1", "Ouvrir $1", "$1 öffnen"),
+    "colGame": ("Game", "Juego", "Jogo", "Jeu", "Spiel"),
+    "colTime": ("Time", "Tiempo", "Tempo", "Durée", "Zeit"),
+    "colAuto": ("Auto", "Auto", "Auto", "Auto", "Auto"),
+    "thisPage": ("This page", "Esta página", "Esta página", "Cette page", "Diese Seite"),
+    "solveTimeFor": (
+        "$1 solve time in seconds, 1 to 999",
+        "Tiempo de resolución de $1 en segundos, de 1 a 999",
+        "Tempo de resolução do $1 em segundos, de 1 a 999",
+        "Durée de résolution de $1 en secondes, de 1 à 999",
+        "Lösungszeit für $1 in Sekunden, 1 bis 999",
+    ),
+    "autoSolveFor": (
+        "Auto-solve $1",
+        "Resolver $1 automáticamente",
+        "Resolver o $1 automaticamente",
+        "Résoudre $1 automatiquement",
+        "$1 automatisch lösen",
+    ),
+}
+# Errors only Sumbreak's engine reports. Puzzle Solver's i18n.js and messages carry
+# these on top of ERRORS; the single-game solvers never see them.
+SUMBREAK_ERRORS = {
+    "errSolveTime": (
+        "Couldn't find a solution in time.",
+        "No se encontró una solución a tiempo.",
+        "Não foi possível encontrar uma solução a tempo.",
+        "Impossible de trouver une solution à temps.",
+        "Keine Lösung rechtzeitig gefunden.",
+    ),
+    "errMerge": (
+        "A merge didn't register. Try again.",
+        "Una unión no se registró. Inténtalo de nuevo.",
+        "Uma junção não foi registrada. Tente novamente.",
+        "Une fusion n'a pas été prise en compte. Réessayez.",
+        "Eine Zusammenführung wurde nicht erkannt. Versuch es noch einmal.",
+    ),
+    "errBoardChanged": (
+        "The board changed unexpectedly. Try again.",
+        "El tablero cambió de forma inesperada. Inténtalo de nuevo.",
+        "O tabuleiro mudou de forma inesperada. Tente novamente.",
+        "La grille a changé de façon inattendue. Réessayez.",
+        "Das Spielfeld hat sich unerwartet verändert. Versuch es noch einmal.",
+    ),
+}
+
+# Sumbreak is new with Puzzle Solver, so its popup text lives here, not in GAMES.
+SUMBREAK = {
+    "lblOpen": ("Open Sumbreak game", "Abrir Sumbreak", "Abrir o Sumbreak", "Ouvrir Sumbreak", "Sumbreak öffnen"),
+    "stSolving": ("Merging tiles…", "Uniendo fichas…", "Juntando peças…", "Fusion des tuiles…", "Kacheln werden verbunden…"),
+    "stSolved": (
+        "Solved · $1 merges",
+        "Resuelto · $1 uniones",
+        "Resolvido · $1 junções",
+        "Résolu · $1 fusions",
+        "Gelöst · $1 Zusammenführungen",
+    ),
+}
+
+
+def puzzle_messages(lang):
+    out = {"extName": {"message": PUZZLE_NAME}}
+    for source in (PUZZLE, UI, ERRORS, SUMBREAK_ERRORS):
+        for key, values in source.items():
+            out[key] = {"message": by_lang(values, key)[lang]}
+    for solver, gid in PUZZLE_IDS.items():
+        for key in PUZZLE_GAME_KEYS:
+            if key in GAMES[solver]["ui"]:
+                out[f"{gid}_{key}"] = {"message": by_lang(GAMES[solver]["ui"][key], key)[lang]}
+    for key, values in SUMBREAK.items():
+        out[f"sumbreak_{key}"] = {"message": by_lang(values, key)[lang]}
+    return out
+
+
 AND = {"es": " y ", "pt": " e ", "fr": " et ", "de": " und "}
 
 
@@ -758,15 +860,20 @@ def error_pattern(english):
 def check_engine_errors():
     """Fail if an engine reports an error ERRORS doesn't cover."""
     patterns = [re.compile(error_pattern(v[0])) for v in ERRORS.values()]
-    for solver in GAMES:
-        src = (ROOT / solver / "injected.js").read_text()
+    extra = [re.compile(error_pattern(v[0])) for v in SUMBREAK_ERRORS.values()]
+    engines = [ROOT / solver / "injected.js" for solver in GAMES]
+    engines += sorted((ROOT / PUZZLE_DIR / "games").glob("*/injected.js"))
+    for path in engines:
+        solver = path.parent.relative_to(ROOT)
+        src = path.read_text()
         found = re.findall(r'error:\s*"([^"]+)"', src) + re.findall(r"error:\s*`([^`]+)`", src)
         found += re.findall(r'const MISSED = "([^"]+)"', src)
         for text in found:
             if text.endswith(": "):  # "Solve failed: " + reason
                 text += "x"
             sample = re.sub(r"\$\{[^}]*\}", "7", text)
-            if not any(p.match(sample) for p in patterns):
+            allowed = patterns + (extra if PUZZLE_DIR in path.parts else [])
+            if not any(p.match(sample) for p in allowed):
                 fail(f"{solver}/injected.js reports an untranslated error: {text!r}")
 
 
@@ -826,6 +933,14 @@ def main():
         missing = [l for l in LANGS[1:] if l not in game["store"]]
         if missing:
             fail(f"{solver}: no store text for {missing}")
+    for key, values in {**PUZZLE, **SUMBREAK, **SUMBREAK_ERRORS}.items():
+        by_lang(values, key)
+        check_placeholders(key, values)
+    for lang, text in by_lang(PUZZLE["extDescription"], "extDescription").items():
+        if len(text) > SUMMARY_MAX:
+            fail(f"Puzzle Solver summary [{lang}] is {len(text)} characters (max {SUMMARY_MAX})")
+    if len(PUZZLE_NAME) > 75:
+        fail(f"Puzzle Solver name is {len(PUZZLE_NAME)} characters (max 75)")
     check_engine_errors()
 
     shared = (ROOT / "scripts" / "i18n.js").read_text()
@@ -847,11 +962,25 @@ def main():
             text = json.dumps(messages_for(solver, lang), ensure_ascii=False, indent=2)
             (d / "messages.json").write_text(text + "\n")
 
+    both = {**ERRORS, **SUMBREAK_ERRORS}
+    ptable = ",\n".join(f"  [{json.dumps(error_pattern(v[0]))}, {json.dumps(k)}]" for k, v in both.items())
+    puzzle_i18n = marker.sub(lambda m: m.group(1) + "const ENGINE_ERRORS = [\n" + ptable + ",\n];" + m.group(2), shared)
+    puzzle_i18n = puzzle_i18n.replace("This copy is identical in all five solvers.", "Puzzle Solver's copy adds Sumbreak's errors to the table.")
+    (ROOT / PUZZLE_DIR / "i18n.js").write_text(puzzle_i18n)
+    locales_dir = ROOT / PUZZLE_DIR / "_locales"
+    if locales_dir.exists():
+        shutil.rmtree(locales_dir)
+    for locale, lang in LOCALES.items():
+        d = locales_dir / locale
+        d.mkdir(parents=True)
+        text = json.dumps(puzzle_messages(lang), ensure_ascii=False, indent=2)
+        (d / "messages.json").write_text(text + "\n")
+
     out = ROOT / "store_listings"
     out.mkdir(exist_ok=True)
     for lang in LANGS[1:]:
         (out / f"{lang}.md").write_text(store_listing(lang))
-    print(f"Wrote {len(GAMES)} solvers × {len(LOCALES)} locales and {len(LANGS) - 1} store listings.")
+    print(f"Wrote {len(GAMES)} solvers and Puzzle Solver × {len(LOCALES)} locales and {len(LANGS) - 1} store listings.")
 
 
 if __name__ == "__main__":

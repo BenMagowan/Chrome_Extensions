@@ -1,0 +1,818 @@
+/* ================================================================ zip */
+/* From Zip_Solver/styles.css: its game tokens and board preview. */
+
+:root[data-game="zip"] {
+  /* Accent: the Trail accent on the puzzle site (registry.ts). */
+  --accent: #ff6d29;
+  --accent-hi: #fe9266;
+  --accent-lo: #dc5300;
+  --on-accent: #391608;
+  /* Solve button hover. -hi, as on the site. */
+  --accent-hover: var(--accent-hi);
+
+  /* Board preview: hairlines between cells, the puzzle's walls, and the path.
+     The path is the extension's accent — it's the answer, so it gets the colour
+     that means "this is ours". */
+  --board-line: color-mix(in srgb, var(--text) 16%, transparent);
+  --board-wall: color-mix(in srgb, var(--text) 55%, transparent);
+  --board-path: var(--accent);
+}
+
+/* ---------- board preview ---------- */
+
+/* The board is on screen in every state — an empty grid until one is found, the
+   solved path once there is. It stands in for the status line, which is the
+   whole point: the grid says "6×6 board detected" better than the sentence did,
+   and an empty one says "no board yet" better than "No board found" did. Keeping
+   it in every state also holds the popup at one size, so nothing jumps around as
+   the game loads. */
+
+/* The board's card: a --surface tile on the sunk page, as the site sets its
+   boards. The board itself can't be the card: its background is the hairline
+   colour and it clips to its own radius. */
+
+:root[data-game="zip"] .board-card {
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+:root[data-game="zip"] .board {
+  display: grid;
+  grid-template-columns: repeat(var(--n, 6), 1fr);
+  grid-template-rows: repeat(var(--n, 6), 1fr);
+  /* No gap, deliberately: the path overlay maps one SVG unit to one cell, which
+     only lines up if the cells divide the box evenly. The hairlines below stand
+     in for the gaps. */
+  gap: 0;
+  position: relative;
+  width: 100%;
+  max-width: 216px;
+  margin: 0 auto;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--board-line);
+}
+
+/* The status line's replacement — see the note in the Queens/Tango stylesheets.
+   Errors are the exception: that message has no equivalent in the grid. */
+
+:root[data-game="zip"] body:not([data-state="error"]) .status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Waiting on a board: an empty grid, breathing while we look, then settling to
+   something quieter once we've concluded there's nothing there. */
+
+:root[data-game="zip"] body[data-state="checking"] .board {
+  animation: board-breathe 1.4s ease-in-out infinite;
+}
+
+:root[data-game="zip"] body[data-state="idle"] .board {
+  opacity: 0.55;
+}
+
+/* Round the four corner cells to follow the board's 8px radius (the board has no
+   padding, so the cells meet its edge and take the same radius). Without this the
+   square cells are clipped by the board's `overflow: hidden`, cutting their inset
+   hairlines off at the curve. popup.js tags the corner cells for any board size. */
+
+:root[data-game="zip"] .board__cell--tl {
+  border-top-left-radius: 8px;
+}
+
+:root[data-game="zip"] .board__cell--tr {
+  border-top-right-radius: 8px;
+}
+
+:root[data-game="zip"] .board__cell--bl {
+  border-bottom-left-radius: 8px;
+}
+
+:root[data-game="zip"] .board__cell--br {
+  border-bottom-right-radius: 8px;
+}
+
+/* The hairlines the missing gap would have given us. Drawn on the right and
+   bottom of every cell; the last row and column land exactly on the board's own
+   1px frame, so they coincide rather than doubling up. */
+
+:root[data-game="zip"] .board__cell {
+  display: grid;
+  place-items: center;
+  box-shadow: inset -1px -1px 0 0 var(--board-line);
+}
+
+/* The numbered dots, as the game draws them: a filled disc the path runs under. */
+
+:root[data-game="zip"] .board__num {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 76%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--text);
+  color: var(--surface);
+  /* Scales with N so the dots keep their proportions whatever size the grid is. */
+  font-size: calc(74px / var(--n, 6));
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* Walls and path share one overlay stretched across the whole grid. */
+
+:root[data-game="zip"] .board__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Stroke widths are in user units — fractions of a cell — NOT pixels, and
+   deliberately not vector-effect: non-scaling-stroke. Non-scaling strokes
+   resolve stroke-dasharray in screen pixels while getTotalLength() reports user
+   units, so the two disagree and the drawn-on path below renders as a dashed
+   line. Keeping everything in user units also means the board scales cleanly. */
+
+:root[data-game="zip"] .board__wall {
+  stroke: var(--board-wall);
+  stroke-width: 0.08;
+  stroke-linecap: square;
+}
+
+:root[data-game="zip"] .board__path {
+  fill: none;
+  stroke: var(--board-path);
+  stroke-width: 0.34;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: 0.9;
+}
+
+/* The path the solver just drew gets traced on, so you can see its route.
+   --len is the polyline's own length, measured in popup.js. */
+
+:root[data-game="zip"] body[data-state="solved"] .board__path {
+  stroke-dasharray: var(--len);
+  animation: path-draw 1s ease-out backwards;
+}
+
+@keyframes path-draw {
+  from {
+    stroke-dashoffset: var(--len);
+  }
+}
+
+/* ================================================================ queens */
+/* From Queens_Solver/styles.css: its game tokens and board preview. */
+
+:root[data-game="queens"] {
+  /* Accent: the Crowns accent on the puzzle site (registry.ts). */
+  --accent: #ffbb00;
+  --accent-hi: #ffd321;
+  --accent-lo: #e69902;
+  --on-accent: #2a2000;
+  /* Solve button hover. -hi, as on the site. */
+  --accent-hover: var(--accent-hi);
+}
+
+/* ---------- board preview (Queens only) ---------- */
+
+/* The board is on screen in every state — an empty grid until one is found, the
+   solution once there is. It stands in for the status line, which is the whole
+   point: the grid says "9×9 board detected" better than the sentence did, and an
+   empty one says "no board yet" better than "No board found" did. Keeping it in
+   every state also holds the popup at one size, so nothing jumps around as the
+   game loads. */
+
+/* The board's card: a --surface tile on the sunk page, as the site sets its
+   boards. The board itself can't be the card: its background is the hairline
+   colour and it clips to its own radius. */
+
+:root[data-game="queens"] .board-card {
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+:root[data-game="queens"] .board {
+  display: grid;
+  /* Rows must be pinned to 1fr too — without it, auto row sizing lets a queen's
+     SVG (66% of .board__cell) make that row taller than an empty one. */
+  grid-template-columns: repeat(var(--n, 8), 1fr);
+  grid-template-rows: repeat(var(--n, 8), 1fr);
+  gap: 1px;
+  width: 100%;
+  max-width: 216px;
+  margin: 0 auto;
+  aspect-ratio: 1;
+  padding: 1px;
+  border-radius: 8px;
+  overflow: hidden;
+  /* Shows through the gaps as hairline grid lines. */
+  background: color-mix(in srgb, var(--text) 22%, transparent);
+}
+
+/* The board says everything the status line used to, so the line is replaced
+   *visually only* — it stays in the a11y tree, where the live region goes on
+   announcing "Looking for a board", "Board detected", "Solved" and the rest.
+   An error is the exception: that message has no equivalent in the grid, so it
+   is the one state that still shows its text. */
+
+:root[data-game="queens"] body:not([data-state="error"]) .status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Waiting on a board: an empty grid, breathing while we look, then settling to
+   something quieter once we've concluded there's nothing there. */
+
+:root[data-game="queens"] body[data-state="checking"] .board {
+  animation: board-breathe 1.4s ease-in-out infinite;
+}
+
+:root[data-game="queens"] body[data-state="idle"] .board {
+  opacity: 0.55;
+}
+
+:root[data-game="queens"] .board__cell {
+  display: grid;
+  place-items: center;
+  background: var(--surface-sunk);
+}
+
+/* Round the four corner cells to follow the board's 8px radius (inset by the 1px
+   padding = 7px). Without this the square cells' bright colours are clipped by the
+   board's `overflow: hidden`, leaving a dark notch in each corner — the "corner
+   highlights are cut off" bug. popup.js tags the corner cells for any board size. */
+
+:root[data-game="queens"] .board__cell--tl {
+  border-top-left-radius: 7px;
+}
+
+:root[data-game="queens"] .board__cell--tr {
+  border-top-right-radius: 7px;
+}
+
+:root[data-game="queens"] .board__cell--bl {
+  border-bottom-left-radius: 7px;
+}
+
+:root[data-game="queens"] .board__cell--br {
+  border-bottom-right-radius: 7px;
+}
+
+/* Queen. Dark on LinkedIn's pastel regions; the light stroke keeps it legible
+   if a region ever comes back dark. */
+
+:root[data-game="queens"] .board__cell svg {
+  width: 66%;
+  height: 66%;
+  fill: #10243a;
+  stroke: rgb(255 255 255 / 0.55);
+  stroke-width: 0.6;
+  paint-order: stroke fill;
+}
+
+/* Player's own cross annotations, kept faint so they never read as queens. */
+
+:root[data-game="queens"] .board__cell--cross::before {
+  content: "";
+  width: 34%;
+  height: 34%;
+  opacity: 0.4;
+  background: currentColor;
+  color: #10243a;
+  clip-path: polygon(
+    20% 0%, 50% 30%, 80% 0%, 100% 20%, 70% 50%, 100% 80%,
+    80% 100%, 50% 70%, 20% 100%, 0% 80%, 30% 50%, 0% 20%
+  );
+}
+
+/* Queens the solver just placed get a one-off pop, so you can see its work. */
+
+:root[data-game="queens"] body[data-state="solved"] .board__cell--queen svg {
+  animation: queen-in 0.32s cubic-bezier(0.2, 1.5, 0.4, 1) backwards;
+}
+
+@keyframes queen-in {
+  from {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+}
+
+/* ================================================================ tango */
+/* From Tango_Solver/styles.css: its game tokens and board preview. */
+
+:root[data-game="tango"] {
+  /* Accent: the Binairo accent on the puzzle site (registry.ts). */
+  --accent: #4c8de7;
+  --accent-hi: #5ea0fc;
+  --accent-lo: #3071c9;
+  --on-accent: #0d223e;
+  /* Solve button hover. -hi, as on the site. */
+  --accent-hover: var(--accent-hi);
+
+  /* Board pieces — the game's own Sun and Moon, not part of the popup palette.
+     Fixed across light and dark: they're a picture of the board, and the board
+     looks the same either way. */
+  --sun: #f2b544;
+  --sun-line: #c4712c;
+  --moon: #4c7fd0;
+  --moon-line: #2b529d;
+}
+
+/* ---------- board preview ---------- */
+
+/* The board is on screen in every state — an empty grid until one is found, the
+   solution once there is. It stands in for the status line, which is the whole
+   point: the grid says "6×6 board detected" better than the sentence did, and
+   an empty one says "no board yet" better than "No board found" did. Keeping it
+   in every state also holds the popup at one size, so nothing jumps around as
+   the game loads. */
+
+/* The board's card: a --surface tile on the sunk page, as the site sets its
+   boards. The board itself can't be the card: its background is the hairline
+   colour and it clips to its own radius. */
+
+:root[data-game="tango"] .board-card {
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+:root[data-game="tango"] .board {
+  display: grid;
+  /* Rows pinned to 1fr too — without it, auto row sizing lets a symbol's SVG
+     (66% of .board__cell) make that row taller than an empty one. */
+  grid-template-columns: repeat(var(--n, 6), 1fr);
+  grid-template-rows: repeat(var(--n, 6), 1fr);
+  gap: 1px;
+  width: 100%;
+  max-width: 216px;
+  margin: 0 auto;
+  aspect-ratio: 1;
+  padding: 1px;
+  border-radius: 8px;
+  overflow: hidden;
+  /* Shows through the gaps as hairline grid lines. */
+  background: color-mix(in srgb, var(--text) 22%, transparent);
+}
+
+/* The board says everything the status line used to, so the line is replaced
+   *visually only* — it stays in the a11y tree, where the live region goes on
+   announcing "Looking for a board", "Board detected", "Solved" and the rest.
+   An error is the exception: that message has no equivalent in the grid, so it
+   is the one state that still shows its text. */
+
+:root[data-game="tango"] body:not([data-state="error"]) .status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Waiting on a board: an empty grid, breathing while we look, then settling to
+   something quieter once we've concluded there's nothing there. Cells keep their
+   normal surface, so it reads as a blank board rather than a loading skeleton. */
+
+:root[data-game="tango"] body[data-state="checking"] .board {
+  animation: board-breathe 1.4s ease-in-out infinite;
+}
+
+:root[data-game="tango"] body[data-state="idle"] .board {
+  opacity: 0.55;
+}
+
+/* Round the four corner cells to follow the board's 8px radius (inset by the 1px
+   padding = 7px). Without this the square cells are clipped by the board's
+   `overflow: hidden`, so the corners read as cut off. popup.js tags the corner
+   cells for any board size. */
+
+:root[data-game="tango"] .board__cell--tl {
+  border-top-left-radius: 7px;
+}
+
+:root[data-game="tango"] .board__cell--tr {
+  border-top-right-radius: 7px;
+}
+
+:root[data-game="tango"] .board__cell--bl {
+  border-bottom-left-radius: 7px;
+}
+
+:root[data-game="tango"] .board__cell--br {
+  border-bottom-right-radius: 7px;
+}
+
+:root[data-game="tango"] .board__cell {
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+}
+
+/* The puzzle's given clues. Tinting them separates what the board started with
+   from what the solver worked out — the one distinction the preview can draw
+   that the finished grid itself cannot. */
+
+:root[data-game="tango"] .board__cell--locked {
+  background: var(--surface-sunk);
+}
+
+/* Sun and Moon are drawn as the game draws them: a filled disc with a darker
+   outline of the same hue, in the game's own two colours. They deliberately sit
+   outside the popup's palette — these are a picture of the board, not UI, so
+   they should look like the pieces the player is staring at, not like the
+   button. The outline is what stops a pale Sun disappearing into a light cell. */
+
+:root[data-game="tango"] .board__cell svg {
+  width: 70%;
+  height: 70%;
+  stroke-width: 1.4;
+  /* The crescent's horns are cusps; mitre would spike them into needles. */
+  stroke-linejoin: round;
+}
+
+:root[data-game="tango"] .board__cell--sun svg {
+  fill: var(--sun);
+  stroke: var(--sun-line);
+}
+
+:root[data-game="tango"] .board__cell--moon svg {
+  fill: var(--moon);
+  stroke: var(--moon-line);
+}
+
+/* Symbols the solver just placed get a one-off pop, so you can see its work.
+   The givens sat there all along, so they don't join in. */
+
+:root[data-game="tango"] body[data-state="solved"] .board__cell:not(.board__cell--locked) svg {
+  animation: symbol-in 0.32s cubic-bezier(0.2, 1.5, 0.4, 1) backwards;
+}
+
+@keyframes symbol-in {
+  from {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+}
+
+/* ================================================================ sudoku */
+/* From Mini_Sudoku_Solver/styles.css: its game tokens and board preview. */
+
+:root[data-game="sudoku"] {
+  /* Accent: the Mini Sudoku accent on the puzzle site (registry.ts). */
+  --accent: #338041;
+  --accent-hi: #469252;
+  --accent-lo: #126527;
+  --on-accent: #ffffff;
+  /* Solve button hover. -lo, not -hi: white on -hi is under 4.5:1. */
+  --accent-hover: var(--accent-lo);
+
+  /* Board preview: the region walls, and the digits the solver worked out (the
+     puzzle's own clues just use --text). The fill colour is the extension's
+     accent, stepped lighter in dark mode so it stays legible on a dark cell. */
+  --board-wall: color-mix(in srgb, var(--text) 40%, transparent);
+  --digit-fill: var(--accent-lo);
+}
+
+@media (prefers-color-scheme: dark) {
+:root[data-game="sudoku"] {
+    /* The dark green accent all but vanishes on a dark cell — step up to the
+       light variant so the solver's digits stay readable. */
+    --digit-fill: var(--accent-hi);
+  }
+}
+
+/* ---------- board preview ---------- */
+
+/* The board is on screen in every state — an empty grid until one is found, the
+   solution once there is. It stands in for the status line, which is the whole
+   point: the grid says "6×6 board detected" better than the sentence did, and an
+   empty one says "no board yet" better than "No board found" did. Keeping it in
+   every state also holds the popup at one size, so nothing jumps around as the
+   game loads. */
+
+/* The board's card: a --surface tile on the sunk page, as the site sets its
+   boards. The board itself can't be the card: its background is the hairline
+   colour and it clips to its own radius. */
+
+:root[data-game="sudoku"] .board-card {
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+:root[data-game="sudoku"] .board {
+  display: grid;
+  /* Rows pinned to 1fr too — without it, auto row sizing lets a row with taller
+     glyphs come out deeper than one without. */
+  grid-template-columns: repeat(var(--n, 6), 1fr);
+  grid-template-rows: repeat(var(--n, 6), 1fr);
+  gap: 1px;
+  width: 100%;
+  max-width: 216px;
+  margin: 0 auto;
+  aspect-ratio: 1;
+  padding: 1px;
+  border-radius: 8px;
+  overflow: hidden;
+  /* Shows through the gaps as hairline grid lines. */
+  background: color-mix(in srgb, var(--text) 22%, transparent);
+}
+
+/* The board says everything the status line used to, so the line is replaced
+   *visually only* — it stays in the a11y tree, where the live region goes on
+   announcing "Looking for a board", "Board detected", "Solved" and the rest.
+   An error is the exception: that message has no equivalent in the grid, so it
+   still shows its text. So does `waiting`: the grid looks ready to solve, and
+   only the line says why the button won't. */
+
+:root[data-game="sudoku"] body:not([data-state="error"]):not([data-state="waiting"]) .status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Waiting on a board: an empty grid, breathing while we look, then settling to
+   something quieter once we've concluded there's nothing there. */
+
+:root[data-game="sudoku"] body[data-state="checking"] .board {
+  animation: board-breathe 1.4s ease-in-out infinite;
+}
+
+:root[data-game="sudoku"] body[data-state="idle"] .board {
+  opacity: 0.55;
+}
+
+/* Round the four corner cells to follow the board's 8px radius (inset by the 1px
+   padding = 7px). Without this the square cells are clipped by the board's
+   `overflow: hidden`, so the corners read as cut off. popup.js tags the corner
+   cells for any board size. */
+
+:root[data-game="sudoku"] .board__cell--tl {
+  border-top-left-radius: 7px;
+}
+
+:root[data-game="sudoku"] .board__cell--tr {
+  border-top-right-radius: 7px;
+}
+
+:root[data-game="sudoku"] .board__cell--bl {
+  border-bottom-left-radius: 7px;
+}
+
+:root[data-game="sudoku"] .board__cell--br {
+  border-bottom-right-radius: 7px;
+}
+
+:root[data-game="sudoku"] .board__cell {
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  /* Scales with N so the digits keep their proportions whatever size the grid is. */
+  font-size: calc(90px / var(--n, 6));
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--digit-fill);
+}
+
+/* The puzzle's given clues. Tinting the cell and using the plain text colour
+   separates what the board started with from what the solver worked out — the
+   one distinction the preview can draw that the finished grid cannot. */
+
+:root[data-game="sudoku"] .board__cell--given {
+  background: var(--surface-sunk);
+  color: var(--text);
+}
+
+/* Region walls. Sudoku regions are wall-bounded and can be irregular, so these
+   borders are what make the layout readable — without them a jigsaw board would
+   render as a featureless grid. */
+
+/* Only ever drawn on the upper/left cell of a boundary (see markWalls in
+   popup.js), so there's exactly one border per wall, never two. The negative
+   margin pulls that border out over the 1px hairline gap so it fully covers
+   it — without this the hairline shows through right next to the wall border,
+   reading as a thin line drawn over the thick one. */
+
+:root[data-game="sudoku"] .board__cell--wall-right {
+  margin-right: -1px;
+  border-right: 1.5px solid var(--board-wall);
+}
+
+:root[data-game="sudoku"] .board__cell--wall-bottom {
+  margin-bottom: -1px;
+  border-bottom: 1.5px solid var(--board-wall);
+}
+
+/* Digits the solver just placed get a one-off pop, so you can see its work.
+   The givens sat there all along, so they don't join in. */
+
+:root[data-game="sudoku"] body[data-state="solved"] .board__cell:not(.board__cell--given) {
+  animation: digit-in 0.32s cubic-bezier(0.2, 1.5, 0.4, 1) backwards;
+}
+
+@keyframes digit-in {
+  from {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+}
+
+/* ================================================================ patches */
+/* From Patches_Solver/styles.css: its game tokens and board preview. */
+
+:root[data-game="patches"] {
+  /* Accent: the Shikaku accent on the puzzle site (registry.ts). */
+  --accent: #49a2fe;
+  --accent-hi: #73b6ff;
+  --accent-lo: #2985df;
+  --on-accent: #08223d;
+  /* Solve button hover. -hi, as on the site. */
+  --accent-hover: var(--accent-hi);
+
+  /* Board preview. Each patch gets its own hue (set per cell in popup.js); these
+     two decide how those hues are rendered, so the same patch reads as a pastel
+     here and as a deep tone against the dark surface below. */
+  --patch-sat: 62%;
+  --patch-light: 79%;
+  --board-line: color-mix(in srgb, var(--text) 22%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+:root[data-game="patches"] {
+    /* Pastel patches would glare against the dark surface — same hues, deepened. */
+    --patch-sat: 40%;
+    --patch-light: 34%;
+  }
+}
+
+/* ---------- board preview ---------- */
+
+/* The board is on screen in every state — an empty grid until one is found, the
+   tiling once there is. It stands in for the status line, which is the whole
+   point: the grid says "7×7 board detected" better than the sentence did, and an
+   empty one says "no board yet" better than "No board found" did. Keeping it in
+   every state also holds the popup at one size, so nothing jumps around as the
+   game loads. */
+
+/* The board's card: a --surface tile on the sunk page, as the site sets its
+   boards. The board itself can't be the card: its background is the hairline
+   colour and it clips to its own radius. */
+
+:root[data-game="patches"] .board-card {
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+:root[data-game="patches"] .board {
+  display: grid;
+  /* Patches boards are not always square, so both dimensions drive the layout
+     and the aspect ratio — a 5×8 board must preview as 5×8, not as a squashed
+     square. */
+  grid-template-columns: repeat(var(--cols, 7), 1fr);
+  grid-template-rows: repeat(var(--rows, 7), 1fr);
+  aspect-ratio: var(--cols, 7) / var(--rows, 7);
+  gap: 1px;
+  width: 100%;
+  max-width: 216px;
+  margin: 0 auto;
+  padding: 1px;
+  border-radius: 8px;
+  overflow: hidden;
+  /* Shows through the gaps as hairline grid lines. */
+  background: var(--board-line);
+}
+
+/* The board says everything the status line used to, so the line is replaced
+   *visually only* — it stays in the a11y tree, where the live region goes on
+   announcing every state. Errors and `stuck` are the exceptions: "no tiling
+   exists for this board" has no equivalent in the grid, so those keep their
+   text. */
+
+:root[data-game="patches"] body:not([data-state="error"]):not([data-state="stuck"]) .status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Waiting on a board: an empty grid, breathing while we look, then settling to
+   something quieter once we've concluded there's nothing there. */
+
+:root[data-game="patches"] body[data-state="checking"] .board {
+  animation: board-breathe 1.4s ease-in-out infinite;
+}
+
+:root[data-game="patches"] body[data-state="idle"] .board {
+  opacity: 0.55;
+}
+
+/* Round the four corner cells to follow the board's 8px radius (inset by the 1px
+   padding = 7px). Without this the square cells' patch colours are clipped by the
+   board's `overflow: hidden`, leaving a dark notch in each corner. popup.js tags
+   the corner cells for any board shape. */
+
+:root[data-game="patches"] .board__cell--tl {
+  border-top-left-radius: 7px;
+}
+
+:root[data-game="patches"] .board__cell--tr {
+  border-top-right-radius: 7px;
+}
+
+:root[data-game="patches"] .board__cell--bl {
+  border-bottom-left-radius: 7px;
+}
+
+:root[data-game="patches"] .board__cell--br {
+  border-bottom-right-radius: 7px;
+}
+
+:root[data-game="patches"] .board__cell {
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+}
+
+/* A cell belonging to one of the solution's patches. --hue is set per cell in
+   popup.js; the other two components come from the theme. */
+
+:root[data-game="patches"] .board__cell--patch {
+  background: hsl(var(--hue) var(--patch-sat) var(--patch-light));
+}
+
+/* The clue markers, as the game draws them: a disc sitting on its patch. An
+   unnumbered clue gets an empty one — it's still a clue, just not sized. */
+
+:root[data-game="patches"] .board__clue {
+  display: grid;
+  place-items: center;
+  width: 74%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  /* Scales with the grid so the discs keep their proportions at any board size. */
+  font-size: calc(72px / var(--cols, 7));
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* Patches the solver just placed fade up, so you can see its work. */
+
+:root[data-game="patches"] body[data-state="solved"] .board__cell--patch {
+  animation: patch-in 0.36s ease-out backwards;
+}
+
+@keyframes patch-in {
+  from {
+    opacity: 0;
+  }
+}
