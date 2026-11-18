@@ -134,9 +134,9 @@ remains. The engine:
 - makes each merge by tap-tap, falling back to a pointer drag;
 - re-reads the board after every merge and re-plans from what's actually there.
 
-**Not yet checked on the live game:** the two board captures don't show how the game
-takes a merge, so the engine tries both tap-tap and drag and remembers which one
-worked. Run it once on the real page before publishing.
+**Checked on the live game** (2026-11-18): Solve all solved it, signed in and signed
+out. The board captures don't show how the game takes a merge, so the engine still
+tries both tap-tap and drag and remembers which one worked.
 
 ## Tests
 
@@ -153,10 +153,11 @@ board captures in `tests/fixtures`. It isn't LinkedIn's code.
 
 ## Before publishing
 
-1. Run Solve all once signed in. Signed out it's verified live (2026-11-18): all
-   six games, Sumbreak included, solved in about 45 s.
-2. Replace the placeholder toolbar icon (`images/icon-*.png`, made from four game icons).
-3. Package without the tests:
+Solve all is verified live (2026-11-18), signed in and signed out: all six games,
+Sumbreak included, solved (about 45 s signed out).
+
+1. Replace the placeholder toolbar icon (`images/icon-*.png`, made from four game icons).
+2. Package without the tests:
    `cd Puzzle_Solver && zip -r ../Puzzle_Solver.zip . -x 'tests/*' README.md`
-4. Upload to the **Zip Solver** listing as an update. Keep the permissions as they are,
+3. Upload to the **Zip Solver** listing as an update. Keep the permissions as they are,
    so Zip users get it without having to re-approve.
