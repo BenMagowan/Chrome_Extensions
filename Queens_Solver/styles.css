@@ -46,9 +46,9 @@
   --solved-fill: color-mix(in srgb, var(--gold) 22%, var(--surface));
   --solved-ink: #2a2000;
   --solved-line: #b08100;
-  /* NEW badges: violet, a hue nothing else in the popup uses (red is errors, gold
-     is solved). White on it in both themes. */
-  --new-fill: #6b4fd8;
+  /* NEW badges: the light theme's red behind white text, in both themes, since
+     white on the dark theme's lighter red is under 4.5:1. */
+  --new-fill: #d1372f;
 
   /* Surfaces */
   --surface: #ffffff;
