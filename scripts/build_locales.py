@@ -92,6 +92,7 @@ UI = {
     "lblSolve": ("Solve puzzle", "Resolver puzle", "Resolver quebra-cabeça", "Résoudre le puzzle", "Rätsel lösen"),
     "lblSolving": ("Solving", "Resolviendo", "Resolvendo", "Résolution", "Wird gelöst"),
     "lblSolved": ("Solved", "Resuelto", "Resolvido", "Résolu", "Gelöst"),
+    "lblAlready": ("Already solved", "Ya resuelto", "Já resolvido", "Déjà résolu", "Bereits gelöst"),
     "stDone": ("Already solved · $1×$2", "Ya resuelto · $1×$2", "Já resolvido · $1×$2", "Déjà résolu · $1×$2", "Bereits gelöst · $1×$2"),
     "lblNothing": ("Nothing to solve", "Nada que resolver", "Nada para resolver", "Rien à résoudre", "Nichts zu lösen"),
     "lblTryAgain": ("Try again", "Reintentar", "Tentar novamente", "Réessayer", "Erneut versuchen"),

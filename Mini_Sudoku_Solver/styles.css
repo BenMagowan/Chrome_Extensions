@@ -38,13 +38,17 @@
   --ok: #1a9e63;
   --err: #d1372f;
 
-  /* The solved pill: the crown's gold with its own dark ink, the same in both
-     themes (the Crowns accent on the site). */
+  /* The solved state: the crown's gold (the Crowns accent on the site), but as a
+     pale tint with a gold rim rather than a solid fill, so a finished board never
+     looks like a button waiting to be pressed. Light ink on the light tint, gold
+     ink on the dark one. */
   --gold: #ffbb00;
-  --on-gold: #2a2000;
-  /* NEW badges: the light theme's red behind white text, in both themes, since
-     white on the dark theme's lighter red is under 4.5:1. */
-  --new-fill: #d1372f;
+  --solved-fill: color-mix(in srgb, var(--gold) 22%, var(--surface));
+  --solved-ink: #2a2000;
+  --solved-line: #b08100;
+  /* NEW badges: violet, a hue nothing else in the popup uses (red is errors, gold
+     is solved). White on it in both themes. */
+  --new-fill: #6b4fd8;
 
   /* Surfaces */
   --surface: #ffffff;
@@ -63,6 +67,10 @@
     --brand: #2b9fdb;
     --ok: #3ecf8e;
     --err: #ff7a70;
+
+    --solved-fill: color-mix(in srgb, var(--gold) 16%, var(--surface));
+    --solved-ink: #ffbb00;
+    --solved-line: #937311;
 
     --surface: #0f1b26;
     --surface-sunk: #0a141d;
@@ -311,11 +319,13 @@ body[data-state="solving"] .action:disabled {
   opacity: 0.6;
 }
 
-/* Gold means solved: the same pill whether we just solved the board or it was
-   already finished when we looked. */
+/* Gold means solved, whether we just solved the board or it was already
+   finished when we looked (the label tells the two apart). A tint with a rim,
+   not a solid fill: it is an end state, not something to press. */
 body:is([data-state="solved"], [data-state="done"]) .action:disabled {
-  background: var(--gold);
-  color: var(--on-gold);
+  background: var(--solved-fill);
+  border-color: var(--solved-line);
+  color: var(--solved-ink);
 }
 
 /* ---------- spinner (solving only) ---------- */
@@ -380,12 +390,18 @@ body[data-state="solving"] .action__spinner {
   border-radius: 999px;
   background: var(--new-fill);
   color: #fff;
-  font-size: 9.5px;
+  font-size: 10px;
   font-weight: 700;
   line-height: 1.3;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   vertical-align: 1px;
+}
+
+/* Shipped hidden; popup.js shows it until the puzzle site has been opened from
+   this popup once. Needed because display above beats the [hidden] attribute. */
+.badge[hidden] {
+  display: none;
 }
 
 /* The menu row's own gap spaces it there. */

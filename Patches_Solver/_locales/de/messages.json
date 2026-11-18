@@ -80,6 +80,9 @@
   "lblSolved": {
     "message": "Gelöst"
   },
+  "lblAlready": {
+    "message": "Bereits gelöst"
+  },
   "stDone": {
     "message": "Bereits gelöst · $1×$2"
   },

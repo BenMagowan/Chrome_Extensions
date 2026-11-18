@@ -92,7 +92,7 @@ const STATES = {
   // means we did it. Nothing to claim credit for, so no entrance flourish either.
   done: {
     status: (d) => t("stDone", d.rows, d.cols),
-    label: t("lblSolved"),
+    label: t("lblAlready"),
     hint: HINT_SOLVED,
     act: null,
   },
@@ -343,6 +343,43 @@ document.addEventListener("keydown", (e) => {
 menuEl.addEventListener("click", (e) => {
   if (e.target.closest('a[role="menuitem"]')) closeMenu();
 });
+
+/* --------------------------------------------------------------- NEW badge */
+
+// The NEW badges flag the puzzle site until it has been opened from this popup
+// once, by either link. They ship hidden in popup.html so a returning user never
+// sees one flash. localStorage, like the settings below: it is synchronous, so the
+// write lands before the new tab takes focus and the popup closes. If storage is
+// blocked the badges simply stay on.
+const SITE_SEEN_KEY = "siteSeen";
+const newBadges = document.querySelectorAll(".badge");
+
+function siteSeen() {
+  try {
+    return localStorage.getItem(SITE_SEEN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markSiteSeen() {
+  try {
+    localStorage.setItem(SITE_SEEN_KEY, "1");
+  } catch {
+    /* storage blocked: the badges come back next time */
+  }
+  for (const badge of newBadges) badge.hidden = true;
+}
+
+if (!siteSeen()) for (const badge of newBadges) badge.hidden = false;
+
+for (const link of [hintLink, document.getElementById("site-link")]) {
+  link.addEventListener("click", markSiteSeen);
+  // A middle-click opens the site in a background tab too.
+  link.addEventListener("auxclick", (e) => {
+    if (e.button === 1) markSiteSeen();
+  });
+}
 
 /* ---------------------------------------------------------------- settings */
 
