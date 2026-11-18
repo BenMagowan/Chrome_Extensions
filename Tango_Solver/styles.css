@@ -34,11 +34,17 @@
      theme's #2b9fdb is under 4.5:1. */
   --brand-fill: #0072b1;
 
-  /* Semantic. --ok is for borders and fills; as text use --ok-ink, which adds a
-     touch of ink so it holds 4.5:1 (the site's --color-ok-ink). */
+  /* Semantic */
   --ok: #1a9e63;
-  --ok-ink: color-mix(in srgb, var(--ok) 72%, var(--text));
   --err: #d1372f;
+
+  /* The solved pill: the crown's gold with its own dark ink, the same in both
+     themes (the Crowns accent on the site). */
+  --gold: #ffbb00;
+  --on-gold: #2a2000;
+  /* NEW badges: the light theme's red behind white text, in both themes, since
+     white on the dark theme's lighter red is under 4.5:1. */
+  --new-fill: #d1372f;
 
   /* Surfaces */
   --surface: #ffffff;
@@ -298,20 +304,11 @@ body[data-state="solving"] .action:disabled {
   opacity: 0.6;
 }
 
-/* Green means solved: only a win we just made gets it. */
-body[data-state="solved"] .action:disabled {
-  background: var(--surface);
-  border-color: color-mix(in srgb, var(--ok) 40%, var(--line));
-  color: var(--ok-ink);
-}
-
-/* "Nothing to solve": the board was finished before we looked, so the button
-   goes quiet rather than claiming the win. The border gives the pill its edge
-   on the sunk page, which shares its fill. */
-body[data-state="done"] .action:disabled {
-  background: var(--surface-sunk);
-  border-color: var(--line);
-  color: var(--text-muted);
+/* Gold means solved: the same pill whether we just solved the board or it was
+   already finished when we looked. */
+body:is([data-state="solved"], [data-state="done"]) .action:disabled {
+  background: var(--gold);
+  color: var(--on-gold);
 }
 
 /* ---------- spinner (solving only) ---------- */
@@ -364,6 +361,42 @@ body[data-state="solving"] .action__spinner {
 .hint__link:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
+}
+
+/* A small red "NEW" pill flagging the puzzle site: in front of the hint link's
+   text, and after the menu link's. Inline-block, so the link's hover underline
+   skips it. */
+.badge {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--new-fill);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+}
+
+/* The menu row's own gap spaces it there. */
+.menu__item .badge {
+  margin-right: 0;
+}
+
+/* Under the button the badge hangs off the text's left edge rather than taking
+   up room in the line, so the text itself stays centred. */
+.hint__link {
+  position: relative;
+}
+
+.hint__link .badge {
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 /* ---------- settings menu ---------- */
@@ -481,13 +514,6 @@ body[data-state="solving"] .action__spinner {
   box-shadow: inset 0 0 0 2px var(--ring);
 }
 
-.menu__icon {
-  width: 15px;
-  height: 15px;
-  flex: none;
-  object-fit: contain;
-  border-radius: 3px;
-}
 
 /* Auto-solve toggle: a <button role="menuitemcheckbox"> that has to reset the
    button defaults to sit flush with the anchor items around it, then push its

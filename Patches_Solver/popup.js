@@ -21,6 +21,7 @@ const statusEl = document.getElementById("status-text");
 const actionBtn = document.getElementById("action");
 const actionLabel = document.getElementById("action-label");
 const hintLink = document.getElementById("hint-link");
+const hintText = document.getElementById("hint-text");
 document.getElementById("site-link").href = siteUrl("menu");
 const brandIcon = document.getElementById("brand-icon");
 const boardEl = document.getElementById("board");
@@ -91,7 +92,7 @@ const STATES = {
   // means we did it. Nothing to claim credit for, so no entrance flourish either.
   done: {
     status: (d) => t("stDone", d.rows, d.cols),
-    label: t("lblNothing"),
+    label: t("lblSolved"),
     hint: HINT_SOLVED,
     act: null,
   },
@@ -124,7 +125,7 @@ function setState(next, data = {}) {
   document.body.dataset.state = next;
   statusEl.textContent = resolve(spec.status, data);
   actionLabel.textContent = spec.label;
-  hintLink.textContent = resolve(spec.hint, data);
+  hintText.textContent = resolve(spec.hint, data);
   hintLink.href = siteUrl(next);
   actionBtn.disabled = spec.act === null;
   actionBtn.setAttribute("aria-busy", String(next === "solving"));

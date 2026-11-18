@@ -54,10 +54,13 @@
     "message": "Prévia da solução, $1 por $2."
   },
   "hintAny": {
-    "message": "Jogue quebra-cabeças ilimitados, sem limite diário →"
+    "message": "Quebra-cabeças ilimitados"
   },
   "hintSolved": {
-    "message": "Quer mais um? Jogue quebra-cabeças ilimitados →"
+    "message": "Quebra-cabeças ilimitados"
+  },
+  "badgeNew": {
+    "message": "Novo"
   },
   "stChecking": {
     "message": "Procurando um tabuleiro…"

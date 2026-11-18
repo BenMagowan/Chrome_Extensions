@@ -51,10 +51,13 @@
     "message": "Solution preview, $1 by $2."
   },
   "hintAny": {
-    "message": "Play unlimited puzzles, no daily limit →"
+    "message": "Play unlimited puzzles"
   },
   "hintSolved": {
-    "message": "Want another? Play unlimited puzzles →"
+    "message": "Play unlimited puzzles"
+  },
+  "badgeNew": {
+    "message": "New"
   },
   "stChecking": {
     "message": "Looking for a board…"
