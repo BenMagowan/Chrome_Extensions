@@ -1,40 +1,44 @@
 /*
  * Popup styling for the Zip Solver. Adapts to light/dark.
  *
- * Shared across all five LinkedIn Games solvers: only the accent block below
- * differs. --accent is sampled from this extension's own images/icon-128.png
- * and is spent on one thing — the button that actually solves — so the primary
- * action is unmistakable. --brand is LinkedIn blue in every solver: they are one
- * family, so navigation and focus look the same throughout, and each member is
- * told apart by its icon and accent. Success/danger stay conventional green/red:
- * they must read instantly and are deliberately not part of the palette.
+ * Shared across all five LinkedIn Games solvers. Everything between BEGIN TOKENS
+ * and END TOKENS is byte-identical in all five; the game block after it is the
+ * only per-solver palette. The tokens are the puzzle site's (globals.css), except
+ * --brand, which stays LinkedIn blue: the solvers are one family, so navigation
+ * and focus look the same throughout. --accent is the matching game's accent on
+ * the site and is spent on one thing, the button that actually solves, so the
+ * primary action is unmistakable. Success/danger stay conventional green/red.
  *
  * Every visual difference between UI states hangs off [data-state] on <body>.
  * popup.js sets that attribute and the copy; it never touches styles.
  */
 
+/* BEGIN TOKENS */
+
+/* Fraunces (SIL OFL 1.1, see fonts/OFL.txt), bundled so the title never depends
+   on the network. Latin subset, bold only: it is used for the title alone. */
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url("fonts/fraunces-bold.woff2") format("woff2");
+}
+
 :root {
   color-scheme: light dark;
 
-  /* Shared family colour */
+  /* Shared family colour: LinkedIn blue, not the site's. */
   --brand: #0072b1;
+  /* Fill behind white text. Stays #0072b1 in dark too: white on the dark
+     theme's #2b9fdb is under 4.5:1. */
+  --brand-fill: #0072b1;
 
-  /* Accent — sampled from this extension's icon */
-  --accent: #ff6d29;
-  --accent-hi: #ff8a4f;
-  --accent-lo: #d9541a;
-  --on-accent: #3a1400;
-
-  /* Semantic */
+  /* Semantic. --ok is for borders and fills; as text use --ok-ink, which adds a
+     touch of ink so it holds 4.5:1 (the site's --color-ok-ink). */
   --ok: #1a9e63;
+  --ok-ink: color-mix(in srgb, var(--ok) 72%, var(--text));
   --err: #d1372f;
-
-  /* Board preview: hairlines between cells, the puzzle's walls, and the path.
-     The path is the extension's accent — it's the answer, so it gets the colour
-     that means "this is ours". */
-  --board-line: color-mix(in srgb, var(--text) 16%, transparent);
-  --board-wall: color-mix(in srgb, var(--text) 55%, transparent);
-  --board-path: var(--accent);
 
   /* Surfaces */
   --surface: #ffffff;
@@ -45,6 +49,7 @@
 
   --ring: color-mix(in srgb, var(--brand) 45%, transparent);
   --shadow: 0 1px 2px rgb(16 36 58 / 0.06), 0 4px 12px rgb(16 36 58 / 0.05);
+  --shadow-pop: 0 6px 20px rgb(16 36 58 / 0.14), 0 2px 6px rgb(16 36 58 / 0.08);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -60,7 +65,29 @@
     --text-muted: #8ea3b5;
 
     --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 12px rgb(0 0 0 / 0.25);
+    --shadow-pop: 0 6px 20px rgb(0 0 0 / 0.45), 0 2px 6px rgb(0 0 0 / 0.3);
   }
+}
+
+/* END TOKENS */
+
+/* ---------- game tokens (Zip) ---------- */
+
+:root {
+  /* Accent: the Trail accent on the puzzle site (registry.ts). */
+  --accent: #ff6d29;
+  --accent-hi: #fe9266;
+  --accent-lo: #dc5300;
+  --on-accent: #391608;
+  /* Solve button hover. -hi, as on the site. */
+  --accent-hover: var(--accent-hi);
+
+  /* Board preview: hairlines between cells, the puzzle's walls, and the path.
+     The path is the extension's accent — it's the answer, so it gets the colour
+     that means "this is ours". */
+  --board-line: color-mix(in srgb, var(--text) 16%, transparent);
+  --board-wall: color-mix(in srgb, var(--text) 55%, transparent);
+  --board-path: var(--accent);
 }
 
 * {
@@ -71,7 +98,8 @@ body {
   margin: 0;
   width: 300px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: var(--surface);
+  /* The site's page: a sunk backdrop with the content on cards. */
+  background: var(--surface-sunk);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
 }
@@ -106,11 +134,14 @@ body {
   flex: 1;
 }
 
+/* The one serif in the popup, as on the site's headings. */
 .brand__title {
   margin: 0;
-  font-size: 14px;
-  font-weight: 650;
-  letter-spacing: -0.01em;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.005em;
 }
 
 .brand__sub {
@@ -199,10 +230,11 @@ body[data-state="solved"] .brand__icon {
 
 /* ---------- action button ---------- */
 
+/* A full-width pill in every state, like the site's buttons. */
 .action {
   appearance: none;
   border: 1px solid transparent;
-  border-radius: 9px;
+  border-radius: 999px;
   padding: 0 14px;
   height: 40px;
   display: inline-flex;
@@ -222,7 +254,7 @@ body[data-state="solved"] .brand__icon {
 }
 
 .action:hover:not(:disabled) {
-  background: var(--accent-hi);
+  background: var(--accent-hover);
 }
 
 .action:active:not(:disabled) {
@@ -241,14 +273,15 @@ body[data-state="solved"] .brand__icon {
 }
 
 /* No board yet: the button navigates rather than solves, so it drops to brand
-   blue — the accent stays reserved for actually solving. */
+   blue — the accent stays reserved for actually solving. --brand-fill, not
+   --brand: the white label needs the light theme's blue in both themes. */
 body[data-state="idle"] .action {
-  background: var(--brand);
+  background: var(--brand-fill);
   color: #fff;
 }
 
 body[data-state="idle"] .action:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--brand) 85%, #000);
+  background: color-mix(in srgb, var(--brand-fill) 85%, #000);
 }
 
 body[data-state="checking"] .action:disabled,
@@ -264,10 +297,20 @@ body[data-state="solving"] .action:disabled {
   opacity: 0.6;
 }
 
-body:is([data-state="solved"], [data-state="done"]) .action:disabled {
-  background: transparent;
+/* Green means solved: only a win we just made gets it. */
+body[data-state="solved"] .action:disabled {
+  background: var(--surface);
   border-color: color-mix(in srgb, var(--ok) 40%, var(--line));
-  color: var(--ok);
+  color: var(--ok-ink);
+}
+
+/* "Nothing to solve": the board was finished before we looked, so the button
+   goes quiet rather than claiming the win. The border gives the pill its edge
+   on the sunk page, which shares its fill. */
+body[data-state="done"] .action:disabled {
+  background: var(--surface-sunk);
+  border-color: var(--line);
+  color: var(--text-muted);
 }
 
 /* ---------- spinner (solving only) ---------- */
@@ -316,7 +359,7 @@ body:is([data-state="solving"], [data-state="solved"]) .timer {
 
 /* Frozen total: greened to match the solved button, a quiet "done". */
 body[data-state="solved"] .timer {
-  color: var(--ok);
+  color: var(--ok-ink);
 }
 
 .timer__icon {
@@ -363,18 +406,21 @@ body[data-state="solved"] .timer {
   flex: none;
 }
 
+/* Round, on a surface chip, like the site's round header buttons. Open or
+   hovered it only darkens its glyph: no square fill. */
 .cog {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border: none;
-  border-radius: 7px;
-  background: transparent;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: var(--shadow);
   color: var(--text-muted);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: color 0.15s ease;
 }
 
 .cog svg {
@@ -386,7 +432,6 @@ body[data-state="solved"] .timer {
 
 .cog:hover,
 .cog[aria-expanded="true"] {
-  background: color-mix(in srgb, var(--text-muted) 14%, transparent);
   color: var(--text);
 }
 
@@ -415,7 +460,7 @@ body[data-state="solved"] .timer {
 
 .cog:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px var(--ring);
+  box-shadow: var(--shadow), 0 0 0 3px var(--ring);
 }
 
 .menu {
@@ -426,21 +471,15 @@ body[data-state="solved"] .timer {
   min-width: 172px;
   padding: 5px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 14px;
   background: var(--surface);
-  box-shadow: 0 6px 20px rgb(16 36 58 / 0.14), 0 2px 6px rgb(16 36 58 / 0.08);
+  box-shadow: var(--shadow-pop);
   animation: menu-in 0.13s ease-out;
 }
 
 /* [hidden] must beat the display used above. */
 .menu[hidden] {
   display: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  .menu {
-    box-shadow: 0 6px 20px rgb(0 0 0 / 0.45), 0 2px 6px rgb(0 0 0 / 0.3);
-  }
 }
 
 @keyframes menu-in {
@@ -455,7 +494,7 @@ body[data-state="solved"] .timer {
   align-items: center;
   gap: 7px;
   padding: 7px 9px;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 12.5px;
   font-weight: 550;
   color: var(--text);
@@ -505,7 +544,7 @@ body[data-state="solved"] .timer {
   height: 18px;
   flex: none;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--text-muted) 42%, transparent);
+  background: color-mix(in srgb, var(--text-muted) 45%, var(--line));
   transition: background 0.15s ease;
 }
 
@@ -587,7 +626,7 @@ body[data-state="solved"] .timer {
   height: 4px;
   margin: 2px 9px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--text-muted) 35%, transparent);
+  background: color-mix(in srgb, var(--text-muted) 45%, var(--line));
   cursor: pointer;
 }
 
@@ -615,7 +654,8 @@ body[data-state="solved"] .timer {
   background: var(--brand);
 }
 
-/* First thing in the menu, so it carries no top border of its own. */
+/* Group heading ("More solvers"). Sits under a separator, which gives it its
+   top edge. */
 .menu__label {
   margin: 1px 0 2px;
   padding: 3px 9px 0;
@@ -650,6 +690,16 @@ body[data-state="solved"] .timer {
    and an empty one says "no board yet" better than "No board found" did. Keeping
    it in every state also holds the popup at one size, so nothing jumps around as
    the game loads. */
+/* The board's card: a --surface tile on the sunk page, as the site sets its
+   boards. The board itself can't be the card: its background is the hairline
+   colour and it clips to its own radius. */
+.board-card {
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
 .board {
   display: grid;
   grid-template-columns: repeat(var(--n, 6), 1fr);

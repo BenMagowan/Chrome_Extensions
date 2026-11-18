@@ -114,12 +114,9 @@
 
         <div id="menu" class="menu" role="menu" aria-label="Settings and more"
           data-i18n-aria-label="menuAria" hidden>
-          <!-- role="presentation": a bare <p> isn't a valid child of role="menu".
-               It still names the group below via aria-labelledby. -->
-          <p class="menu__label" id="settings-label" role="presentation" data-i18n="settings">
-            Settings
-          </p>
-          <div role="group" aria-labelledby="settings-label">
+          <!-- No visible heading: the cog already says these are settings. The
+               group is still named for screen readers. -->
+          <div role="group" aria-label="Settings" data-i18n-aria-label="settings">
             <!-- A checkable menu item, not a link: role="menuitemcheckbox" +
                  aria-checked is the accessible pairing for an in-menu toggle, and
                  popup.js keeps aria-checked in sync with the stored preference.
@@ -247,7 +244,9 @@
       <!-- Board preview: a live picture of the grid, its colour regions and any
            crowns already placed. Filled in by popup.js from the detect snapshot
            and shown instead of the status line whenever there's a board. -->
-      <div id="board" class="board" role="img" aria-label="Board preview" data-i18n-aria-label="boardPreview"></div>
+      <div class="board-card">
+        <div id="board" class="board" role="img" aria-label="Board preview" data-i18n-aria-label="boardPreview"></div>
+      </div>
 
       <button id="action" class="action" type="button" disabled>
         <span class="action__spinner" aria-hidden="true"></span>

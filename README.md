@@ -36,10 +36,12 @@ game-specific details and verified DOM selectors):
 - **Shared popup design** — all five popups use one stylesheet and one state machine
   (`checking → idle | ready → solving → solved | error`, plus `stuck` in Patches for a
   board with no valid tiling, and `done` in Queens for an already-finished board).
-  `styles.css` is byte-identical between solvers apart from a palette block at the top:
-  `--accent` is sampled from that extension's own `images/icon-128.png` and is spent on
-  the one button that solves, while `--brand` stays LinkedIn blue everywhere, since these
-  are one family and each member is told apart by its icon and accent. `setState()` writes
+  `styles.css` shares one token block between solvers (`BEGIN TOKENS` to `END TOKENS`,
+  byte-identical in all five): the puzzle site's colours, except `--brand`, which stays
+  LinkedIn blue everywhere, since these are one family. Below it, a game block holds
+  `--accent` (the matching game's accent on the puzzle site), which is spent on the one
+  button that solves, plus any board-preview colours. The title is set in Fraunces,
+  bundled in each solver's `fonts/` with its licence. `setState()` writes
   `data-state` on `<body>` and the CSS reacts to it; the JS never touches styles. Each
   header shows the extension's own icon (via `chrome.runtime.getURL`, 128 → 48 → 32 → 16)
   and a cog menu linking the other four solvers.
