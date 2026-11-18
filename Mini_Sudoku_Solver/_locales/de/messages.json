@@ -51,10 +51,13 @@
     "message": "Vorschau der Lösung, $1 mal $2."
   },
   "hintAny": {
-    "message": "Unbegrenzt Rätsel spielen, ohne Tageslimit →"
+    "message": "Unbegrenzt Rätsel spielen"
   },
   "hintSolved": {
-    "message": "Noch eins? Unbegrenzt Rätsel spielen →"
+    "message": "Unbegrenzt Rätsel spielen"
+  },
+  "badgeNew": {
+    "message": "Neu"
   },
   "stChecking": {
     "message": "Suche nach einem Spielfeld…"
@@ -76,6 +79,9 @@
   },
   "lblSolved": {
     "message": "Gelöst"
+  },
+  "lblAlready": {
+    "message": "Bereits gelöst"
   },
   "stDone": {
     "message": "Bereits gelöst · $1×$2"

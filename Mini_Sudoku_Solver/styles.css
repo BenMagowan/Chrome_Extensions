@@ -1,39 +1,54 @@
 /*
  * Popup styling for the Mini Sudoku Solver. Adapts to light/dark.
  *
- * Shared across all five LinkedIn Games solvers: only the accent block below
- * differs. --accent is sampled from this extension's own images/icon-128.png
- * and is spent on one thing — the button that actually solves — so the primary
- * action is unmistakable. --brand is LinkedIn blue in every solver: they are one
- * family, so navigation and focus look the same throughout, and each member is
- * told apart by its icon and accent. Success/danger stay conventional green/red:
- * they must read instantly and are deliberately not part of the palette.
+ * Shared across all five LinkedIn Games solvers. Everything between BEGIN TOKENS
+ * and END TOKENS is byte-identical in all five; the game block after it is the
+ * only per-solver palette. The tokens are the puzzle site's (globals.css), except
+ * --brand, which stays LinkedIn blue: the solvers are one family, so navigation
+ * and focus look the same throughout. --accent is the matching game's accent on
+ * the site and is spent on one thing, the button that actually solves, so the
+ * primary action is unmistakable. Success/danger stay conventional green/red.
  *
  * Every visual difference between UI states hangs off [data-state] on <body>.
  * popup.js sets that attribute and the copy; it never touches styles.
  */
 
+/* BEGIN TOKENS */
+
+/* Fraunces (SIL OFL 1.1, see fonts/OFL.txt), bundled so the title never depends
+   on the network. Latin subset, bold only: it is used for the title alone. */
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url("fonts/fraunces-bold.woff2") format("woff2");
+}
+
 :root {
   color-scheme: light dark;
 
-  /* Shared family colour */
+  /* Shared family colour: LinkedIn blue, not the site's. */
   --brand: #0072b1;
-
-  /* Accent — sampled from this extension's icon */
-  --accent: #338041;
-  --accent-hi: #3f9c50;
-  --accent-lo: #26632f;
-  --on-accent: #ffffff;
+  /* Fill behind white text. Stays #0072b1 in dark too: white on the dark
+     theme's #2b9fdb is under 4.5:1. */
+  --brand-fill: #0072b1;
 
   /* Semantic */
   --ok: #1a9e63;
   --err: #d1372f;
 
-  /* Board preview: the region walls, and the digits the solver worked out (the
-     puzzle's own clues just use --text). The fill colour is the extension's
-     accent, stepped lighter in dark mode so it stays legible on a dark cell. */
-  --board-wall: color-mix(in srgb, var(--text) 40%, transparent);
-  --digit-fill: var(--accent-lo);
+  /* The solved state: the crown's gold (the Crowns accent on the site), but as a
+     pale tint with a gold rim rather than a solid fill, so a finished board never
+     looks like a button waiting to be pressed. Light ink on the light tint, gold
+     ink on the dark one. */
+  --gold: #ffbb00;
+  --solved-fill: color-mix(in srgb, var(--gold) 22%, var(--surface));
+  --solved-ink: #2a2000;
+  --solved-line: #b08100;
+  /* NEW badges: the light theme's red behind white text, in both themes, since
+     white on the dark theme's lighter red is under 4.5:1. */
+  --new-fill: #d1372f;
 
   /* Surfaces */
   --surface: #ffffff;
@@ -44,6 +59,7 @@
 
   --ring: color-mix(in srgb, var(--brand) 45%, transparent);
   --shadow: 0 1px 2px rgb(16 36 58 / 0.06), 0 4px 12px rgb(16 36 58 / 0.05);
+  --shadow-pop: 0 6px 20px rgb(16 36 58 / 0.14), 0 2px 6px rgb(16 36 58 / 0.08);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -52,6 +68,10 @@
     --ok: #3ecf8e;
     --err: #ff7a70;
 
+    --solved-fill: color-mix(in srgb, var(--gold) 16%, var(--surface));
+    --solved-ink: #ffbb00;
+    --solved-line: #937311;
+
     --surface: #0f1b26;
     --surface-sunk: #0a141d;
     --line: #21323f;
@@ -59,7 +79,32 @@
     --text-muted: #8ea3b5;
 
     --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 12px rgb(0 0 0 / 0.25);
+    --shadow-pop: 0 6px 20px rgb(0 0 0 / 0.45), 0 2px 6px rgb(0 0 0 / 0.3);
+  }
+}
 
+/* END TOKENS */
+
+/* ---------- game tokens (Mini Sudoku) ---------- */
+
+:root {
+  /* Accent: the Mini Sudoku accent on the puzzle site (registry.ts). */
+  --accent: #338041;
+  --accent-hi: #469252;
+  --accent-lo: #126527;
+  --on-accent: #ffffff;
+  /* Solve button hover. -lo, not -hi: white on -hi is under 4.5:1. */
+  --accent-hover: var(--accent-lo);
+
+  /* Board preview: the region walls, and the digits the solver worked out (the
+     puzzle's own clues just use --text). The fill colour is the extension's
+     accent, stepped lighter in dark mode so it stays legible on a dark cell. */
+  --board-wall: color-mix(in srgb, var(--text) 40%, transparent);
+  --digit-fill: var(--accent-lo);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
     /* The dark green accent all but vanishes on a dark cell — step up to the
        light variant so the solver's digits stay readable. */
     --digit-fill: var(--accent-hi);
@@ -74,7 +119,8 @@ body {
   margin: 0;
   width: 300px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: var(--surface);
+  /* The site's page: a sunk backdrop with the content on cards. */
+  background: var(--surface-sunk);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
 }
@@ -109,11 +155,14 @@ body {
   flex: 1;
 }
 
+/* The one serif in the popup, as on the site's headings. */
 .brand__title {
   margin: 0;
-  font-size: 14px;
-  font-weight: 650;
-  letter-spacing: -0.01em;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.005em;
 }
 
 .brand__sub {
@@ -202,10 +251,11 @@ body[data-state="solved"] .brand__icon {
 
 /* ---------- action button ---------- */
 
+/* A full-width pill in every state, like the site's buttons. */
 .action {
   appearance: none;
   border: 1px solid transparent;
-  border-radius: 9px;
+  border-radius: 999px;
   padding: 0 14px;
   height: 40px;
   display: inline-flex;
@@ -225,7 +275,7 @@ body[data-state="solved"] .brand__icon {
 }
 
 .action:hover:not(:disabled) {
-  background: var(--accent-hi);
+  background: var(--accent-hover);
 }
 
 .action:active:not(:disabled) {
@@ -244,14 +294,15 @@ body[data-state="solved"] .brand__icon {
 }
 
 /* No board yet: the button navigates rather than solves, so it drops to brand
-   blue — the accent stays reserved for actually solving. */
+   blue — the accent stays reserved for actually solving. --brand-fill, not
+   --brand: the white label needs the light theme's blue in both themes. */
 body[data-state="idle"] .action {
-  background: var(--brand);
+  background: var(--brand-fill);
   color: #fff;
 }
 
 body[data-state="idle"] .action:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--brand) 85%, #000);
+  background: color-mix(in srgb, var(--brand-fill) 85%, #000);
 }
 
 body[data-state="checking"] .action:disabled,
@@ -268,10 +319,13 @@ body[data-state="solving"] .action:disabled {
   opacity: 0.6;
 }
 
+/* Gold means solved, whether we just solved the board or it was already
+   finished when we looked (the label tells the two apart). A tint with a rim,
+   not a solid fill: it is an end state, not something to press. */
 body:is([data-state="solved"], [data-state="done"]) .action:disabled {
-  background: transparent;
-  border-color: color-mix(in srgb, var(--ok) 40%, var(--line));
-  color: var(--ok);
+  background: var(--solved-fill);
+  border-color: var(--solved-line);
+  color: var(--solved-ink);
 }
 
 /* ---------- spinner (solving only) ---------- */
@@ -295,39 +349,6 @@ body[data-state="solving"] .action__spinner {
   to {
     transform: rotate(360deg);
   }
-}
-
-/* ---------- completion timer ---------- */
-
-/* Only meaningful while a solve is in flight or just finished; hidden the rest of
-   the time so it doesn't sit at a stale 0.0s. Tabular figures keep the width from
-   twitching as the count ticks over. */
-.timer {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  margin: 0;
-  font-size: 12.5px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
-}
-
-body:is([data-state="solving"], [data-state="solved"]) .timer {
-  display: flex;
-}
-
-/* Frozen total: greened to match the solved button, a quiet "done". */
-body[data-state="solved"] .timer {
-  color: var(--ok);
-}
-
-.timer__icon {
-  width: 14px;
-  height: 14px;
-  flex: none;
-  fill: currentColor;
 }
 
 /* ---------- hint ---------- */
@@ -359,6 +380,48 @@ body[data-state="solved"] .timer {
   outline-offset: 2px;
 }
 
+/* A small red "NEW" pill flagging the puzzle site: in front of the hint link's
+   text, and after the menu link's. Inline-block, so the link's hover underline
+   skips it. */
+.badge {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--new-fill);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+}
+
+/* Shipped hidden; popup.js shows it until the puzzle site has been opened from
+   this popup once. Needed because display above beats the [hidden] attribute. */
+.badge[hidden] {
+  display: none;
+}
+
+/* The menu row's own gap spaces it there. */
+.menu__item .badge {
+  margin-right: 0;
+}
+
+/* Under the button the badge hangs off the text's left edge rather than taking
+   up room in the line, so the text itself stays centred. */
+.hint__link {
+  position: relative;
+}
+
+.hint__link .badge {
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
 /* ---------- settings menu ---------- */
 
 /* Positioning context for the dropdown, which is anchored to the cog. */
@@ -367,18 +430,21 @@ body[data-state="solved"] .timer {
   flex: none;
 }
 
+/* Round, on a surface chip, like the site's round header buttons. Open or
+   hovered it only darkens its glyph: no square fill. */
 .cog {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border: none;
-  border-radius: 7px;
-  background: transparent;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: var(--shadow);
   color: var(--text-muted);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: color 0.15s ease;
 }
 
 .cog svg {
@@ -390,7 +456,6 @@ body[data-state="solved"] .timer {
 
 .cog:hover,
 .cog[aria-expanded="true"] {
-  background: color-mix(in srgb, var(--text-muted) 14%, transparent);
   color: var(--text);
 }
 
@@ -419,7 +484,7 @@ body[data-state="solved"] .timer {
 
 .cog:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px var(--ring);
+  box-shadow: var(--shadow), 0 0 0 3px var(--ring);
 }
 
 .menu {
@@ -430,21 +495,15 @@ body[data-state="solved"] .timer {
   min-width: 172px;
   padding: 5px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 14px;
   background: var(--surface);
-  box-shadow: 0 6px 20px rgb(16 36 58 / 0.14), 0 2px 6px rgb(16 36 58 / 0.08);
+  box-shadow: var(--shadow-pop);
   animation: menu-in 0.13s ease-out;
 }
 
 /* [hidden] must beat the display used above. */
 .menu[hidden] {
   display: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  .menu {
-    box-shadow: 0 6px 20px rgb(0 0 0 / 0.45), 0 2px 6px rgb(0 0 0 / 0.3);
-  }
 }
 
 @keyframes menu-in {
@@ -459,7 +518,7 @@ body[data-state="solved"] .timer {
   align-items: center;
   gap: 7px;
   padding: 7px 9px;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 12.5px;
   font-weight: 550;
   color: var(--text);
@@ -478,13 +537,6 @@ body[data-state="solved"] .timer {
   box-shadow: inset 0 0 0 2px var(--ring);
 }
 
-.menu__icon {
-  width: 15px;
-  height: 15px;
-  flex: none;
-  object-fit: contain;
-  border-radius: 3px;
-}
 
 /* Auto-solve toggle: a <button role="menuitemcheckbox"> that has to reset the
    button defaults to sit flush with the anchor items around it, then push its
@@ -509,7 +561,7 @@ body[data-state="solved"] .timer {
   height: 18px;
   flex: none;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--text-muted) 42%, transparent);
+  background: color-mix(in srgb, var(--text-muted) 45%, var(--line));
   transition: background 0.15s ease;
 }
 
@@ -591,7 +643,7 @@ body[data-state="solved"] .timer {
   height: 4px;
   margin: 2px 9px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--text-muted) 35%, transparent);
+  background: color-mix(in srgb, var(--text-muted) 45%, var(--line));
   cursor: pointer;
 }
 
@@ -619,7 +671,8 @@ body[data-state="solved"] .timer {
   background: var(--brand);
 }
 
-/* First thing in the menu, so it carries no top border of its own. */
+/* Group heading ("More solvers"). Sits under a separator, which gives it its
+   top edge. */
 .menu__label {
   margin: 1px 0 2px;
   padding: 3px 9px 0;
@@ -654,6 +707,16 @@ body[data-state="solved"] .timer {
    empty one says "no board yet" better than "No board found" did. Keeping it in
    every state also holds the popup at one size, so nothing jumps around as the
    game loads. */
+/* The board's card: a --surface tile on the sunk page, as the site sets its
+   boards. The board itself can't be the card: its background is the hairline
+   colour and it clips to its own radius. */
+.board-card {
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
 .board {
   display: grid;
   /* Rows pinned to 1fr too — without it, auto row sizing lets a row with taller

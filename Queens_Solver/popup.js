@@ -20,6 +20,7 @@ const statusEl = document.getElementById("status-text");
 const actionBtn = document.getElementById("action");
 const actionLabel = document.getElementById("action-label");
 const hintLink = document.getElementById("hint-link");
+const hintText = document.getElementById("hint-text");
 document.getElementById("site-link").href = siteUrl("menu");
 const brandIcon = document.getElementById("brand-icon");
 const boardEl = document.getElementById("board");
@@ -28,7 +29,6 @@ const menuEl = document.getElementById("menu");
 const autoToggle = document.getElementById("autosolve-toggle");
 const targetInput = document.getElementById("target-time");
 const targetRange = document.getElementById("target-range");
-const timerValueEl = document.getElementById("timer-value");
 
 let pollTimer = null;
 
@@ -93,7 +93,7 @@ const STATES = {
   // means we did it. Nothing to claim credit for, so no crown flourish either.
   done: {
     status: (d) => t("stDone", d.N, d.N),
-    label: t("lblNothing"),
+    label: t("lblAlready"),
     hint: HINT_SOLVED,
     act: null,
   },
@@ -117,7 +117,7 @@ function setState(next, data = {}) {
   document.body.dataset.state = next;
   statusEl.textContent = resolve(spec.status, data);
   actionLabel.textContent = spec.label;
-  hintLink.textContent = resolve(spec.hint, data);
+  hintText.textContent = resolve(spec.hint, data);
   hintLink.href = siteUrl(next);
   actionBtn.disabled = spec.act === null;
   actionBtn.setAttribute("aria-busy", String(next === "solving"));
@@ -340,6 +340,43 @@ menuEl.addEventListener("click", (e) => {
   if (e.target.closest('a[role="menuitem"]')) closeMenu();
 });
 
+/* --------------------------------------------------------------- NEW badge */
+
+// The NEW badges flag the puzzle site until it has been opened from this popup
+// once, by either link. They ship hidden in popup.html so a returning user never
+// sees one flash. localStorage, like the settings below: it is synchronous, so the
+// write lands before the new tab takes focus and the popup closes. If storage is
+// blocked the badges simply stay on.
+const SITE_SEEN_KEY = "siteSeen";
+const newBadges = document.querySelectorAll(".badge");
+
+function siteSeen() {
+  try {
+    return localStorage.getItem(SITE_SEEN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markSiteSeen() {
+  try {
+    localStorage.setItem(SITE_SEEN_KEY, "1");
+  } catch {
+    /* storage blocked: the badges come back next time */
+  }
+  for (const badge of newBadges) badge.hidden = true;
+}
+
+if (!siteSeen()) for (const badge of newBadges) badge.hidden = false;
+
+for (const link of [hintLink, document.getElementById("site-link")]) {
+  link.addEventListener("click", markSiteSeen);
+  // A middle-click opens the site in a background tab too.
+  link.addEventListener("auxclick", (e) => {
+    if (e.button === 1) markSiteSeen();
+  });
+}
+
 /* ---------------------------------------------------------------- settings */
 
 // Two settings: Auto-solve (off by default — opt-in, so nothing touches the board
@@ -479,11 +516,10 @@ targetInput.addEventListener("keydown", (e) => {
 
 /* -------------------------------------------------------------------- timer */
 
-// How long the last solve took: counts up live while crowns are placed, frozen
-// at the total once the board is complete. `elapsedMs` is read back by runSolve
-// to hand the final figure to the solved state.
+// How long the last solve took. Not shown on screen: the figure goes only into
+// the solved status line, which screen readers announce. `elapsedMs` is read
+// back by runSolve to hand it to the solved state.
 let timerStart = 0;
-let timerTick = null;
 let elapsedMs = 0;
 
 function fmtTime(ms) {
@@ -493,20 +529,10 @@ function fmtTime(ms) {
 function startTimer() {
   timerStart = performance.now();
   elapsedMs = 0;
-  timerValueEl.textContent = fmtTime(0);
-  timerTick = setInterval(() => {
-    elapsedMs = performance.now() - timerStart;
-    timerValueEl.textContent = fmtTime(elapsedMs);
-  }, 100);
 }
 
 function stopTimer() {
-  if (timerTick) {
-    clearInterval(timerTick);
-    timerTick = null;
-  }
   elapsedMs = performance.now() - timerStart;
-  timerValueEl.textContent = fmtTime(elapsedMs);
 }
 
 /* ------------------------------------------------------------------ solving */
@@ -638,7 +664,6 @@ function showAutoSolve(auto, boardSolved, data) {
   if (auto.state === "solved" && (wasWatching || boardSolved)) {
     // Quote the solve's own figure, which covers the whole of it.
     elapsedMs = auto.result.ms;
-    timerValueEl.textContent = fmtTime(elapsedMs);
     setState("solved", { ...data, ...auto.result });
     stopPolling();
     return true;
@@ -716,7 +741,7 @@ async function runSolve() {
   startTimer();
 
   // Pace the solve to the target time set in the menu (the engine spreads its
-  // clicks to land near it), so the completion timer settles around that figure.
+  // clicks to land near it), so the solve settles around that figure.
   const results = await runInFrames("solve", { targetMs });
 
   // Another solve already holds this board (see exclusive() in injected.js) —

@@ -51,10 +51,13 @@
     "message": "Vista previa de la solución, $1 por $2."
   },
   "hintAny": {
-    "message": "Juega puzles ilimitados, sin límite diario →"
+    "message": "Juega puzles ilimitados"
   },
   "hintSolved": {
-    "message": "¿Quieres otro? Juega puzles ilimitados →"
+    "message": "Juega puzles ilimitados"
+  },
+  "badgeNew": {
+    "message": "Nuevo"
   },
   "stChecking": {
     "message": "Buscando un tablero…"
@@ -76,6 +79,9 @@
   },
   "lblSolved": {
     "message": "Resuelto"
+  },
+  "lblAlready": {
+    "message": "Ya resuelto"
   },
   "stDone": {
     "message": "Ya resuelto · $1×$2"

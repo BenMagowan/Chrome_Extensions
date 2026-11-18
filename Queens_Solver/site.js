@@ -3,14 +3,14 @@
  * background worker (importScripts), so the domain lives in one place per extension.
  * `src` names the placement (a popup state, "menu", "install", "uninstall") so the
  * site's analytics can tell which one brought the visit. `page` picks a page made for
- * that moment ("welcome", "goodbye"); without it the link opens the game's first level.
+ * that moment ("welcome", "goodbye"); without it the link opens the game's page.
  */
 const SITE_ORIGIN = "https://puzzle-site-lyart.vercel.app";
 const SITE_GAME = "crowns";
 const SITE_REF = "queens";
 
 function siteUrl(src, page) {
-  const path = page ? `/${page}/${SITE_GAME}` : `/${SITE_GAME}/easy/1`;
+  const path = page ? `/${page}/${SITE_GAME}` : `/${SITE_GAME}`;
   const url = new URL(path, SITE_ORIGIN);
   url.searchParams.set("ref", SITE_REF);
   url.searchParams.set("src", src);

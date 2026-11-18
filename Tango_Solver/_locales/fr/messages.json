@@ -51,10 +51,13 @@
     "message": "Aperçu de la solution, $1 sur $2."
   },
   "hintAny": {
-    "message": "Jouez à des puzzles illimités, sans limite quotidienne →"
+    "message": "Puzzles illimités"
   },
   "hintSolved": {
-    "message": "Envie d'un autre ? Jouez à des puzzles illimités →"
+    "message": "Puzzles illimités"
+  },
+  "badgeNew": {
+    "message": "Nouveau"
   },
   "stChecking": {
     "message": "Recherche d'une grille…"
@@ -76,6 +79,9 @@
   },
   "lblSolved": {
     "message": "Résolu"
+  },
+  "lblAlready": {
+    "message": "Déjà résolu"
   },
   "stDone": {
     "message": "Déjà résolu · $1×$2"

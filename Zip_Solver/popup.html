@@ -63,12 +63,9 @@
 
         <div id="menu" class="menu" role="menu" aria-label="Settings and more"
           data-i18n-aria-label="menuAria" hidden>
-          <!-- role="presentation": a bare <p> isn't a valid child of role="menu".
-               It still names the group below via aria-labelledby. -->
-          <p class="menu__label" id="settings-label" role="presentation" data-i18n="settings">
-            Settings
-          </p>
-          <div role="group" aria-labelledby="settings-label">
+          <!-- No visible heading: the cog already says these are settings. The
+               group is still named for screen readers. -->
+          <div role="group" aria-label="Settings" data-i18n-aria-label="settings">
             <!-- A checkable menu item, not a link: role="menuitemcheckbox" +
                  aria-checked is the accessible pairing for an in-menu toggle, and
                  popup.js keeps aria-checked in sync with the stored preference.
@@ -177,8 +174,8 @@
             target="_blank"
             rel="noopener noreferrer"
           >
-            <img src="images/crown.png" alt="" class="menu__icon" />
             <span data-i18n="unlimitedPuzzles">Unlimited puzzles</span>
+            <span class="badge" data-i18n="badgeNew" hidden>New</span>
           </a>
         </div>
       </div>
@@ -196,28 +193,17 @@
       <!-- Board preview: the numbered cells with the solution path drawn through
            them. Filled in by popup.js from the detect snapshot and shown instead
            of the status line whenever there's a board. -->
-      <div id="board" class="board" role="img" aria-label="Board preview" data-i18n-aria-label="boardPreview"></div>
+      <div class="board-card">
+        <div id="board" class="board" role="img" aria-label="Board preview" data-i18n-aria-label="boardPreview"></div>
+      </div>
 
       <button id="action" class="action" type="button" disabled>
         <span class="action__spinner" aria-hidden="true"></span>
         <span class="action__label" id="action-label" data-i18n="lblSolve">Solve puzzle</span>
       </button>
 
-      <!-- Completion timer: counts up live while the path is drawn, then freezes at
-           the total once the board is solved. Shown only in the solving/solved
-           states (styles.css). aria-hidden because the same figure is folded into
-           the live status line for screen readers — a chip ticking every 100ms
-           would otherwise spam the a11y tree. -->
-      <p class="timer" id="timer" aria-hidden="true">
-        <svg class="timer__icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm0 2a7 7 0 1 1 0 14 7 7 0 0 1 0-14zm-.95 2.4v5.2l4.2 2.5.75-1.3-3.45-2.05V7.4z"
-          />
-        </svg>
-        <span id="timer-value">0.0s</span>
-      </p>
 
-      <p class="hint" id="hint"><a class="hint__link" id="hint-link" data-i18n="hintAny" href="https://puzzle-site-lyart.vercel.app/" target="_blank" rel="noopener noreferrer">Play unlimited puzzles, no daily limit →</a></p>
+      <p class="hint" id="hint"><a class="hint__link" id="hint-link" href="https://puzzle-site-lyart.vercel.app/" target="_blank" rel="noopener noreferrer"><span class="badge" data-i18n="badgeNew" hidden>New</span><span id="hint-text" data-i18n="hintAny">Play unlimited puzzles</span></a></p>
     </main>
 
     <script src="site.js"></script>
