@@ -1,9 +1,9 @@
 {
   "extName": {
-    "message": "Puzzle Solver - Zip, Queens, Tango, Sudoku, Patches & Sumbreak"
+    "message": "Puzzle Solver - Zip, Queens, Tango, Mini Sudoku, Patches & Sumbreak"
   },
   "extDescription": {
-    "message": "Solves the daily LinkedIn Zip, Queens, Tango, Mini Sudoku, Patches and Sumbreak puzzles in one click, or on its own as they load."
+    "message": "Solves LinkedIn's daily Zip, Queens, Tango, Mini Sudoku, Patches, and Sumbreak puzzles automatically or in one click."
   },
   "actionTitle": {
     "message": "Solve LinkedIn puzzles"
@@ -60,7 +60,7 @@
     "message": "Stop"
   },
   "checkingGames": {
-    "message": "Checking today's games…"
+    "message": "Checking games…"
   },
   "localeTag": {
     "message": "en"
@@ -108,19 +108,19 @@
     "message": "Looking for a board…"
   },
   "lblChecking": {
-    "message": "Looking for puzzle…"
+    "message": "Checking…"
   },
   "stIdle": {
     "message": "No board found"
   },
   "stReady": {
-    "message": "Board detected · $1×$2"
+    "message": "Board ready · $1×$2"
   },
   "lblSolve": {
     "message": "Solve puzzle"
   },
   "lblSolving": {
-    "message": "Solving"
+    "message": "Solving…"
   },
   "lblSolved": {
     "message": "Solved"
@@ -132,106 +132,106 @@
     "message": "Already solved · $1×$2"
   },
   "lblNothing": {
-    "message": "Nothing to solve"
+    "message": "Can't solve"
   },
   "lblTryAgain": {
     "message": "Try again"
   },
   "stStuck": {
-    "message": "Board found, but no solution exists"
+    "message": "No solution found. Try reloading."
   },
   "stWaiting": {
-    "message": "Board found · start the round to solve it"
+    "message": "Start the game to solve it"
   },
   "lblWaiting": {
-    "message": "Waiting for the round"
+    "message": "Waiting to start"
   },
   "errNoFinish": {
-    "message": "The solve didn't finish."
+    "message": "Couldn't finish. Try again."
   },
   "errNoFrame": {
-    "message": "No board frame responded."
+    "message": "Board didn't respond. Try reloading."
   },
   "errBusy": {
-    "message": "A solve is already running on this board."
+    "message": "Already solving this board."
   },
   "errFailed": {
     "message": "Solve failed: $1"
   },
   "errNoBoard": {
-    "message": "Board not found or still loading."
+    "message": "No board found. Wait or reload."
   },
   "errNoSolution": {
-    "message": "No solution exists for this board."
+    "message": "No solution found. Try reloading."
   },
   "errUnsolved": {
-    "message": "The board still isn't solved. Try again."
+    "message": "Board isn't solved yet. Try again."
   },
   "errClick": {
     "message": "A click didn't register. Try again."
   },
   "errColours": {
-    "message": "Read $1 colours on a $2×$3 board."
+    "message": "Misread $2×$3 board ($1 colours). Try again."
   },
   "errCluesGuesses": {
-    "message": "Couldn't tell clues from guesses on this board."
+    "message": "Couldn't read the board clues. Try reloading."
   },
   "errNoPad": {
-    "message": "Number pad not found. Start the round first."
+    "message": "Number pad not found. Start the game first."
   },
   "errDigit": {
-    "message": "A digit didn't register. Try again."
+    "message": "A number didn't register. Try again."
   },
   "errFocus": {
-    "message": "Could not focus the gameboard."
+    "message": "Click the board and try again."
   },
   "errCursor": {
-    "message": "Cursor navigation failed."
+    "message": "Couldn't reach a cell. Try again."
   },
   "errClearPatches": {
-    "message": "Couldn't clear the patches already on the board."
+    "message": "Couldn't clear patches. Undo and try again."
   },
   "errPatchDraw": {
-    "message": "Patch $1 of $2 wouldn't draw. Try again."
+    "message": "Couldn't draw patch $1 of $2. Try again."
   },
   "errNoTiling": {
-    "message": "No rectangle tiling found for this board."
+    "message": "No solution found. Try reloading."
   },
   "errPathTime": {
-    "message": "Couldn't find a path in time. The board may have been misread."
+    "message": "Timed out finding a path. Reload and try again."
   },
   "errNoPath": {
-    "message": "No path exists for this board."
+    "message": "No path found. Try reloading."
   },
   "errClearPath": {
-    "message": "Couldn't clear the path already drawn. Undo it and try again."
+    "message": "Couldn't clear the path. Undo and try again."
   },
   "errInternalStep": {
-    "message": "Internal: non-adjacent path step."
+    "message": "Something went wrong. Try again."
   },
   "errPathStopped": {
-    "message": "The path stopped after $1 of $2 cells. Try again."
+    "message": "Path stopped at $1 of $2 cells. Try again."
   },
   "errSolveTime": {
-    "message": "Couldn't find a solution in time."
+    "message": "Timed out solving. Try again."
   },
   "errMerge": {
     "message": "A merge didn't register. Try again."
   },
   "errBoardChanged": {
-    "message": "The board changed unexpectedly. Try again."
+    "message": "Board changed mid-solve. Try again."
   },
   "zip_lblOpen": {
-    "message": "Open Zip game"
+    "message": "Open Zip"
   },
   "zip_stSolving": {
-    "message": "Drawing the path…"
+    "message": "Drawing path…"
   },
   "zip_stSolved": {
     "message": "Solved · $1-cell path drawn"
   },
   "queens_lblOpen": {
-    "message": "Open Queens game"
+    "message": "Open Queens"
   },
   "queens_stSolving": {
     "message": "Placing crowns…"
@@ -243,7 +243,7 @@
     "message": "Solved · $1 crowns placed, $2 cleared"
   },
   "tango_lblOpen": {
-    "message": "Open Tango game"
+    "message": "Open Tango"
   },
   "tango_stSolving": {
     "message": "Placing symbols…"
@@ -252,25 +252,25 @@
     "message": "Solved · $1 symbols placed"
   },
   "sudoku_lblOpen": {
-    "message": "Open Mini Sudoku game"
+    "message": "Open Mini Sudoku"
   },
   "sudoku_stSolving": {
-    "message": "Placing digits…"
+    "message": "Placing numbers…"
   },
   "sudoku_stSolved": {
-    "message": "Solved · $1 digits placed"
+    "message": "Solved · $1 numbers placed"
   },
   "patches_lblOpen": {
-    "message": "Open Patches game"
+    "message": "Open Patches"
   },
   "patches_stSolving": {
-    "message": "Placing patches…"
+    "message": "Drawing patches…"
   },
   "patches_stSolved": {
-    "message": "Solved · $1 patches placed"
+    "message": "Solved · $1 patches drawn"
   },
   "sumbreak_lblOpen": {
-    "message": "Open Sumbreak game"
+    "message": "Open Sumbreak"
   },
   "sumbreak_stSolving": {
     "message": "Merging tiles…"

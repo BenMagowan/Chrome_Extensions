@@ -1,9 +1,9 @@
 {
   "extName": {
-    "message": "Puzzle Solver - Zip, Queens, Tango, Sudoku, Patches & Sumbreak"
+    "message": "Puzzle Solver - Zip, Queens, Tango, Mini Sudoku, Patches & Sumbreak"
   },
   "extDescription": {
-    "message": "Resuelve los puzles diarios de LinkedIn: Zip, Queens, Tango, Mini Sudoku, Patches y Sumbreak. Con un clic, o solo al cargar."
+    "message": "Resuelve los juegos diarios de LinkedIn: Zip, Queens, Tango, Mini Sudoku, Patches y Sumbreak, automáticamente o con un clic."
   },
   "actionTitle": {
     "message": "Resolver puzles de LinkedIn"
@@ -60,7 +60,7 @@
     "message": "Detener"
   },
   "checkingGames": {
-    "message": "Comprobando los juegos de hoy…"
+    "message": "Revisando juegos…"
   },
   "localeTag": {
     "message": "es"
@@ -108,19 +108,19 @@
     "message": "Buscando un tablero…"
   },
   "lblChecking": {
-    "message": "Buscando el puzle…"
+    "message": "Comprobando…"
   },
   "stIdle": {
     "message": "No se encontró ningún tablero"
   },
   "stReady": {
-    "message": "Tablero detectado · $1×$2"
+    "message": "Tablero listo · $1×$2"
   },
   "lblSolve": {
     "message": "Resolver puzle"
   },
   "lblSolving": {
-    "message": "Resolviendo"
+    "message": "Resolviendo…"
   },
   "lblSolved": {
     "message": "Resuelto"
@@ -132,94 +132,94 @@
     "message": "Ya resuelto · $1×$2"
   },
   "lblNothing": {
-    "message": "Nada que resolver"
+    "message": "No se puede resolver"
   },
   "lblTryAgain": {
     "message": "Reintentar"
   },
   "stStuck": {
-    "message": "Tablero encontrado, pero no tiene solución"
+    "message": "No se encontró solución. Recarga."
   },
   "stWaiting": {
-    "message": "Tablero encontrado · inicia la partida para resolverlo"
+    "message": "Inicia el juego para resolverlo"
   },
   "lblWaiting": {
-    "message": "Esperando la partida"
+    "message": "Esperando para empezar"
   },
   "errNoFinish": {
-    "message": "La resolución no terminó."
+    "message": "No se pudo terminar. Inténtalo de nuevo."
   },
   "errNoFrame": {
-    "message": "Ningún tablero respondió."
+    "message": "El tablero no respondió. Recarga."
   },
   "errBusy": {
-    "message": "Ya hay una resolución en curso en este tablero."
+    "message": "Ya se está resolviendo este tablero."
   },
   "errFailed": {
     "message": "La resolución falló: $1"
   },
   "errNoBoard": {
-    "message": "No se encontró el tablero o aún se está cargando."
+    "message": "No se encontró tablero. Espera o recarga."
   },
   "errNoSolution": {
-    "message": "Este tablero no tiene solución."
+    "message": "No se encontró solución. Recarga."
   },
   "errUnsolved": {
-    "message": "El tablero sigue sin resolverse. Inténtalo de nuevo."
+    "message": "El tablero aún no está resuelto. Inténtalo de nuevo."
   },
   "errClick": {
     "message": "Un clic no se registró. Inténtalo de nuevo."
   },
   "errColours": {
-    "message": "Se leyeron $1 colores en un tablero de $2×$3."
+    "message": "Tablero $2×$3 mal leído ($1 colores). Inténtalo de nuevo."
   },
   "errCluesGuesses": {
-    "message": "No se pudieron distinguir las pistas de tus números en este tablero."
+    "message": "No se pudieron leer las pistas. Recarga."
   },
   "errNoPad": {
-    "message": "No se encontró el teclado numérico. Inicia primero la partida."
+    "message": "Teclado numérico no encontrado. Inicia el juego primero."
   },
   "errDigit": {
     "message": "Un número no se registró. Inténtalo de nuevo."
   },
   "errFocus": {
-    "message": "No se pudo seleccionar el tablero."
+    "message": "Haz clic en el tablero e inténtalo de nuevo."
   },
   "errCursor": {
-    "message": "No se pudo mover el cursor."
+    "message": "No se alcanzó una celda. Inténtalo de nuevo."
   },
   "errClearPatches": {
-    "message": "No se pudieron borrar los rectángulos que ya estaban en el tablero."
+    "message": "No se pudieron borrar los rectángulos. Deshazlos e inténtalo de nuevo."
   },
   "errPatchDraw": {
     "message": "No se pudo dibujar el rectángulo $1 de $2. Inténtalo de nuevo."
   },
   "errNoTiling": {
-    "message": "No se encontró ninguna forma de cubrir este tablero con rectángulos."
+    "message": "No se encontró solución. Recarga."
   },
   "errPathTime": {
-    "message": "No se encontró un camino a tiempo. Puede que el tablero se haya leído mal."
+    "message": "No se encontró camino a tiempo. Recarga e inténtalo de nuevo."
   },
   "errNoPath": {
-    "message": "No existe ningún camino para este tablero."
+    "message": "No se encontró camino. Recarga."
   },
   "errClearPath": {
-    "message": "No se pudo borrar el camino ya trazado. Deshazlo e inténtalo de nuevo."
+    "message": "No se pudo borrar el camino. Deshazlo e inténtalo de nuevo."
   },
   "errInternalStep": {
-    "message": "Error interno: paso del camino no adyacente."
+    "message": "Algo salió mal. Inténtalo de nuevo."
   },
   "errPathStopped": {
-    "message": "El camino se detuvo tras $1 de $2 celdas. Inténtalo de nuevo."
+    "message": "El camino se detuvo en $1 de $2 celdas. Inténtalo de nuevo."
   },
   "errSolveTime": {
-    "message": "No se encontró una solución a tiempo."
+    "message": "Se agotó el tiempo. Inténtalo de nuevo."
   },
   "errMerge": {
     "message": "Una unión no se registró. Inténtalo de nuevo."
   },
   "errBoardChanged": {
-    "message": "El tablero cambió de forma inesperada. Inténtalo de nuevo."
+    "message": "El tablero cambió al resolver. Inténtalo de nuevo."
   },
   "zip_lblOpen": {
     "message": "Abrir Zip"
