@@ -1,9 +1,9 @@
 {
   "extName": {
-    "message": "Puzzle Solver - Zip, Queens, Tango, Sudoku, Patches & Sumbreak"
+    "message": "Puzzle Solver - Zip, Queens, Tango, Mini Sudoku, Patches & Sumbreak"
   },
   "extDescription": {
-    "message": "Löst die täglichen LinkedIn-Rätsel Zip, Queens, Tango, Mini Sudoku, Patches und Sumbreak mit einem Klick oder von selbst beim Laden."
+    "message": "Löst die täglichen LinkedIn-Rätsel Zip, Queens, Tango, Mini Sudoku, Patches und Sumbreak automatisch oder mit einem Klick."
   },
   "actionTitle": {
     "message": "LinkedIn-Rätsel lösen"
@@ -60,7 +60,7 @@
     "message": "Stoppen"
   },
   "checkingGames": {
-    "message": "Prüfe die heutigen Spiele…"
+    "message": "Prüfe Spiele…"
   },
   "localeTag": {
     "message": "de"
@@ -108,19 +108,19 @@
     "message": "Suche nach einem Spielfeld…"
   },
   "lblChecking": {
-    "message": "Suche nach dem Rätsel…"
+    "message": "Wird geprüft…"
   },
   "stIdle": {
     "message": "Kein Spielfeld gefunden"
   },
   "stReady": {
-    "message": "Spielfeld erkannt · $1×$2"
+    "message": "Spielfeld bereit · $1×$2"
   },
   "lblSolve": {
     "message": "Rätsel lösen"
   },
   "lblSolving": {
-    "message": "Wird gelöst"
+    "message": "Wird gelöst…"
   },
   "lblSolved": {
     "message": "Gelöst"
@@ -132,94 +132,94 @@
     "message": "Bereits gelöst · $1×$2"
   },
   "lblNothing": {
-    "message": "Nichts zu lösen"
+    "message": "Nicht lösbar"
   },
   "lblTryAgain": {
     "message": "Erneut versuchen"
   },
   "stStuck": {
-    "message": "Spielfeld gefunden, aber es gibt keine Lösung"
+    "message": "Keine Lösung gefunden. Lade neu."
   },
   "stWaiting": {
-    "message": "Spielfeld gefunden · starte die Runde, um es zu lösen"
+    "message": "Starte das Spiel, um es zu lösen"
   },
   "lblWaiting": {
-    "message": "Warte auf die Runde"
+    "message": "Warte auf Spielstart"
   },
   "errNoFinish": {
-    "message": "Das Lösen wurde nicht abgeschlossen."
+    "message": "Nicht abgeschlossen. Versuch es erneut."
   },
   "errNoFrame": {
-    "message": "Kein Spielfeld hat geantwortet."
+    "message": "Spielfeld antwortet nicht. Lade neu."
   },
   "errBusy": {
-    "message": "Auf diesem Spielfeld läuft bereits eine Lösung."
+    "message": "Dieses Spielfeld wird bereits gelöst."
   },
   "errFailed": {
     "message": "Lösen fehlgeschlagen: $1"
   },
   "errNoBoard": {
-    "message": "Spielfeld nicht gefunden oder lädt noch."
+    "message": "Kein Spielfeld. Warte kurz oder lade neu."
   },
   "errNoSolution": {
-    "message": "Für dieses Spielfeld gibt es keine Lösung."
+    "message": "Keine Lösung gefunden. Lade neu."
   },
   "errUnsolved": {
-    "message": "Das Spielfeld ist noch nicht gelöst. Versuch es noch einmal."
+    "message": "Spielfeld noch nicht gelöst. Versuch es erneut."
   },
   "errClick": {
     "message": "Ein Klick wurde nicht übernommen. Versuch es noch einmal."
   },
   "errColours": {
-    "message": "$1 Farben auf einem $2×$3-Spielfeld gelesen."
+    "message": "$2×$3 falsch gelesen ($1 Farben). Versuch es erneut."
   },
   "errCluesGuesses": {
-    "message": "Vorgaben und eigene Einträge ließen sich auf diesem Spielfeld nicht unterscheiden."
+    "message": "Vorgaben konnten nicht gelesen werden. Lade neu."
   },
   "errNoPad": {
-    "message": "Ziffernfeld nicht gefunden. Starte zuerst die Runde."
+    "message": "Ziffernfeld nicht gefunden. Starte zuerst das Spiel."
   },
   "errDigit": {
-    "message": "Eine Ziffer wurde nicht übernommen. Versuch es noch einmal."
+    "message": "Eine Zahl wurde nicht übernommen. Versuch es noch einmal."
   },
   "errFocus": {
-    "message": "Das Spielfeld konnte nicht ausgewählt werden."
+    "message": "Klick auf das Spielfeld und versuch es erneut."
   },
   "errCursor": {
-    "message": "Der Cursor ließ sich nicht bewegen."
+    "message": "Feld nicht erreichbar. Versuch es erneut."
   },
   "errClearPatches": {
-    "message": "Die bereits gezeichneten Rechtecke ließen sich nicht entfernen."
+    "message": "Rechtecke nicht entfernt. Rückgängig machen und neu versuchen."
   },
   "errPatchDraw": {
     "message": "Rechteck $1 von $2 ließ sich nicht zeichnen. Versuch es noch einmal."
   },
   "errNoTiling": {
-    "message": "Für dieses Spielfeld wurde keine Aufteilung in Rechtecke gefunden."
+    "message": "Keine Lösung gefunden. Lade neu."
   },
   "errPathTime": {
-    "message": "Kein Pfad rechtzeitig gefunden. Das Spielfeld wurde möglicherweise falsch gelesen."
+    "message": "Kein Pfad rechtzeitig gefunden. Neu laden und erneut versuchen."
   },
   "errNoPath": {
-    "message": "Für dieses Spielfeld gibt es keinen Pfad."
+    "message": "Kein Pfad gefunden. Lade neu."
   },
   "errClearPath": {
-    "message": "Der bereits gezeichnete Pfad ließ sich nicht entfernen. Mach ihn rückgängig und versuch es noch einmal."
+    "message": "Pfad ließ sich nicht entfernen. Mach ihn rückgängig und versuch es erneut."
   },
   "errInternalStep": {
-    "message": "Interner Fehler: nicht benachbarter Pfadschritt."
+    "message": "Etwas ist schiefgelaufen. Versuch es erneut."
   },
   "errPathStopped": {
-    "message": "Der Pfad endete nach $1 von $2 Feldern. Versuch es noch einmal."
+    "message": "Pfad nach $1 von $2 Feldern gestoppt. Versuch es erneut."
   },
   "errSolveTime": {
-    "message": "Keine Lösung rechtzeitig gefunden."
+    "message": "Zeit abgelaufen. Versuch es erneut."
   },
   "errMerge": {
     "message": "Eine Zusammenführung wurde nicht erkannt. Versuch es noch einmal."
   },
   "errBoardChanged": {
-    "message": "Das Spielfeld hat sich unerwartet verändert. Versuch es noch einmal."
+    "message": "Spielfeld hat sich beim Lösen geändert. Versuch es erneut."
   },
   "zip_lblOpen": {
     "message": "Zip öffnen"
@@ -255,10 +255,10 @@
     "message": "Mini Sudoku öffnen"
   },
   "sudoku_stSolving": {
-    "message": "Ziffern werden eingetragen…"
+    "message": "Zahlen werden eingetragen…"
   },
   "sudoku_stSolved": {
-    "message": "Gelöst · $1 Ziffern eingetragen"
+    "message": "Gelöst · $1 Zahlen eingetragen"
   },
   "patches_lblOpen": {
     "message": "Patches öffnen"

@@ -1,9 +1,9 @@
 {
   "extName": {
-    "message": "Puzzle Solver - Zip, Queens, Tango, Sudoku, Patches & Sumbreak"
+    "message": "Puzzle Solver - Zip, Queens, Tango, Mini Sudoku, Patches & Sumbreak"
   },
   "extDescription": {
-    "message": "Résout les puzzles quotidiens LinkedIn Zip, Queens, Tango, Mini Sudoku, Patches et Sumbreak, en un clic ou tout seul au chargement."
+    "message": "Résout les jeux quotidiens LinkedIn : Zip, Queens, Tango, Mini Sudoku, Patches et Sumbreak, automatiquement ou en un clic."
   },
   "actionTitle": {
     "message": "Résoudre les puzzles LinkedIn"
@@ -60,7 +60,7 @@
     "message": "Arrêter"
   },
   "checkingGames": {
-    "message": "Vérification des jeux du jour…"
+    "message": "Vérification…"
   },
   "localeTag": {
     "message": "fr"
@@ -108,19 +108,19 @@
     "message": "Recherche d'une grille…"
   },
   "lblChecking": {
-    "message": "Recherche du puzzle…"
+    "message": "Recherche…"
   },
   "stIdle": {
     "message": "Aucune grille trouvée"
   },
   "stReady": {
-    "message": "Grille détectée · $1×$2"
+    "message": "Grille prête · $1×$2"
   },
   "lblSolve": {
     "message": "Résoudre le puzzle"
   },
   "lblSolving": {
-    "message": "Résolution"
+    "message": "Résolution…"
   },
   "lblSolved": {
     "message": "Résolu"
@@ -132,49 +132,49 @@
     "message": "Déjà résolu · $1×$2"
   },
   "lblNothing": {
-    "message": "Rien à résoudre"
+    "message": "Impossible à résoudre"
   },
   "lblTryAgain": {
     "message": "Réessayer"
   },
   "stStuck": {
-    "message": "Grille trouvée, mais aucune solution n'existe"
+    "message": "Aucune solution trouvée. Rechargez."
   },
   "stWaiting": {
-    "message": "Grille trouvée · lancez la partie pour la résoudre"
+    "message": "Lancez la partie pour la résoudre"
   },
   "lblWaiting": {
-    "message": "En attente de la partie"
+    "message": "En attente du début"
   },
   "errNoFinish": {
-    "message": "La résolution ne s'est pas terminée."
+    "message": "Impossible de terminer. Réessayez."
   },
   "errNoFrame": {
-    "message": "Aucune grille n'a répondu."
+    "message": "La grille ne répond pas. Rechargez."
   },
   "errBusy": {
-    "message": "Une résolution est déjà en cours sur cette grille."
+    "message": "Grille déjà en cours de résolution."
   },
   "errFailed": {
     "message": "La résolution a échoué : $1"
   },
   "errNoBoard": {
-    "message": "Grille introuvable ou en cours de chargement."
+    "message": "Aucune grille trouvée. Patientez ou rechargez."
   },
   "errNoSolution": {
-    "message": "Cette grille n'a pas de solution."
+    "message": "Aucune solution trouvée. Rechargez."
   },
   "errUnsolved": {
-    "message": "La grille n'est toujours pas résolue. Réessayez."
+    "message": "Grille pas encore résolue. Réessayez."
   },
   "errClick": {
     "message": "Un clic n'a pas été pris en compte. Réessayez."
   },
   "errColours": {
-    "message": "$1 couleurs lues sur une grille $2×$3."
+    "message": "Grille $2×$3 mal lue ($1 couleurs). Réessayez."
   },
   "errCluesGuesses": {
-    "message": "Impossible de distinguer les indices de vos essais sur cette grille."
+    "message": "Impossible de lire les indices. Rechargez."
   },
   "errNoPad": {
     "message": "Pavé numérique introuvable. Lancez d'abord la partie."
@@ -183,43 +183,43 @@
     "message": "Un chiffre n'a pas été pris en compte. Réessayez."
   },
   "errFocus": {
-    "message": "Impossible de sélectionner la grille."
+    "message": "Cliquez sur la grille et réessayez."
   },
   "errCursor": {
-    "message": "Le déplacement du curseur a échoué."
+    "message": "Impossible d'atteindre une case. Réessayez."
   },
   "errClearPatches": {
-    "message": "Impossible d'effacer les rectangles déjà présents sur la grille."
+    "message": "Impossible d'effacer les rectangles. Annulez-les et réessayez."
   },
   "errPatchDraw": {
-    "message": "Le rectangle $1 sur $2 n'a pas pu être dessiné. Réessayez."
+    "message": "Impossible de dessiner le rectangle $1 sur $2. Réessayez."
   },
   "errNoTiling": {
-    "message": "Aucun pavage en rectangles trouvé pour cette grille."
+    "message": "Aucune solution trouvée. Rechargez."
   },
   "errPathTime": {
-    "message": "Aucun chemin trouvé à temps. La grille a peut-être été mal lue."
+    "message": "Délai dépassé pour trouver un chemin. Rechargez et réessayez."
   },
   "errNoPath": {
-    "message": "Aucun chemin n'existe pour cette grille."
+    "message": "Aucun chemin trouvé. Rechargez."
   },
   "errClearPath": {
-    "message": "Impossible d'effacer le chemin déjà tracé. Annulez-le et réessayez."
+    "message": "Impossible d'effacer le chemin. Annulez-le et réessayez."
   },
   "errInternalStep": {
-    "message": "Erreur interne : étape du chemin non adjacente."
+    "message": "Un problème est survenu. Réessayez."
   },
   "errPathStopped": {
-    "message": "Le chemin s'est arrêté après $1 cases sur $2. Réessayez."
+    "message": "Chemin arrêté après $1 cases sur $2. Réessayez."
   },
   "errSolveTime": {
-    "message": "Impossible de trouver une solution à temps."
+    "message": "Délai dépassé. Réessayez."
   },
   "errMerge": {
     "message": "Une fusion n'a pas été prise en compte. Réessayez."
   },
   "errBoardChanged": {
-    "message": "La grille a changé de façon inattendue. Réessayez."
+    "message": "La grille a changé en cours de résolution. Réessayez."
   },
   "zip_lblOpen": {
     "message": "Ouvrir Zip"

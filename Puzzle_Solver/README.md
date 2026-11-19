@@ -1,74 +1,23 @@
 # Puzzle Solver (Chrome Extension, Manifest V3)
 
-One extension for all six LinkedIn games: **Zip, Queens, Tango, Mini Sudoku, Patches
-and Sumbreak**. It replaces the five single-game solvers and ships on the Zip Solver's
-store listing, as version 2.0.0.
+One Chrome extension for all six LinkedIn daily games: **Zip, Queens, Tango, Mini Sudoku, Patches, and Sumbreak**. It replaces the five single-game solvers and ships on the Zip Solver store listing as v2.0.0.
 
-Open a game and the popup shows that game's board with the solution, and a **Solve
-puzzle** button. **Auto-solve** is on by default for every game: the board solves as
-soon as it's on screen, with no popup needed. Each game has its own Auto-solve switch
-and **Solve time** (whole seconds, 1–999, default 5) in the settings menu (the cog).
-Off a game page, the popup shows the six games as a 2×3 grid in the style of
-LinkedIn's games page: each card has the game's art on its tint, today's puzzle
-number ("Zip #611") and whether it's **Solved today**, with LinkedIn's green check.
-On a game page, the game strip carries the same check. Under the grid, **Solve all**
-(always available) opens LinkedIn's games page, sees which games are still
-unsolved there, and solves them in one go.
+- **On a game page:** Open the popup to preview the solved board and click **Solve puzzle**. **Auto-solve** is on by default for every game, so boards solve automatically as soon as they appear, without opening the popup.
+- **Per-game settings:** Click the cog icon to toggle **Auto-solve** or set the **Solve time** (1–999 seconds, default 5) for each game independently.
+- **Off a game page:** The popup shows all six games in a 2×3 grid with each game's icon, today's puzzle number (`Zip #611`), and a green check when it's **Solved today**. (The game strip on a game page shows the same check.)
+- **Solve all:** Click **Solve all** below the grid (always enabled) to open LinkedIn's games page, check which games are still unsolved, and solve them one by one.
 
 ## Solved today and Solve all
 
-- **Today** is the puzzle day: LinkedIn releases new puzzles at midnight Pacific
-  time, so the day is the date in Los Angeles (`puzzleDay()` in `games.js`). Puzzle
-  numbers are the ones last read off LinkedIn's games page today (`hub.js`), or
-  else count on from the `number` each game had on `NUMBER_DAY`.
-- **Solved today** is recorded as `solved:<id>` = the day, in `chrome.storage.local`,
-  whenever a board is seen finished: by `content.js` after it solves, or when it
-  finds a board already solved (with Auto-solve off it keeps watching, so a puzzle
-  solved by hand counts too), and by the popup's solved states. It only knows what
-  this browser has seen: a puzzle finished on another device shows as solved once
-  its page is opened here and shows the finished board (Solve all opens every
-  unsolved game, so it picks these up too).
-- **Solve all** is run by `background.js`, in the tab the popup was opened on.
-  Changing that tab's page doesn't take focus, so the popup stays open and follows
-  the run (a new tab would close it), and the tab stays in front (a background
-  tab's timers are throttled). The run:
-  1. Loads LinkedIn's games page (`linkedin.com/games/`). `hub.js` reads each
-     game's card there, records today's puzzle number and which are solved, and
-     reports; the worker drops the solved ones. The page shows "solved" only as a
-     green check drawn into the game's art, so `hub.js` knows the solved art's
-     files (as captured on 2026-11-18, `tests/fixtures/games-hub.html`); any
-     other art counts as not solved, so if LinkedIn changes it the run just opens
-     that game too. Signed out (in an incognito window, say) the page has another
-     layout (`tests/fixtures/games-hub-guest.html`) with no numbers and no sign of
-     a guest's progress, so every game is opened; one already finished is found
-     on its own page. A page that never shows the list is reported empty after 15 s.
-  2. Walks the tab through the rest. Signed in, each opens with
-     `?skipStartScreen=true`, LinkedIn's own switch past the start screen. Signed
-     out, LinkedIn redirects that URL to the games page unless it's followed from
-     the game itself, so the plain URL is opened and the page presses its
-     **Start game** link (which is that URL). A game sent back to the games page
-     anyway is retried once by its plain URL, then skipped. `content.js` asks the worker whether its
-     tab is the run's, then solves even with that game's Auto-solve off and
-     reports back; the worker moves on. Start screens are passed by pressing
-     **Start game** (a link, pressed only if it leads to the same game) or Mini
-     Sudoku's **Solve now** (a button), matched by label in the extension's five
-     languages. A page whose board never appears
-     gives up after 45 s.
+- **Today** follows LinkedIn's puzzle day, which resets at midnight Pacific time (`puzzleDay()` in `games.js`, using `America/Los_Angeles`). Puzzle numbers come from the latest visit to LinkedIn's games page (`hub.js`), or count forward from each game's `number` on `NUMBER_DAY`.
+- **Solved today** is saved as `solved:<id>` = the puzzle day in `chrome.storage.local` whenever a finished board is seen: after `content.js` solves it, when it detects an already-solved board (even with Auto-solve off, so manual solves count too), or when the popup enters a solved state. It only tracks what this browser has seen; puzzles finished on another device appear as solved once opened here (Solve all checks every unsolved game, so it picks those up too).
+- **Solve all** runs in `background.js`, reusing the tab the popup was opened on. Navigating that tab keeps focus in place so the popup stays open to show progress (opening a new tab would close it), and keeps the tab in the foreground so timers aren't throttled. A run works in two steps:
+  1. **Check the games page (`linkedin.com/games/`).** `hub.js` reads each game card, records today's puzzle numbers and solved games, and reports back so the worker can skip already-solved games. LinkedIn marks solved cards only by swapping the artwork for a version with a green check, so `hub.js` matches those known filenames (captured 2026-11-18 in `tests/fixtures/games-hub.html`). Any unknown artwork counts as unsolved, so if LinkedIn updates the images, Solve all simply opens that game to check. When signed out (such as in incognito), LinkedIn uses a guest layout (`tests/fixtures/games-hub-guest.html`) with no puzzle numbers or completion state, so every game is opened and checked on its own page. If the game list never loads, `hub.js` reports empty after 15 s.
+  2. **Solve the remaining games.** When signed in, each game opens with `?skipStartScreen=true` to bypass LinkedIn's start screen. When signed out, LinkedIn redirects that URL back to the games page unless followed from the game itself, so Solve all opens the plain URL and clicks **Start game**. If a game still redirects back to the games page, it retries once with the plain URL, then skips it. On each page, `content.js` checks with the worker whether its tab belongs to the run, solves even if Auto-solve is off, and reports back so the worker advances. Start screens are dismissed by clicking **Start game** (only when the link stays on the same game) or Mini Sudoku's **Solve now**, matched across the extension's five languages. If a board never appears, the run moves on after 45 s.
 
-  A run that makes no progress for 60 s (plus the game's Solve time once it's
-  solving) is cleared, so a tab that leaves the game, an extension reload or a
-  browser quit never leaves one stuck. The run lives in storage (`solveAllRun`),
-  progress shows on the toolbar badge ("…" on the games page, then "2/4"), and
-  closing the tab, a browser restart, or **Stop** in the popup ends it. Stop ends
-  the queue; a game already mid-solve finishes. No new permissions: the games page
-  is already covered by the solvers' `linkedin.com/games/*` access.
-- **Incognito** keeps its own solved days (`incognito:solved:<id>`): its windows
-  share this extension's storage but not LinkedIn's sign-in, so a guest there
-  hasn't solved what the signed-in account has. The popup picks them by its window
-  (`chrome.windows.getCurrent`), content scripts by `inIncognitoContext`, and the
-  worker clears them when the last incognito window closes.
-- Opening the games page yourself records the same things, so the grid's checks
-  and numbers stay right without a run.
+  If a run makes no progress for 60 s (plus the game's Solve time once solving begins), it clears automatically so leaving the tab, reloading the extension, or quitting the browser never leaves it stuck. Run state lives in storage (`solveAllRun`), progress shows on the toolbar badge (`…` on the games page, then `2/4`), and closing the tab, restarting the browser, or clicking **Stop** ends the run. Clicking **Stop** clears the remaining queue; a game already mid-solve finishes. No new permissions are needed because the games page is already covered by `linkedin.com/games/*`.
+- **Incognito** stores its own solved days (`incognito:solved:<id>`). Incognito windows share extension storage but not LinkedIn sign-in, so a guest session shouldn't inherit the signed-in account's progress. The popup checks its window (`chrome.windows.getCurrent`), content scripts check `inIncognitoContext`, and the worker clears incognito records when the last incognito window closes.
+- Visiting LinkedIn's games page manually updates the same checks and puzzle numbers, even without running Solve all.
 
 ## Layout
 
@@ -118,10 +67,7 @@ the key `settings`. The popup writes it to `localStorage` (synchronous, so a cha
 survives the popup closing at once) and mirrors it to `chrome.storage.local` for
 `content.js`.
 
-**Moving from the Zip Solver:** this extension takes over the Zip Solver's listing, so
-existing Zip users keep their extension ID, `localStorage` and `chrome.storage`. Their
-old `autosolve` / `targetMs` keys are read as **Zip's** settings until Zip's entry is
-first written (`settingsFor()` in `games.js`). Every other game starts at the defaults.
+**Upgrading from Zip Solver:** Because this extension updates the Zip Solver store listing, existing users keep their extension ID, `localStorage`, and `chrome.storage`. Legacy `autosolve` and `targetMs` keys apply to **Zip** until Zip's entry is first written (`settingsFor()` in `games.js`). The other five games start with the defaults.
 
 ## Sumbreak
 

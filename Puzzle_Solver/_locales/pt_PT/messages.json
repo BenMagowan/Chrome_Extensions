@@ -1,15 +1,15 @@
 {
   "extName": {
-    "message": "Puzzle Solver - Zip, Queens, Tango, Sudoku, Patches & Sumbreak"
+    "message": "Puzzle Solver - Zip, Queens, Tango, Mini Sudoku, Patches & Sumbreak"
   },
   "extDescription": {
-    "message": "Resolve os jogos diários do LinkedIn: Zip, Queens, Tango, Mini Sudoku, Patches e Sumbreak. Com um clique, ou sozinho ao carregar."
+    "message": "Resolve os jogos diários do LinkedIn: Zip, Queens, Tango, Mini Sudoku, Patches e Sumbreak, automaticamente ou num clique."
   },
   "actionTitle": {
     "message": "Resolver jogos do LinkedIn"
   },
   "stList": {
-    "message": "Abra um jogo para resolvê-lo"
+    "message": "Abra um jogo para o resolver"
   },
   "gamesNav": {
     "message": "Jogos"
@@ -36,10 +36,10 @@
     "message": "Esta página"
   },
   "solveTimeFor": {
-    "message": "Tempo de resolução do $1 em segundos, de 1 a 999"
+    "message": "Tempo de resolução de $1 em segundos, de 1 a 999"
   },
   "autoSolveFor": {
-    "message": "Resolver o $1 automaticamente"
+    "message": "Resolver $1 automaticamente"
   },
   "solvedToday": {
     "message": "Resolvido hoje"
@@ -54,22 +54,22 @@
     "message": "Resolver todos"
   },
   "solvingOf": {
-    "message": "Resolvendo $1 de $2…"
+    "message": "A resolver $1 de $2…"
   },
   "stopSolving": {
     "message": "Parar"
   },
   "checkingGames": {
-    "message": "Verificando os jogos de hoje…"
+    "message": "A verificar jogos…"
   },
   "localeTag": {
     "message": "pt-BR"
   },
   "menuAria": {
-    "message": "Configurações e mais"
+    "message": "Definições e mais"
   },
   "settings": {
-    "message": "Configurações"
+    "message": "Definições"
   },
   "autoSolve": {
     "message": "Resolução automática"
@@ -81,46 +81,46 @@
     "message": "Tempo de resolução em segundos, de 1 a 999"
   },
   "solveTimeSliderAria": {
-    "message": "Controle deslizante do tempo de resolução, de 1 a 60 segundos"
+    "message": "Controlo deslizante do tempo de resolução, de 1 a 60 segundos"
   },
   "moreSolvers": {
     "message": "Mais solucionadores"
   },
   "unlimitedPuzzles": {
-    "message": "Quebra-cabeças ilimitados"
+    "message": "Puzzles ilimitados"
   },
   "boardPreview": {
-    "message": "Prévia do tabuleiro"
+    "message": "Pré-visualização do tabuleiro"
   },
   "solutionPreview": {
-    "message": "Prévia da solução, $1 por $2."
+    "message": "Pré-visualização da solução, $1 por $2."
   },
   "hintAny": {
-    "message": "Quebra-cabeças ilimitados"
+    "message": "Puzzles ilimitados"
   },
   "hintSolved": {
-    "message": "Quebra-cabeças ilimitados"
+    "message": "Puzzles ilimitados"
   },
   "badgeNew": {
     "message": "Novo"
   },
   "stChecking": {
-    "message": "Procurando um tabuleiro…"
+    "message": "A procurar tabuleiro…"
   },
   "lblChecking": {
-    "message": "Procurando o quebra-cabeça…"
+    "message": "A verificar…"
   },
   "stIdle": {
     "message": "Nenhum tabuleiro encontrado"
   },
   "stReady": {
-    "message": "Tabuleiro detectado · $1×$2"
+    "message": "Tabuleiro pronto · $1×$2"
   },
   "lblSolve": {
-    "message": "Resolver quebra-cabeça"
+    "message": "Resolver puzzle"
   },
   "lblSolving": {
-    "message": "Resolvendo"
+    "message": "A resolver…"
   },
   "lblSolved": {
     "message": "Resolvido"
@@ -132,109 +132,109 @@
     "message": "Já resolvido · $1×$2"
   },
   "lblNothing": {
-    "message": "Nada para resolver"
+    "message": "Não é possível resolver"
   },
   "lblTryAgain": {
     "message": "Tentar novamente"
   },
   "stStuck": {
-    "message": "Tabuleiro encontrado, mas não há solução"
+    "message": "Sem solução. Recarregue a página."
   },
   "stWaiting": {
-    "message": "Tabuleiro encontrado · inicie a partida para resolver"
+    "message": "Inicie o jogo para o resolver"
   },
   "lblWaiting": {
-    "message": "Aguardando a partida"
+    "message": "A aguardar início"
   },
   "errNoFinish": {
-    "message": "A resolução não terminou."
+    "message": "Não foi possível concluir. Tente novamente."
   },
   "errNoFrame": {
-    "message": "Nenhum tabuleiro respondeu."
+    "message": "O tabuleiro não respondeu. Recarregue."
   },
   "errBusy": {
-    "message": "Já há uma resolução em andamento neste tabuleiro."
+    "message": "Este tabuleiro já está a ser resolvido."
   },
   "errFailed": {
     "message": "A resolução falhou: $1"
   },
   "errNoBoard": {
-    "message": "Tabuleiro não encontrado ou ainda carregando."
+    "message": "Tabuleiro não encontrado. Aguarde ou recarregue."
   },
   "errNoSolution": {
-    "message": "Este tabuleiro não tem solução."
+    "message": "Sem solução. Recarregue a página."
   },
   "errUnsolved": {
-    "message": "O tabuleiro ainda não está resolvido. Tente novamente."
+    "message": "Tabuleiro ainda não resolvido. Tente novamente."
   },
   "errClick": {
-    "message": "Um clique não foi registrado. Tente novamente."
+    "message": "Um clique não foi registado. Tente novamente."
   },
   "errColours": {
-    "message": "Foram lidas $1 cores em um tabuleiro $2×$3."
+    "message": "Erro ao ler tabuleiro $2×$3 ($1 cores). Tente novamente."
   },
   "errCluesGuesses": {
-    "message": "Não foi possível distinguir as pistas dos seus palpites neste tabuleiro."
+    "message": "Não foi possível ler as pistas. Recarregue."
   },
   "errNoPad": {
-    "message": "Teclado numérico não encontrado. Inicie a partida primeiro."
+    "message": "Teclado numérico não encontrado. Inicie primeiro o jogo."
   },
   "errDigit": {
-    "message": "Um número não foi registrado. Tente novamente."
+    "message": "Um número não foi registado. Tente novamente."
   },
   "errFocus": {
-    "message": "Não foi possível selecionar o tabuleiro."
+    "message": "Clique no tabuleiro e tente novamente."
   },
   "errCursor": {
-    "message": "Não foi possível mover o cursor."
+    "message": "Célula inacessível. Tente novamente."
   },
   "errClearPatches": {
-    "message": "Não foi possível apagar os retângulos que já estavam no tabuleiro."
+    "message": "Não foi possível apagar os retângulos. Desfaça e tente novamente."
   },
   "errPatchDraw": {
     "message": "Não foi possível desenhar o retângulo $1 de $2. Tente novamente."
   },
   "errNoTiling": {
-    "message": "Não foi encontrada nenhuma forma de cobrir este tabuleiro com retângulos."
+    "message": "Sem solução. Recarregue a página."
   },
   "errPathTime": {
-    "message": "Não foi possível encontrar um caminho a tempo. O tabuleiro pode ter sido lido incorretamente."
+    "message": "Tempo esgotado ao procurar caminho. Recarregue e tente novamente."
   },
   "errNoPath": {
-    "message": "Não existe caminho para este tabuleiro."
+    "message": "Nenhum caminho encontrado. Recarregue."
   },
   "errClearPath": {
-    "message": "Não foi possível apagar o caminho já traçado. Desfaça-o e tente novamente."
+    "message": "Não foi possível apagar o caminho. Desfaça e tente novamente."
   },
   "errInternalStep": {
-    "message": "Erro interno: passo do caminho não adjacente."
+    "message": "Algo correu mal. Tente novamente."
   },
   "errPathStopped": {
-    "message": "O caminho parou após $1 de $2 células. Tente novamente."
+    "message": "O caminho parou em $1 de $2 células. Tente novamente."
   },
   "errSolveTime": {
-    "message": "Não foi possível encontrar uma solução a tempo."
+    "message": "Tempo esgotado. Tente novamente."
   },
   "errMerge": {
-    "message": "Uma junção não foi registrada. Tente novamente."
+    "message": "Uma junção não foi registada. Tente novamente."
   },
   "errBoardChanged": {
-    "message": "O tabuleiro mudou de forma inesperada. Tente novamente."
+    "message": "O tabuleiro mudou durante a resolução. Tente novamente."
   },
   "zip_lblOpen": {
-    "message": "Abrir o Zip"
+    "message": "Abrir Zip"
   },
   "zip_stSolving": {
-    "message": "Traçando o caminho…"
+    "message": "A traçar o caminho…"
   },
   "zip_stSolved": {
     "message": "Resolvido · caminho de $1 células traçado"
   },
   "queens_lblOpen": {
-    "message": "Abrir o Queens"
+    "message": "Abrir Queens"
   },
   "queens_stSolving": {
-    "message": "Colocando coroas…"
+    "message": "A colocar coroas…"
   },
   "queens_stSolved": {
     "message": "Resolvido · $1 coroas colocadas"
@@ -243,37 +243,37 @@
     "message": "Resolvido · $1 coroas colocadas, $2 removidas"
   },
   "tango_lblOpen": {
-    "message": "Abrir o Tango"
+    "message": "Abrir Tango"
   },
   "tango_stSolving": {
-    "message": "Colocando símbolos…"
+    "message": "A colocar símbolos…"
   },
   "tango_stSolved": {
     "message": "Resolvido · $1 símbolos colocados"
   },
   "sudoku_lblOpen": {
-    "message": "Abrir o Mini Sudoku"
+    "message": "Abrir Mini Sudoku"
   },
   "sudoku_stSolving": {
-    "message": "Colocando números…"
+    "message": "A colocar números…"
   },
   "sudoku_stSolved": {
     "message": "Resolvido · $1 números colocados"
   },
   "patches_lblOpen": {
-    "message": "Abrir o Patches"
+    "message": "Abrir Patches"
   },
   "patches_stSolving": {
-    "message": "Desenhando retângulos…"
+    "message": "A desenhar retângulos…"
   },
   "patches_stSolved": {
     "message": "Resolvido · $1 retângulos desenhados"
   },
   "sumbreak_lblOpen": {
-    "message": "Abrir o Sumbreak"
+    "message": "Abrir Sumbreak"
   },
   "sumbreak_stSolving": {
-    "message": "Juntando peças…"
+    "message": "A juntar peças…"
   },
   "sumbreak_stSolved": {
     "message": "Resolvido · $1 junções"
