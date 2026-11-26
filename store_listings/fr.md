@@ -37,7 +37,7 @@ Confidentialité
 La résolution se fait dans votre navigateur. L'extension ne collecte et n'envoie aucune donnée personnelle, et elle ne fonctionne que sur les pages de jeux de LinkedIn, jamais sur votre fil d'actualité, vos messages ou votre profil. Vos réglages restent sur votre appareil.
 
 Plus de puzzles
-LinkedIn publie un seul puzzle Queens par jour. Si vous en voulez plus, Puzzle Unlimited propose 3 000 niveaux gratuits du même puzzle (il s'y appelle Crowns) en facile, moyen et difficile, sans inscription (site en anglais) : https://puzzle-site-lyart.vercel.app/crowns
+LinkedIn publie un seul puzzle Queens par jour. Si vous en voulez plus, LinkedIn Ranked propose des parties classées de Queens adaptées à votre niveau, avec une cote Elo en direct et des classements mondiaux. Jouez 5 parties de placement sans compte, puis connectez-vous pour voir votre rang (site en anglais) : https://magowan.dev/ranked
 
 Questions
 Est-ce gratuit ? Oui. Aucun compte ni inscription.
@@ -79,7 +79,7 @@ Confidentialité
 La résolution se fait dans votre navigateur. L'extension ne collecte et n'envoie aucune donnée personnelle, et elle ne fonctionne que sur les pages de jeux de LinkedIn, jamais sur votre fil d'actualité, vos messages ou votre profil. Vos réglages restent sur votre appareil.
 
 Plus de puzzles
-LinkedIn publie un seul puzzle Tango par jour. Si vous en voulez plus, Puzzle Unlimited propose 3 000 niveaux gratuits du même type de puzzle (il s'y appelle Binairo) en facile, moyen et difficile, sans inscription (site en anglais) : https://puzzle-site-lyart.vercel.app/binairo
+LinkedIn publie un seul puzzle Tango par jour. Si vous en voulez plus, LinkedIn Ranked propose des parties classées de Queens et de Zip adaptées à votre niveau, avec une cote Elo en direct et des classements mondiaux. Jouez 5 parties de placement sans compte, puis connectez-vous pour voir votre rang (site en anglais) : https://magowan.dev/ranked
 
 Questions
 Est-ce gratuit ? Oui. Aucun compte ni inscription.
@@ -121,7 +121,7 @@ Confidentialité
 La résolution se fait dans votre navigateur. L'extension ne collecte et n'envoie aucune donnée personnelle, et elle ne fonctionne que sur les pages de jeux de LinkedIn, jamais sur votre fil d'actualité, vos messages ou votre profil. Vos réglages restent sur votre appareil.
 
 Plus de puzzles
-LinkedIn publie un seul puzzle Zip par jour. Si vous en voulez plus, Puzzle Unlimited propose 3 000 niveaux gratuits du même type de puzzle (il s'y appelle Trail) en facile, moyen et difficile, sans inscription (site en anglais) : https://puzzle-site-lyart.vercel.app/trail
+LinkedIn publie un seul puzzle Zip par jour. Si vous en voulez plus, LinkedIn Ranked propose des parties classées de Zip adaptées à votre niveau, avec une cote Elo en direct et des classements mondiaux. Jouez 5 parties de placement sans compte, puis connectez-vous pour voir votre rang (site en anglais) : https://magowan.dev/ranked
 
 Questions
 Est-ce gratuit ? Oui. Aucun compte ni inscription.
@@ -165,7 +165,7 @@ Confidentialité
 La résolution se fait dans votre navigateur. L'extension ne collecte et n'envoie aucune donnée personnelle, et elle ne fonctionne que sur les pages de jeux de LinkedIn, jamais sur votre fil d'actualité, vos messages ou votre profil. Vos réglages restent sur votre appareil.
 
 Plus de puzzles
-LinkedIn publie un seul puzzle Patches par jour. Si vous en voulez plus, Puzzle Unlimited propose 3 000 niveaux gratuits du même type de puzzle (il s'y appelle Shikaku) en facile, moyen et difficile, sans inscription (site en anglais) : https://puzzle-site-lyart.vercel.app/shikaku
+LinkedIn publie un seul puzzle Patches par jour. Si vous en voulez plus, LinkedIn Ranked propose des parties classées de Queens et de Zip adaptées à votre niveau, avec une cote Elo en direct et des classements mondiaux. Jouez 5 parties de placement sans compte, puis connectez-vous pour voir votre rang (site en anglais) : https://magowan.dev/ranked
 
 Questions
 Est-ce gratuit ? Oui. Aucun compte ni inscription.
@@ -207,7 +207,7 @@ Confidentialité
 La résolution se fait dans votre navigateur. L'extension ne collecte et n'envoie aucune donnée personnelle, et elle ne fonctionne que sur les pages de jeux de LinkedIn, jamais sur votre fil d'actualité, vos messages ou votre profil. Vos réglages restent sur votre appareil.
 
 Plus de puzzles
-LinkedIn publie un seul Mini Sudoku par jour. Si vous en voulez plus, Puzzle Unlimited propose 3 000 niveaux gratuits de sudoku 6×6 en facile, moyen et difficile, sans inscription (site en anglais) : https://puzzle-site-lyart.vercel.app/sudoku
+LinkedIn publie un seul Mini Sudoku par jour. Si vous en voulez plus, LinkedIn Ranked propose des parties classées de Queens et de Zip adaptées à votre niveau, avec une cote Elo en direct et des classements mondiaux. Jouez 5 parties de placement sans compte, puis connectez-vous pour voir votre rang (site en anglais) : https://magowan.dev/ranked
 
 Questions
 Est-ce gratuit ? Oui. Aucun compte ni inscription.

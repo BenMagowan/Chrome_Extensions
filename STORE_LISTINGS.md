@@ -50,7 +50,7 @@ Privacy
 The solving happens in your browser. The extension doesn't collect or send any personal data, and it only works on LinkedIn's game pages, never your feed, messages or profile. Your settings stay on your device.
 
 More puzzles
-LinkedIn posts one Queens puzzle a day. If you want more, Puzzle Unlimited has 3,000 free levels of the same puzzle (called Crowns there) on easy, medium and hard, with no login: https://puzzle-site-lyart.vercel.app/crowns
+LinkedIn posts one Queens puzzle a day. If you want more, LinkedIn Ranked has ranked Queens puzzles matched to your skill, with a live Elo rating and global leaderboards. Play 5 placement puzzles without an account, then sign in to see your rank: https://magowan.dev/ranked
 
 Questions
 Is it free? Yes. There's no account or sign-up.
@@ -90,7 +90,7 @@ Privacy
 The solving happens in your browser. The extension doesn't collect or send any personal data, and it only works on LinkedIn's game pages, never your feed, messages or profile. Your settings stay on your device.
 
 More puzzles
-LinkedIn posts one Tango puzzle a day. If you want more, Puzzle Unlimited has 3,000 free levels of the same kind of puzzle (called Binairo there) on easy, medium and hard, with no login: https://puzzle-site-lyart.vercel.app/binairo
+LinkedIn posts one Tango puzzle a day. If you want more, LinkedIn Ranked has ranked Queens and Zip puzzles matched to your skill, with a live Elo rating and global leaderboards. Play 5 placement puzzles without an account, then sign in to see your rank: https://magowan.dev/ranked
 
 Questions
 Is it free? Yes. There's no account or sign-up.
@@ -130,7 +130,7 @@ Privacy
 The solving happens in your browser. The extension doesn't collect or send any personal data, and it only works on LinkedIn's game pages, never your feed, messages or profile. Your settings stay on your device.
 
 More puzzles
-LinkedIn posts one Zip puzzle a day. If you want more, Puzzle Unlimited has 3,000 free levels of the same kind of puzzle (called Trail there) on easy, medium and hard, with no login: https://puzzle-site-lyart.vercel.app/trail
+LinkedIn posts one Zip puzzle a day. If you want more, LinkedIn Ranked has ranked Zip puzzles matched to your skill, with a live Elo rating and global leaderboards. Play 5 placement puzzles without an account, then sign in to see your rank: https://magowan.dev/ranked
 
 Questions
 Is it free? Yes. There's no account or sign-up.
@@ -172,7 +172,7 @@ Privacy
 The solving happens in your browser. The extension doesn't collect or send any personal data, and it only works on LinkedIn's game pages, never your feed, messages or profile. Your settings stay on your device.
 
 More puzzles
-LinkedIn posts one Patches puzzle a day. If you want more, Puzzle Unlimited has 3,000 free levels of the same kind of puzzle (called Shikaku there) on easy, medium and hard, with no login: https://puzzle-site-lyart.vercel.app/shikaku
+LinkedIn posts one Patches puzzle a day. If you want more, LinkedIn Ranked has ranked Queens and Zip puzzles matched to your skill, with a live Elo rating and global leaderboards. Play 5 placement puzzles without an account, then sign in to see your rank: https://magowan.dev/ranked
 
 Questions
 Is it free? Yes. There's no account or sign-up.
@@ -212,7 +212,7 @@ Privacy
 The solving happens in your browser. The extension doesn't collect or send any personal data, and it only works on LinkedIn's game pages, never your feed, messages or profile. Your settings stay on your device.
 
 More puzzles
-LinkedIn posts one Mini Sudoku a day. If you want more, Puzzle Unlimited has 3,000 free levels of 6×6 sudoku on easy, medium and hard, with no login: https://puzzle-site-lyart.vercel.app/sudoku
+LinkedIn posts one Mini Sudoku a day. If you want more, LinkedIn Ranked has ranked Queens and Zip puzzles matched to your skill, with a live Elo rating and global leaderboards. Play 5 placement puzzles without an account, then sign in to see your rank: https://magowan.dev/ranked
 
 Questions
 Is it free? Yes. There's no account or sign-up.

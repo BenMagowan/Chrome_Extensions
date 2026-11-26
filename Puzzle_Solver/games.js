@@ -9,8 +9,7 @@
  *
  *   runner  the engine's function name, defined by games/<id>/injected.js
  *   path    the LinkedIn URL segment: /games/<path>/ and /games/view/<path>/
- *   site    the game's page on the puzzle site, and `ref` for its analytics.
- *           null: the site has no version of it yet, so links go to the home page.
+ *   ref     the `ref` on links to LinkedIn Ranked (site.js), for its analytics
  *   accent  the game's colour in the game strip and settings menu (its full set of
  *           tokens is in games/games.css)
  *   isNew   shows a NEW badge beside the game until it's been opened from the popup
@@ -22,12 +21,12 @@
  *           also the colour of its row in the settings menu
  */
 const GAMES = [
-  { id: "zip", name: "Zip", runner: "runZip", path: "zip", site: "trail", ref: "zip", accent: "#ff6d29", number: 611 },
-  { id: "queens", name: "Queens", runner: "runQueens", path: "queens", site: "crowns", ref: "queens", accent: "#e0a500", number: 932, shade: "#4c8de7" },
-  { id: "tango", name: "Tango", runner: "runTango", path: "tango", site: "binairo", ref: "tango", accent: "#4c8de7", number: 772, shade: "#e0a500" },
-  { id: "sudoku", name: "Mini Sudoku", short: "Sudoku", runner: "runSudoku", path: "mini-sudoku", site: "sudoku", ref: "mini-sudoku", accent: "#338041", number: 464 },
-  { id: "patches", name: "Patches", runner: "runPatches", path: "patches", site: "shikaku", ref: "patches", accent: "#49a2fe", number: 246, shade: "#9b5cff" },
-  { id: "sumbreak", name: "Sumbreak", runner: "runSumbreak", path: "sumbreak", site: null, ref: "sumbreak", accent: "#9b5cff", number: 1, shade: "#49a2fe", isNew: true },
+  { id: "zip", name: "Zip", runner: "runZip", path: "zip", ref: "zip", accent: "#ff6d29", number: 611 },
+  { id: "queens", name: "Queens", runner: "runQueens", path: "queens", ref: "queens", accent: "#e0a500", number: 932, shade: "#4c8de7" },
+  { id: "tango", name: "Tango", runner: "runTango", path: "tango", ref: "tango", accent: "#4c8de7", number: 772, shade: "#e0a500" },
+  { id: "sudoku", name: "Mini Sudoku", short: "Sudoku", runner: "runSudoku", path: "mini-sudoku", ref: "mini-sudoku", accent: "#338041", number: 464 },
+  { id: "patches", name: "Patches", runner: "runPatches", path: "patches", ref: "patches", accent: "#49a2fe", number: 246, shade: "#9b5cff" },
+  { id: "sumbreak", name: "Sumbreak", runner: "runSumbreak", path: "sumbreak", ref: "sumbreak", accent: "#9b5cff", number: 1, shade: "#49a2fe", isNew: true },
 ];
 
 const GAME_BY_ID = Object.fromEntries(GAMES.map((g) => [g.id, g]));

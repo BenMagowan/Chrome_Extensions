@@ -37,7 +37,7 @@ Datenschutz
 Gelöst wird in deinem Browser. Die Erweiterung sammelt und sendet keine persönlichen Daten und funktioniert nur auf den Spieleseiten von LinkedIn, nie in deinem Feed, deinen Nachrichten oder deinem Profil. Deine Einstellungen bleiben auf deinem Gerät.
 
 Mehr Rätsel
-LinkedIn veröffentlicht ein Queens-Rätsel pro Tag. Wenn du mehr willst: Puzzle Unlimited hat 3.000 kostenlose Level desselben Rätsels (dort heißt es Crowns) in leicht, mittel und schwer, ohne Anmeldung (Seite auf Englisch): https://puzzle-site-lyart.vercel.app/crowns
+LinkedIn veröffentlicht ein Queens-Rätsel pro Tag. Wenn du mehr willst: LinkedIn Ranked hat gewertete Queens-Rätsel passend zu deinem Können, mit Live-Elo-Wertung und weltweiten Bestenlisten. Löse 5 Einstufungsrätsel ohne Konto und melde dich dann an, um deinen Rang zu sehen (Seite auf Englisch): https://magowan.dev/ranked
 
 Fragen
 Ist sie kostenlos? Ja. Es gibt kein Konto und keine Registrierung.
@@ -79,7 +79,7 @@ Datenschutz
 Gelöst wird in deinem Browser. Die Erweiterung sammelt und sendet keine persönlichen Daten und funktioniert nur auf den Spieleseiten von LinkedIn, nie in deinem Feed, deinen Nachrichten oder deinem Profil. Deine Einstellungen bleiben auf deinem Gerät.
 
 Mehr Rätsel
-LinkedIn veröffentlicht ein Tango-Rätsel pro Tag. Wenn du mehr willst: Puzzle Unlimited hat 3.000 kostenlose Level derselben Rätselart (dort heißt sie Binairo) in leicht, mittel und schwer, ohne Anmeldung (Seite auf Englisch): https://puzzle-site-lyart.vercel.app/binairo
+LinkedIn veröffentlicht ein Tango-Rätsel pro Tag. Wenn du mehr willst: LinkedIn Ranked hat gewertete Queens- und Zip-Rätsel passend zu deinem Können, mit Live-Elo-Wertung und weltweiten Bestenlisten. Löse 5 Einstufungsrätsel ohne Konto und melde dich dann an, um deinen Rang zu sehen (Seite auf Englisch): https://magowan.dev/ranked
 
 Fragen
 Ist sie kostenlos? Ja. Es gibt kein Konto und keine Registrierung.
@@ -121,7 +121,7 @@ Datenschutz
 Gelöst wird in deinem Browser. Die Erweiterung sammelt und sendet keine persönlichen Daten und funktioniert nur auf den Spieleseiten von LinkedIn, nie in deinem Feed, deinen Nachrichten oder deinem Profil. Deine Einstellungen bleiben auf deinem Gerät.
 
 Mehr Rätsel
-LinkedIn veröffentlicht ein Zip-Rätsel pro Tag. Wenn du mehr willst: Puzzle Unlimited hat 3.000 kostenlose Level derselben Rätselart (dort heißt sie Trail) in leicht, mittel und schwer, ohne Anmeldung (Seite auf Englisch): https://puzzle-site-lyart.vercel.app/trail
+LinkedIn veröffentlicht ein Zip-Rätsel pro Tag. Wenn du mehr willst: LinkedIn Ranked hat gewertete Zip-Rätsel passend zu deinem Können, mit Live-Elo-Wertung und weltweiten Bestenlisten. Löse 5 Einstufungsrätsel ohne Konto und melde dich dann an, um deinen Rang zu sehen (Seite auf Englisch): https://magowan.dev/ranked
 
 Fragen
 Ist sie kostenlos? Ja. Es gibt kein Konto und keine Registrierung.
@@ -165,7 +165,7 @@ Datenschutz
 Gelöst wird in deinem Browser. Die Erweiterung sammelt und sendet keine persönlichen Daten und funktioniert nur auf den Spieleseiten von LinkedIn, nie in deinem Feed, deinen Nachrichten oder deinem Profil. Deine Einstellungen bleiben auf deinem Gerät.
 
 Mehr Rätsel
-LinkedIn veröffentlicht ein Patches-Rätsel pro Tag. Wenn du mehr willst: Puzzle Unlimited hat 3.000 kostenlose Level derselben Rätselart (dort heißt sie Shikaku) in leicht, mittel und schwer, ohne Anmeldung (Seite auf Englisch): https://puzzle-site-lyart.vercel.app/shikaku
+LinkedIn veröffentlicht ein Patches-Rätsel pro Tag. Wenn du mehr willst: LinkedIn Ranked hat gewertete Queens- und Zip-Rätsel passend zu deinem Können, mit Live-Elo-Wertung und weltweiten Bestenlisten. Löse 5 Einstufungsrätsel ohne Konto und melde dich dann an, um deinen Rang zu sehen (Seite auf Englisch): https://magowan.dev/ranked
 
 Fragen
 Ist sie kostenlos? Ja. Es gibt kein Konto und keine Registrierung.
@@ -207,7 +207,7 @@ Datenschutz
 Gelöst wird in deinem Browser. Die Erweiterung sammelt und sendet keine persönlichen Daten und funktioniert nur auf den Spieleseiten von LinkedIn, nie in deinem Feed, deinen Nachrichten oder deinem Profil. Deine Einstellungen bleiben auf deinem Gerät.
 
 Mehr Rätsel
-LinkedIn veröffentlicht ein Mini Sudoku pro Tag. Wenn du mehr willst: Puzzle Unlimited hat 3.000 kostenlose Level mit 6×6-Sudoku in leicht, mittel und schwer, ohne Anmeldung (Seite auf Englisch): https://puzzle-site-lyart.vercel.app/sudoku
+LinkedIn veröffentlicht ein Mini Sudoku pro Tag. Wenn du mehr willst: LinkedIn Ranked hat gewertete Queens- und Zip-Rätsel passend zu deinem Können, mit Live-Elo-Wertung und weltweiten Bestenlisten. Löse 5 Einstufungsrätsel ohne Konto und melde dich dann an, um deinen Rang zu sehen (Seite auf Englisch): https://magowan.dev/ranked
 
 Fragen
 Ist sie kostenlos? Ja. Es gibt kein Konto und keine Registrierung.

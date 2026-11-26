@@ -81,17 +81,17 @@ work whatever language LinkedIn is shown in (see each solver's README).
 > For educational use. Solving the puzzle for you removes the challenge — enjoy the
 > games unaided too.
 
-## Links to the puzzle site
+## Links to LinkedIn Ranked
 
-Each solver links to its matching game on the unlimited puzzle site. The domain,
-game slug and `ref` live in that extension's `site.js`, and every link is built by
-`siteUrl(src)` as `/<game>/easy/1?ref=<extension>&src=<placement>`:
+Each solver links to LinkedIn Ranked at `https://magowan.dev/ranked`. The URL, game
+slug and `ref` live in that extension's `site.js`, and every link is built by
+`siteUrl(src, page)` as `https://magowan.dev/ranked?ref=<extension>&src=<placement>`:
 
 - **Popup hint** — the hint line is always a link; `src` is the popup state
   (`checking`, `idle`, `ready`, `solving`, `solved`, `done`, `error`, `stuck`).
-- **Cog menu** — "Unlimited puzzles" with the crown icon, `src=menu`.
-- **Install / uninstall** — `background.js` opens `/welcome/<game>` on first install
-  only (`src=install`) and sets `/goodbye/<game>` as the uninstall page
+- **Cog menu** — "Play LinkedIn Ranked" with the crown icon, `src=menu`.
+- **Install / uninstall** — `background.js` opens `/ranked/welcome/<game>` on first
+  install only (`src=install`) and sets `/ranked/goodbye/<game>` as the uninstall page
   (`src=uninstall`).
 
-To move to a new domain, change `SITE_ORIGIN` in all five `site.js` files.
+To move to a new URL, change `SITE_URL` in all five `site.js` files and Puzzle Solver's.

@@ -1,9 +1,9 @@
 /*
  * Background worker. Two jobs:
  *
- *  1. Point new and departing users at the puzzle site: opens its welcome page on
- *     first install (never on updates, so Zip Solver users moving onto this
- *     extension aren't sent anywhere) and sets the page shown after uninstall.
+ *  1. Point new and departing users at LinkedIn Ranked: opens it on first install
+ *     (never on updates, so Zip Solver users moving onto this extension aren't sent
+ *     anywhere) and sets it as the page shown after uninstall.
  *
  *  2. Run "Solve all" from the popup, in the tab the popup was opened on. Changing
  *     that tab's page doesn't take focus, so the popup stays open and shows the
@@ -26,9 +26,9 @@
 importScripts("games.js", "site.js");
 
 chrome.runtime.onInstalled.addListener(({ reason }) => {
-  chrome.runtime.setUninstallURL(siteUrl("uninstall", "goodbye"));
+  chrome.runtime.setUninstallURL(siteUrl("uninstall"));
   if (reason === chrome.runtime.OnInstalledReason.INSTALL) {
-    chrome.tabs.create({ url: siteUrl("install", "welcome") });
+    chrome.tabs.create({ url: siteUrl("install") });
   }
 });
 

@@ -86,8 +86,8 @@
   "moreSolvers": {
     "message": "More solvers"
   },
-  "unlimitedPuzzles": {
-    "message": "Unlimited puzzles"
+  "playRanked": {
+    "message": "Play LinkedIn Ranked"
   },
   "boardPreview": {
     "message": "Board preview"
@@ -96,10 +96,10 @@
     "message": "Solution preview, $1 by $2."
   },
   "hintAny": {
-    "message": "Play unlimited puzzles"
+    "message": "Play LinkedIn Ranked"
   },
   "hintSolved": {
-    "message": "Play unlimited puzzles"
+    "message": "Play LinkedIn Ranked"
   },
   "badgeNew": {
     "message": "New"

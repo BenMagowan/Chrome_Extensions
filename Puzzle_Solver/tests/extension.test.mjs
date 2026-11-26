@@ -56,9 +56,9 @@ try {
     for (const id of hubUnsolved) body = body.replace(SOLVED_ART[id], "unsolved-art-" + id);
     route.fulfill({ status: 200, contentType: "text/html", body });
   });
-  // The worker opens the site's welcome page on install; nothing to test there.
+  // The worker opens LinkedIn Ranked on install; nothing to test there.
   context.on("page", (p) => {
-    if (p.url().includes("puzzle-site")) p.close().catch(() => {});
+    if (p.url().includes("magowan.dev/ranked")) p.close().catch(() => {});
   });
 
   let [worker] = context.serviceWorkers();

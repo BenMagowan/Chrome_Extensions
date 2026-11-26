@@ -656,7 +656,7 @@ body[data-state="solving"] .action__spinner {
   color: var(--text-muted);
 }
 
-/* Divides the solver list from the Unlimited puzzles link below it. */
+/* Divides the solver list from the Play LinkedIn Ranked link below it. */
 .menu__sep {
   height: 1px;
   margin: 5px 4px;

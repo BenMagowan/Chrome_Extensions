@@ -61,7 +61,7 @@ UI = {
         "Schieberegler für die Lösungszeit, 1 bis 60 Sekunden",
     ),
     "moreSolvers": ("More solvers", "Más solucionadores", "Mais solucionadores", "Autres solveurs", "Weitere Löser"),
-    "unlimitedPuzzles": ("Unlimited puzzles", "Puzles ilimitados", "Quebra-cabeças ilimitados", "Puzzles illimités", "Unbegrenzt Rätsel"),
+    "playRanked": ("Play LinkedIn Ranked", "Juega a LinkedIn Ranked", "Jogar LinkedIn Ranked", "Jouer à LinkedIn Ranked", "LinkedIn Ranked spielen"),
     "boardPreview": ("Board preview", "Vista previa del tablero", "Prévia do tabuleiro", "Aperçu de la grille", "Vorschau des Spielfelds"),
     "solutionPreview": (
         "Solution preview, $1 by $2.",
@@ -71,18 +71,18 @@ UI = {
         "Vorschau der Lösung, $1 mal $2.",
     ),
     "hintAny": (
-        "Play unlimited puzzles",
-        "Juega puzles ilimitados",
-        "Quebra-cabeças ilimitados",
-        "Puzzles illimités",
-        "Unbegrenzt Rätsel spielen",
+        "Play LinkedIn Ranked",
+        "Juega a LinkedIn Ranked",
+        "Jogar LinkedIn Ranked",
+        "Jouer à LinkedIn Ranked",
+        "LinkedIn Ranked spielen",
     ),
     "hintSolved": (
-        "Play unlimited puzzles",
-        "Juega puzles ilimitados",
-        "Quebra-cabeças ilimitados",
-        "Puzzles illimités",
-        "Unbegrenzt Rätsel spielen",
+        "Play LinkedIn Ranked",
+        "Juega a LinkedIn Ranked",
+        "Jogar LinkedIn Ranked",
+        "Jouer à LinkedIn Ranked",
+        "LinkedIn Ranked spielen",
     ),
     "badgeNew": ("New", "Nuevo", "Novo", "Nouveau", "Neu"),
     "stChecking": ("Looking for a board…", "Buscando un tablero…", "Procurando um tabuleiro…", "Recherche d'une grille…", "Suche nach einem Spielfeld…"),
@@ -273,7 +273,7 @@ GAMES = {
         "game": "Queens",
         "name": "Queens Puzzle Solver",
         "slug": "queens",
-        "site": "https://puzzle-site-lyart.vercel.app/crowns",
+        "site": "https://magowan.dev/ranked",
         "ui": {
             "extDescription": (
                 "Solves the daily LinkedIn Queens puzzle for you. Places every queen in one click, or on its own as soon as the board loads.",
@@ -309,7 +309,7 @@ GAMES = {
                     "Si ya habías empezado, quita tus reinas incorrectas y termina desde ahí.",
                     "Muestra una vista previa en directo del tablero, con sus regiones de color y las reinas ya colocadas.",
                 ],
-                "more": "LinkedIn publica un solo puzle Queens al día. Si quieres más, Puzzle Unlimited tiene 3000 niveles gratis del mismo puzle (allí se llama Crowns) en fácil, medio y difícil, sin registro (sitio en inglés):",
+                "more": "LinkedIn publica un solo puzle Queens al día. Si quieres más, LinkedIn Ranked tiene partidas clasificatorias de Queens adaptadas a tu nivel, con puntuación Elo en directo y clasificaciones mundiales. Juega 5 partidas de posicionamiento sin cuenta y después inicia sesión para ver tu rango (sitio en inglés):",
                 "start": "empiezas la partida",
             },
             "pt": {
@@ -320,7 +320,7 @@ GAMES = {
                     "Se você já tiver começado, ele remove as rainhas erradas e termina a partir daí.",
                     "Mostra uma prévia ao vivo do tabuleiro, com as regiões de cor e as rainhas já colocadas.",
                 ],
-                "more": "O LinkedIn publica um único Queens por dia. Se quiser mais, o Puzzle Unlimited tem 3.000 níveis grátis do mesmo quebra-cabeça (lá ele se chama Crowns) nos níveis fácil, médio e difícil, sem login (site em inglês):",
+                "more": "O LinkedIn publica um único Queens por dia. Se quiser mais, o LinkedIn Ranked tem partidas ranqueadas de Queens ajustadas ao seu nível, com pontuação Elo ao vivo e rankings globais. Jogue 5 partidas de posicionamento sem criar conta e depois faça login para ver seu rank (site em inglês):",
                 "start": "você inicia a partida",
             },
             "fr": {
@@ -331,7 +331,7 @@ GAMES = {
                     "Si vous avez déjà commencé, il retire vos reines mal placées et termine à partir de là.",
                     "Affiche un aperçu en direct de la grille, avec ses régions de couleur et les reines déjà placées.",
                 ],
-                "more": "LinkedIn publie un seul puzzle Queens par jour. Si vous en voulez plus, Puzzle Unlimited propose 3 000 niveaux gratuits du même puzzle (il s'y appelle Crowns) en facile, moyen et difficile, sans inscription (site en anglais) :",
+                "more": "LinkedIn publie un seul puzzle Queens par jour. Si vous en voulez plus, LinkedIn Ranked propose des parties classées de Queens adaptées à votre niveau, avec une cote Elo en direct et des classements mondiaux. Jouez 5 parties de placement sans compte, puis connectez-vous pour voir votre rang (site en anglais) :",
                 "start": "vous lancez la partie",
             },
             "de": {
@@ -342,7 +342,7 @@ GAMES = {
                     "Wenn du schon angefangen hast, entfernt sie deine falschen Queens und macht von dort aus weiter.",
                     "Zeigt eine Live-Vorschau des Spielfelds mit seinen Farbregionen und den bereits gesetzten Queens.",
                 ],
-                "more": "LinkedIn veröffentlicht ein Queens-Rätsel pro Tag. Wenn du mehr willst: Puzzle Unlimited hat 3.000 kostenlose Level desselben Rätsels (dort heißt es Crowns) in leicht, mittel und schwer, ohne Anmeldung (Seite auf Englisch):",
+                "more": "LinkedIn veröffentlicht ein Queens-Rätsel pro Tag. Wenn du mehr willst: LinkedIn Ranked hat gewertete Queens-Rätsel passend zu deinem Können, mit Live-Elo-Wertung und weltweiten Bestenlisten. Löse 5 Einstufungsrätsel ohne Konto und melde dich dann an, um deinen Rang zu sehen (Seite auf Englisch):",
                 "start": "du die Runde startest",
             },
         },
@@ -351,7 +351,7 @@ GAMES = {
         "game": "Tango",
         "name": "Tango Puzzle Solver",
         "slug": "tango",
-        "site": "https://puzzle-site-lyart.vercel.app/binairo",
+        "site": "https://magowan.dev/ranked",
         "ui": {
             "extDescription": (
                 "Solves the daily LinkedIn Tango puzzle for you. Fills in every sun and moon in one click, or on its own when the board loads.",
@@ -378,7 +378,7 @@ GAMES = {
                 "features": [
                     "Resuelve todos los puzles diarios de Tango: mantiene cada fila y columna equilibradas, nunca pone tres iguales seguidos y respeta todos los signos = y ×.",
                 ],
-                "more": "LinkedIn publica un solo puzle Tango al día. Si quieres más, Puzzle Unlimited tiene 3000 niveles gratis del mismo tipo de puzle (allí se llama Binairo) en fácil, medio y difícil, sin registro (sitio en inglés):",
+                "more": "LinkedIn publica un solo puzle Tango al día. Si quieres más, LinkedIn Ranked tiene partidas clasificatorias de Queens y Zip adaptadas a tu nivel, con puntuación Elo en directo y clasificaciones mundiales. Juega 5 partidas de posicionamiento sin cuenta y después inicia sesión para ver tu rango (sitio en inglés):",
                 "start": "aparece el tablero",
             },
             "pt": {
@@ -387,7 +387,7 @@ GAMES = {
                 "features": [
                     "Resolve todos os quebra-cabeças diários do Tango: mantém cada linha e coluna equilibradas, nunca coloca três iguais seguidos e respeita todos os sinais = e ×.",
                 ],
-                "more": "O LinkedIn publica um único Tango por dia. Se quiser mais, o Puzzle Unlimited tem 3.000 níveis grátis do mesmo tipo de quebra-cabeça (lá ele se chama Binairo) nos níveis fácil, médio e difícil, sem login (site em inglês):",
+                "more": "O LinkedIn publica um único Tango por dia. Se quiser mais, o LinkedIn Ranked tem partidas ranqueadas de Queens e Zip ajustadas ao seu nível, com pontuação Elo ao vivo e rankings globais. Jogue 5 partidas de posicionamento sem criar conta e depois faça login para ver seu rank (site em inglês):",
                 "start": "o tabuleiro aparece",
             },
             "fr": {
@@ -396,7 +396,7 @@ GAMES = {
                 "features": [
                     "Résout tous les puzzles Tango quotidiens : chaque ligne et chaque colonne reste équilibrée, jamais trois symboles identiques à la suite, et tous les signes = et × sont respectés.",
                 ],
-                "more": "LinkedIn publie un seul puzzle Tango par jour. Si vous en voulez plus, Puzzle Unlimited propose 3 000 niveaux gratuits du même type de puzzle (il s'y appelle Binairo) en facile, moyen et difficile, sans inscription (site en anglais) :",
+                "more": "LinkedIn publie un seul puzzle Tango par jour. Si vous en voulez plus, LinkedIn Ranked propose des parties classées de Queens et de Zip adaptées à votre niveau, avec une cote Elo en direct et des classements mondiaux. Jouez 5 parties de placement sans compte, puis connectez-vous pour voir votre rang (site en anglais) :",
                 "start": "la grille apparaît",
             },
             "de": {
@@ -405,7 +405,7 @@ GAMES = {
                 "features": [
                     "Löst jedes tägliche Tango-Rätsel: Jede Zeile und Spalte bleibt ausgeglichen, nie stehen drei gleiche Symbole nebeneinander, und alle Zeichen = und × werden beachtet.",
                 ],
-                "more": "LinkedIn veröffentlicht ein Tango-Rätsel pro Tag. Wenn du mehr willst: Puzzle Unlimited hat 3.000 kostenlose Level derselben Rätselart (dort heißt sie Binairo) in leicht, mittel und schwer, ohne Anmeldung (Seite auf Englisch):",
+                "more": "LinkedIn veröffentlicht ein Tango-Rätsel pro Tag. Wenn du mehr willst: LinkedIn Ranked hat gewertete Queens- und Zip-Rätsel passend zu deinem Können, mit Live-Elo-Wertung und weltweiten Bestenlisten. Löse 5 Einstufungsrätsel ohne Konto und melde dich dann an, um deinen Rang zu sehen (Seite auf Englisch):",
                 "start": "das Spielfeld erscheint",
             },
         },
@@ -414,7 +414,7 @@ GAMES = {
         "game": "Zip",
         "name": "Zip Puzzle Solver",
         "slug": "zip",
-        "site": "https://puzzle-site-lyart.vercel.app/trail",
+        "site": "https://magowan.dev/ranked",
         "ui": {
             "extDescription": (
                 "Solves the daily LinkedIn Zip puzzle for you. Draws the path through every cell in one click, or on its own when the board loads.",
@@ -439,28 +439,28 @@ GAMES = {
                 "intro": "Lee la cuadrícula, sus números y sus muros, encuentra el único camino que pasa por todas las celdas con los números en orden y lo traza por ti.",
                 "auto": "el camino se traza",
                 "features": ["Resuelve todos los puzles diarios de Zip, incluidos los tableros con muros."],
-                "more": "LinkedIn publica un solo puzle Zip al día. Si quieres más, Puzzle Unlimited tiene 3000 niveles gratis del mismo tipo de puzle (allí se llama Trail) en fácil, medio y difícil, sin registro (sitio en inglés):",
+                "more": "LinkedIn publica un solo puzle Zip al día. Si quieres más, LinkedIn Ranked tiene partidas clasificatorias de Zip adaptadas a tu nivel, con puntuación Elo en directo y clasificaciones mundiales. Juega 5 partidas de posicionamiento sin cuenta y después inicia sesión para ver tu rango (sitio en inglés):",
                 "start": "aparece el tablero",
             },
             "pt": {
                 "intro": "Ele lê a grade, seus números e suas paredes, encontra o único caminho que passa por todas as células com os números em ordem e o traça para você.",
                 "auto": "o caminho é traçado",
                 "features": ["Resolve todos os quebra-cabeças diários do Zip, inclusive os tabuleiros com paredes."],
-                "more": "O LinkedIn publica um único Zip por dia. Se quiser mais, o Puzzle Unlimited tem 3.000 níveis grátis do mesmo tipo de quebra-cabeça (lá ele se chama Trail) nos níveis fácil, médio e difícil, sem login (site em inglês):",
+                "more": "O LinkedIn publica um único Zip por dia. Se quiser mais, o LinkedIn Ranked tem partidas ranqueadas de Zip ajustadas ao seu nível, com pontuação Elo ao vivo e rankings globais. Jogue 5 partidas de posicionamento sem criar conta e depois faça login para ver seu rank (site em inglês):",
                 "start": "o tabuleiro aparece",
             },
             "fr": {
                 "intro": "Il lit la grille, ses numéros et ses murs, trouve l'unique chemin qui passe par toutes les cases avec les numéros dans l'ordre et le trace pour vous.",
                 "auto": "le chemin est tracé",
                 "features": ["Résout tous les puzzles Zip quotidiens, y compris les grilles avec des murs."],
-                "more": "LinkedIn publie un seul puzzle Zip par jour. Si vous en voulez plus, Puzzle Unlimited propose 3 000 niveaux gratuits du même type de puzzle (il s'y appelle Trail) en facile, moyen et difficile, sans inscription (site en anglais) :",
+                "more": "LinkedIn publie un seul puzzle Zip par jour. Si vous en voulez plus, LinkedIn Ranked propose des parties classées de Zip adaptées à votre niveau, avec une cote Elo en direct et des classements mondiaux. Jouez 5 parties de placement sans compte, puis connectez-vous pour voir votre rang (site en anglais) :",
                 "start": "la grille apparaît",
             },
             "de": {
                 "intro": "Die Erweiterung liest das Raster, seine Zahlen und seine Wände, findet den einen Pfad, der alle Felder in der Reihenfolge der Zahlen durchläuft, und zeichnet ihn für dich.",
                 "auto": "wird der Pfad gezeichnet",
                 "features": ["Löst jedes tägliche Zip-Rätsel, auch Spielfelder mit Wänden."],
-                "more": "LinkedIn veröffentlicht ein Zip-Rätsel pro Tag. Wenn du mehr willst: Puzzle Unlimited hat 3.000 kostenlose Level derselben Rätselart (dort heißt sie Trail) in leicht, mittel und schwer, ohne Anmeldung (Seite auf Englisch):",
+                "more": "LinkedIn veröffentlicht ein Zip-Rätsel pro Tag. Wenn du mehr willst: LinkedIn Ranked hat gewertete Zip-Rätsel passend zu deinem Können, mit Live-Elo-Wertung und weltweiten Bestenlisten. Löse 5 Einstufungsrätsel ohne Konto und melde dich dann an, um deinen Rang zu sehen (Seite auf Englisch):",
                 "start": "das Spielfeld erscheint",
             },
         },
@@ -469,7 +469,7 @@ GAMES = {
         "game": "Patches",
         "name": "Patches Puzzle Solver",
         "slug": "patches",
-        "site": "https://puzzle-site-lyart.vercel.app/shikaku",
+        "site": "https://magowan.dev/ranked",
         "ui": {
             "extDescription": (
                 "Solves the daily LinkedIn Patches puzzle for you. Draws every rectangle in one click, or on its own when the board loads.",
@@ -498,7 +498,7 @@ GAMES = {
                     "Si ya habías dibujado algunos rectángulos, los borra y dibuja la solución.",
                     "Te avisa si un tablero no tiene ninguna solución posible.",
                 ],
-                "more": "LinkedIn publica un solo puzle Patches al día. Si quieres más, Puzzle Unlimited tiene 3000 niveles gratis del mismo tipo de puzle (allí se llama Shikaku) en fácil, medio y difícil, sin registro (sitio en inglés):",
+                "more": "LinkedIn publica un solo puzle Patches al día. Si quieres más, LinkedIn Ranked tiene partidas clasificatorias de Queens y Zip adaptadas a tu nivel, con puntuación Elo en directo y clasificaciones mundiales. Juega 5 partidas de posicionamiento sin cuenta y después inicia sesión para ver tu rango (sitio en inglés):",
                 "start": "aparece el tablero",
             },
             "pt": {
@@ -509,7 +509,7 @@ GAMES = {
                     "Se você já tiver desenhado alguns retângulos, ele os apaga e desenha a solução.",
                     "Avisa se um tabuleiro não tem nenhuma solução possível.",
                 ],
-                "more": "O LinkedIn publica um único Patches por dia. Se quiser mais, o Puzzle Unlimited tem 3.000 níveis grátis do mesmo tipo de quebra-cabeça (lá ele se chama Shikaku) nos níveis fácil, médio e difícil, sem login (site em inglês):",
+                "more": "O LinkedIn publica um único Patches por dia. Se quiser mais, o LinkedIn Ranked tem partidas ranqueadas de Queens e Zip ajustadas ao seu nível, com pontuação Elo ao vivo e rankings globais. Jogue 5 partidas de posicionamento sem criar conta e depois faça login para ver seu rank (site em inglês):",
                 "start": "o tabuleiro aparece",
             },
             "fr": {
@@ -520,7 +520,7 @@ GAMES = {
                     "Si vous avez déjà dessiné des rectangles, il les efface et dessine la solution.",
                     "Vous prévient si une grille n'a aucune solution possible.",
                 ],
-                "more": "LinkedIn publie un seul puzzle Patches par jour. Si vous en voulez plus, Puzzle Unlimited propose 3 000 niveaux gratuits du même type de puzzle (il s'y appelle Shikaku) en facile, moyen et difficile, sans inscription (site en anglais) :",
+                "more": "LinkedIn publie un seul puzzle Patches par jour. Si vous en voulez plus, LinkedIn Ranked propose des parties classées de Queens et de Zip adaptées à votre niveau, avec une cote Elo en direct et des classements mondiaux. Jouez 5 parties de placement sans compte, puis connectez-vous pour voir votre rang (site en anglais) :",
                 "start": "la grille apparaît",
             },
             "de": {
@@ -531,7 +531,7 @@ GAMES = {
                     "Wenn du schon Rechtecke gezeichnet hast, entfernt sie diese und zeichnet die Lösung.",
                     "Sagt dir, wenn ein Spielfeld keine mögliche Lösung hat.",
                 ],
-                "more": "LinkedIn veröffentlicht ein Patches-Rätsel pro Tag. Wenn du mehr willst: Puzzle Unlimited hat 3.000 kostenlose Level derselben Rätselart (dort heißt sie Shikaku) in leicht, mittel und schwer, ohne Anmeldung (Seite auf Englisch):",
+                "more": "LinkedIn veröffentlicht ein Patches-Rätsel pro Tag. Wenn du mehr willst: LinkedIn Ranked hat gewertete Queens- und Zip-Rätsel passend zu deinem Können, mit Live-Elo-Wertung und weltweiten Bestenlisten. Löse 5 Einstufungsrätsel ohne Konto und melde dich dann an, um deinen Rang zu sehen (Seite auf Englisch):",
                 "start": "das Spielfeld erscheint",
             },
         },
@@ -540,7 +540,7 @@ GAMES = {
         "game": "Mini Sudoku",
         "name": "Mini Sudoku Puzzle Solver",
         "slug": "mini-sudoku",
-        "site": "https://puzzle-site-lyart.vercel.app/sudoku",
+        "site": "https://magowan.dev/ranked",
         "ui": {
             "extDescription": (
                 "Solves the daily LinkedIn Mini Sudoku for you. Fills in the 6×6 grid in one click, or on its own when the board loads.",
@@ -565,28 +565,28 @@ GAMES = {
                 "intro": "Lee la cuadrícula 6×6 y rellena todos los números que faltan para que cada fila, columna y caja tenga del 1 al 6 una sola vez.",
                 "auto": "la cuadrícula se rellena",
                 "features": ["Resuelve todos los Mini Sudoku diarios."],
-                "more": "LinkedIn publica un solo Mini Sudoku al día. Si quieres más, Puzzle Unlimited tiene 3000 niveles gratis de sudoku 6×6 en fácil, medio y difícil, sin registro (sitio en inglés):",
+                "more": "LinkedIn publica un solo Mini Sudoku al día. Si quieres más, LinkedIn Ranked tiene partidas clasificatorias de Queens y Zip adaptadas a tu nivel, con puntuación Elo en directo y clasificaciones mundiales. Juega 5 partidas de posicionamiento sin cuenta y después inicia sesión para ver tu rango (sitio en inglés):",
                 "start": "aparece el tablero",
             },
             "pt": {
                 "intro": "Ele lê a grade 6×6 e preenche todos os números que faltam para que cada linha, coluna e caixa tenha de 1 a 6 uma única vez.",
                 "auto": "a grade é preenchida",
                 "features": ["Resolve todos os Mini Sudoku diários."],
-                "more": "O LinkedIn publica um único Mini Sudoku por dia. Se quiser mais, o Puzzle Unlimited tem 3.000 níveis grátis de sudoku 6×6 nos níveis fácil, médio e difícil, sem login (site em inglês):",
+                "more": "O LinkedIn publica um único Mini Sudoku por dia. Se quiser mais, o LinkedIn Ranked tem partidas ranqueadas de Queens e Zip ajustadas ao seu nível, com pontuação Elo ao vivo e rankings globais. Jogue 5 partidas de posicionamento sem criar conta e depois faça login para ver seu rank (site em inglês):",
                 "start": "o tabuleiro aparece",
             },
             "fr": {
                 "intro": "Il lit la grille 6×6 et remplit tous les chiffres manquants pour que chaque ligne, colonne et bloc contienne les chiffres de 1 à 6 une seule fois.",
                 "auto": "la grille se remplit",
                 "features": ["Résout tous les Mini Sudoku quotidiens."],
-                "more": "LinkedIn publie un seul Mini Sudoku par jour. Si vous en voulez plus, Puzzle Unlimited propose 3 000 niveaux gratuits de sudoku 6×6 en facile, moyen et difficile, sans inscription (site en anglais) :",
+                "more": "LinkedIn publie un seul Mini Sudoku par jour. Si vous en voulez plus, LinkedIn Ranked propose des parties classées de Queens et de Zip adaptées à votre niveau, avec une cote Elo en direct et des classements mondiaux. Jouez 5 parties de placement sans compte, puis connectez-vous pour voir votre rang (site en anglais) :",
                 "start": "la grille apparaît",
             },
             "de": {
                 "intro": "Die Erweiterung liest das 6×6-Raster und trägt alle fehlenden Ziffern ein, sodass jede Zeile, Spalte und jeder Block die Ziffern 1 bis 6 genau einmal enthält.",
                 "auto": "wird das Raster ausgefüllt",
                 "features": ["Löst jedes tägliche Mini Sudoku."],
-                "more": "LinkedIn veröffentlicht ein Mini Sudoku pro Tag. Wenn du mehr willst: Puzzle Unlimited hat 3.000 kostenlose Level mit 6×6-Sudoku in leicht, mittel und schwer, ohne Anmeldung (Seite auf Englisch):",
+                "more": "LinkedIn veröffentlicht ein Mini Sudoku pro Tag. Wenn du mehr willst: LinkedIn Ranked hat gewertete Queens- und Zip-Rätsel passend zu deinem Können, mit Live-Elo-Wertung und weltweiten Bestenlisten. Löse 5 Einstufungsrätsel ohne Konto und melde dich dann an, um deinen Rang zu sehen (Seite auf Englisch):",
                 "start": "das Spielfeld erscheint",
             },
         },
@@ -727,10 +727,11 @@ def name_in(game, lang):
 # ------------------------------------------------------------------ Puzzle Solver
 # The combined extension. Its messages.json holds UI and ERRORS, PUZZLE below, and
 # each game's own popup text from GAMES under a `<id>_` prefix (zip_stSolved, …),
-# so one popup can speak for whichever game is in the tab. Its name is the brand,
-# the same in every language.
+# so one popup can speak for whichever game is in the tab, with PUZZLE_COPY and
+# PUZZLE_PT_PT laid over all of them. Its name is the brand, the same in every
+# language.
 PUZZLE_DIR = "Puzzle_Solver"
-PUZZLE_NAME = "Puzzle Solver - Zip, Queens, Tango, Sudoku, Patches & Sumbreak"
+PUZZLE_NAME = "Puzzle Solver - Zip, Queens, Tango, Mini Sudoku, Patches & Sumbreak"
 PUZZLE_IDS = {
     "Zip_Solver": "zip",
     "Queens_Solver": "queens",
@@ -741,11 +742,11 @@ PUZZLE_IDS = {
 PUZZLE_GAME_KEYS = ("lblOpen", "stSolving", "stSolved", "stSolvedCleared")
 PUZZLE = {
     "extDescription": (
-        "Solves the daily LinkedIn Zip, Queens, Tango, Mini Sudoku, Patches and Sumbreak puzzles in one click, or on its own as they load.",
-        "Resuelve los puzles diarios de LinkedIn: Zip, Queens, Tango, Mini Sudoku, Patches y Sumbreak. Con un clic, o solo al cargar.",
-        "Resolve os jogos diários do LinkedIn: Zip, Queens, Tango, Mini Sudoku, Patches e Sumbreak. Com um clique, ou sozinho ao carregar.",
-        "Résout les puzzles quotidiens LinkedIn Zip, Queens, Tango, Mini Sudoku, Patches et Sumbreak, en un clic ou tout seul au chargement.",
-        "Löst die täglichen LinkedIn-Rätsel Zip, Queens, Tango, Mini Sudoku, Patches und Sumbreak mit einem Klick oder von selbst beim Laden.",
+        "Solves LinkedIn's daily Zip, Queens, Tango, Mini Sudoku, Patches, and Sumbreak puzzles automatically or in one click.",
+        "Resuelve los juegos diarios de LinkedIn: Zip, Queens, Tango, Mini Sudoku, Patches y Sumbreak, automáticamente o con un clic.",
+        "Resolve os jogos diários do LinkedIn: Zip, Queens, Tango, Mini Sudoku, Patches e Sumbreak, automaticamente ou com um clique.",
+        "Résout les jeux quotidiens LinkedIn : Zip, Queens, Tango, Mini Sudoku, Patches et Sumbreak, automatiquement ou en un clic.",
+        "Löst die täglichen LinkedIn-Rätsel Zip, Queens, Tango, Mini Sudoku, Patches und Sumbreak automatisch oder mit einem Klick.",
     ),
     "actionTitle": ("Solve LinkedIn puzzles", "Resolver puzles de LinkedIn", "Resolver jogos do LinkedIn", "Résoudre les puzzles LinkedIn", "LinkedIn-Rätsel lösen"),
     "stList": ("Open a game to solve it", "Abre un juego para resolverlo", "Abra um jogo para resolvê-lo", "Ouvrez un jeu pour le résoudre", "Öffne ein Spiel, um es zu lösen"),
@@ -778,7 +779,7 @@ PUZZLE = {
     "solveAll": ("Solve all", "Resolver todos", "Resolver todos", "Tout résoudre", "Alle lösen"),
     "solvingOf": ("Solving $1 of $2…", "Resolviendo $1 de $2…", "Resolvendo $1 de $2…", "Résolution $1 sur $2…", "Löse $1 von $2…"),
     "stopSolving": ("Stop", "Detener", "Parar", "Arrêter", "Stoppen"),
-    "checkingGames": ("Checking today's games…", "Comprobando los juegos de hoy…", "Verificando os jogos de hoje…", "Vérification des jeux du jour…", "Prüfe die heutigen Spiele…"),
+    "checkingGames": ("Checking games…", "Revisando juegos…", "Verificando jogos…", "Vérification…", "Prüfe Spiele…"),
 }
 # Errors only Sumbreak's engine reports. Puzzle Solver's i18n.js and messages carry
 # these on top of ERRORS; the single-game solvers never see them.
@@ -808,7 +809,7 @@ SUMBREAK_ERRORS = {
 
 # Sumbreak is new with Puzzle Solver, so its popup text lives here, not in GAMES.
 SUMBREAK = {
-    "lblOpen": ("Open Sumbreak game", "Abrir Sumbreak", "Abrir o Sumbreak", "Ouvrir Sumbreak", "Sumbreak öffnen"),
+    "lblOpen": ("Open Sumbreak", "Abrir Sumbreak", "Abrir Sumbreak", "Ouvrir Sumbreak", "Sumbreak öffnen"),
     "stSolving": ("Merging tiles…", "Uniendo fichas…", "Juntando peças…", "Fusion des tuiles…", "Kacheln werden verbunden…"),
     "stSolved": (
         "Solved · $1 merges",
@@ -819,8 +820,289 @@ SUMBREAK = {
     ),
 }
 
+# Puzzle Solver's own wording for messages it shares with the single-game solvers
+# (UI, ERRORS, GAMES under their `<id>_` key) and for SUMBREAK_ERRORS. The English
+# in ERRORS and SUMBREAK_ERRORS is what the engines report, which i18n.js matches,
+# so Puzzle Solver's English goes here rather than replacing it.
+PUZZLE_COPY = {
+    "lblChecking": ("Checking…", "Comprobando…", "Verificando…", "Recherche…", "Wird geprüft…"),
+    "stReady": (
+        "Board ready · $1×$2",
+        "Tablero listo · $1×$2",
+        "Tabuleiro pronto · $1×$2",
+        "Grille prête · $1×$2",
+        "Spielfeld bereit · $1×$2",
+    ),
+    "lblSolving": ("Solving…", "Resolviendo…", "Resolvendo…", "Résolution…", "Wird gelöst…"),
+    "lblNothing": (
+        "Can't solve",
+        "No se puede resolver",
+        "Não dá para resolver",
+        "Impossible à résoudre",
+        "Nicht lösbar",
+    ),
+    "stStuck": (
+        "No solution found. Try reloading.",
+        "No se encontró solución. Recarga.",
+        "Sem solução. Recarregue a página.",
+        "Aucune solution trouvée. Rechargez.",
+        "Keine Lösung gefunden. Lade neu.",
+    ),
+    "stWaiting": (
+        "Start the game to solve it",
+        "Inicia el juego para resolverlo",
+        "Inicie o jogo para resolver",
+        "Lancez la partie pour la résoudre",
+        "Starte das Spiel, um es zu lösen",
+    ),
+    "lblWaiting": (
+        "Waiting to start",
+        "Esperando para empezar",
+        "Aguardando iniciar",
+        "En attente du début",
+        "Warte auf Spielstart",
+    ),
+    "errNoFinish": (
+        "Couldn't finish. Try again.",
+        "No se pudo terminar. Inténtalo de nuevo.",
+        "Não foi possível terminar. Tente novamente.",
+        "Impossible de terminer. Réessayez.",
+        "Nicht abgeschlossen. Versuch es erneut.",
+    ),
+    "errNoFrame": (
+        "Board didn't respond. Try reloading.",
+        "El tablero no respondió. Recarga.",
+        "O tabuleiro não respondeu. Recarregue.",
+        "La grille ne répond pas. Rechargez.",
+        "Spielfeld antwortet nicht. Lade neu.",
+    ),
+    "errBusy": (
+        "Already solving this board.",
+        "Ya se está resolviendo este tablero.",
+        "Este tabuleiro já está sendo resolvido.",
+        "Grille déjà en cours de résolution.",
+        "Dieses Spielfeld wird bereits gelöst.",
+    ),
+    "errNoBoard": (
+        "No board found. Wait or reload.",
+        "No se encontró tablero. Espera o recarga.",
+        "Tabuleiro não encontrado. Aguarde ou recarregue.",
+        "Aucune grille trouvée. Patientez ou rechargez.",
+        "Kein Spielfeld. Warte kurz oder lade neu.",
+    ),
+    "errNoSolution": (
+        "No solution found. Try reloading.",
+        "No se encontró solución. Recarga.",
+        "Sem solução. Recarregue a página.",
+        "Aucune solution trouvée. Rechargez.",
+        "Keine Lösung gefunden. Lade neu.",
+    ),
+    "errUnsolved": (
+        "Board isn't solved yet. Try again.",
+        "El tablero aún no está resuelto. Inténtalo de nuevo.",
+        "Tabuleiro ainda não resolvido. Tente novamente.",
+        "Grille pas encore résolue. Réessayez.",
+        "Spielfeld noch nicht gelöst. Versuch es erneut.",
+    ),
+    "errColours": (
+        "Misread $2×$3 board ($1 colours). Try again.",
+        "Tablero $2×$3 mal leído ($1 colores). Inténtalo de nuevo.",
+        "Erro ao ler tabuleiro $2×$3 ($1 cores). Tente novamente.",
+        "Grille $2×$3 mal lue ($1 couleurs). Réessayez.",
+        "$2×$3 falsch gelesen ($1 Farben). Versuch es erneut.",
+    ),
+    "errCluesGuesses": (
+        "Couldn't read the board clues. Try reloading.",
+        "No se pudieron leer las pistas. Recarga.",
+        "Não foi possível ler as pistas. Recarregue.",
+        "Impossible de lire les indices. Rechargez.",
+        "Vorgaben konnten nicht gelesen werden. Lade neu.",
+    ),
+    "errNoPad": (
+        "Number pad not found. Start the game first.",
+        "Teclado numérico no encontrado. Inicia el juego primero.",
+        "Teclado numérico não encontrado. Inicie o jogo primeiro.",
+        "Pavé numérique introuvable. Lancez d'abord la partie.",
+        "Ziffernfeld nicht gefunden. Starte zuerst das Spiel.",
+    ),
+    "errDigit": (
+        "A number didn't register. Try again.",
+        "Un número no se registró. Inténtalo de nuevo.",
+        "Um número não foi registrado. Tente novamente.",
+        "Un chiffre n'a pas été pris en compte. Réessayez.",
+        "Eine Zahl wurde nicht übernommen. Versuch es noch einmal.",
+    ),
+    "errFocus": (
+        "Click the board and try again.",
+        "Haz clic en el tablero e inténtalo de nuevo.",
+        "Clique no tabuleiro e tente novamente.",
+        "Cliquez sur la grille et réessayez.",
+        "Klick auf das Spielfeld und versuch es erneut.",
+    ),
+    "errCursor": (
+        "Couldn't reach a cell. Try again.",
+        "No se alcanzó una celda. Inténtalo de nuevo.",
+        "Célula inacessível. Tente novamente.",
+        "Impossible d'atteindre une case. Réessayez.",
+        "Feld nicht erreichbar. Versuch es erneut.",
+    ),
+    "errClearPatches": (
+        "Couldn't clear patches. Undo and try again.",
+        "No se pudieron borrar los rectángulos. Deshazlos e inténtalo de nuevo.",
+        "Não foi possível apagar os retângulos. Desfaça e tente novamente.",
+        "Impossible d'effacer les rectangles. Annulez-les et réessayez.",
+        "Rechtecke nicht entfernt. Rückgängig machen und neu versuchen.",
+    ),
+    "errPatchDraw": (
+        "Couldn't draw patch $1 of $2. Try again.",
+        "No se pudo dibujar el rectángulo $1 de $2. Inténtalo de nuevo.",
+        "Não foi possível desenhar o retângulo $1 de $2. Tente novamente.",
+        "Impossible de dessiner le rectangle $1 sur $2. Réessayez.",
+        "Rechteck $1 von $2 ließ sich nicht zeichnen. Versuch es noch einmal.",
+    ),
+    "errNoTiling": (
+        "No solution found. Try reloading.",
+        "No se encontró solución. Recarga.",
+        "Sem solução. Recarregue a página.",
+        "Aucune solution trouvée. Rechargez.",
+        "Keine Lösung gefunden. Lade neu.",
+    ),
+    "errPathTime": (
+        "Timed out finding a path. Reload and try again.",
+        "No se encontró camino a tiempo. Recarga e inténtalo de nuevo.",
+        "Tempo esgotado ao buscar caminho. Recarregue e tente novamente.",
+        "Délai dépassé pour trouver un chemin. Rechargez et réessayez.",
+        "Kein Pfad rechtzeitig gefunden. Neu laden und erneut versuchen.",
+    ),
+    "errNoPath": (
+        "No path found. Try reloading.",
+        "No se encontró camino. Recarga.",
+        "Nenhum caminho encontrado. Recarregue.",
+        "Aucun chemin trouvé. Rechargez.",
+        "Kein Pfad gefunden. Lade neu.",
+    ),
+    "errClearPath": (
+        "Couldn't clear the path. Undo and try again.",
+        "No se pudo borrar el camino. Deshazlo e inténtalo de nuevo.",
+        "Não foi possível apagar o caminho. Desfaça e tente novamente.",
+        "Impossible d'effacer le chemin. Annulez-le et réessayez.",
+        "Pfad ließ sich nicht entfernen. Mach ihn rückgängig und versuch es erneut.",
+    ),
+    "errInternalStep": (
+        "Something went wrong. Try again.",
+        "Algo salió mal. Inténtalo de nuevo.",
+        "Algo deu errado. Tente novamente.",
+        "Un problème est survenu. Réessayez.",
+        "Etwas ist schiefgelaufen. Versuch es erneut.",
+    ),
+    "errPathStopped": (
+        "Path stopped at $1 of $2 cells. Try again.",
+        "El camino se detuvo en $1 de $2 celdas. Inténtalo de nuevo.",
+        "Caminho parou em $1 de $2 células. Tente novamente.",
+        "Chemin arrêté après $1 cases sur $2. Réessayez.",
+        "Pfad nach $1 von $2 Feldern gestoppt. Versuch es erneut.",
+    ),
+    "errSolveTime": (
+        "Timed out solving. Try again.",
+        "Se agotó el tiempo. Inténtalo de nuevo.",
+        "Tempo esgotado. Tente novamente.",
+        "Délai dépassé. Réessayez.",
+        "Zeit abgelaufen. Versuch es erneut.",
+    ),
+    "errBoardChanged": (
+        "Board changed mid-solve. Try again.",
+        "El tablero cambió al resolver. Inténtalo de nuevo.",
+        "O tabuleiro mudou durante a resolução. Tente novamente.",
+        "La grille a changé en cours de résolution. Réessayez.",
+        "Spielfeld hat sich beim Lösen geändert. Versuch es erneut.",
+    ),
+    "zip_lblOpen": ("Open Zip", "Abrir Zip", "Abrir Zip", "Ouvrir Zip", "Zip öffnen"),
+    "zip_stSolving": (
+        "Drawing path…",
+        "Trazando el camino…",
+        "Traçando o caminho…",
+        "Tracé du chemin…",
+        "Pfad wird gezeichnet…",
+    ),
+    "queens_lblOpen": ("Open Queens", "Abrir Queens", "Abrir Queens", "Ouvrir Queens", "Queens öffnen"),
+    "tango_lblOpen": ("Open Tango", "Abrir Tango", "Abrir Tango", "Ouvrir Tango", "Tango öffnen"),
+    "sudoku_lblOpen": (
+        "Open Mini Sudoku",
+        "Abrir Mini Sudoku",
+        "Abrir Mini Sudoku",
+        "Ouvrir Mini Sudoku",
+        "Mini Sudoku öffnen",
+    ),
+    "sudoku_stSolving": (
+        "Placing numbers…",
+        "Colocando números…",
+        "Colocando números…",
+        "Placement des chiffres…",
+        "Zahlen werden eingetragen…",
+    ),
+    "sudoku_stSolved": (
+        "Solved · $1 numbers placed",
+        "Resuelto · $1 números colocados",
+        "Resolvido · $1 números colocados",
+        "Résolu · $1 chiffres placés",
+        "Gelöst · $1 Zahlen eingetragen",
+    ),
+    "patches_lblOpen": ("Open Patches", "Abrir Patches", "Abrir Patches", "Ouvrir Patches", "Patches öffnen"),
+    "patches_stSolving": (
+        "Drawing patches…",
+        "Dibujando rectángulos…",
+        "Desenhando retângulos…",
+        "Tracé des rectangles…",
+        "Rechtecke werden gezeichnet…",
+    ),
+    "patches_stSolved": (
+        "Solved · $1 patches drawn",
+        "Resuelto · $1 rectángulos dibujados",
+        "Resolvido · $1 retângulos desenhados",
+        "Résolu · $1 rectangles dessinés",
+        "Gelöst · $1 Rechtecke gezeichnet",
+    ),
+}
+# European Portuguese for Puzzle Solver's pt_PT, where it differs from pt_BR.
+PUZZLE_PT_PT = {
+    "extDescription": "Resolve os jogos diários do LinkedIn: Zip, Queens, Tango, Mini Sudoku, Patches e Sumbreak, automaticamente ou num clique.",
+    "stList": "Abra um jogo para o resolver",
+    "solveTimeFor": "Tempo de resolução de $1 em segundos, de 1 a 999",
+    "autoSolveFor": "Resolver $1 automaticamente",
+    "solvingOf": "A resolver $1 de $2…",
+    "checkingGames": "A verificar jogos…",
+    "menuAria": "Definições e mais",
+    "settings": "Definições",
+    "solveTimeSliderAria": "Controlo deslizante do tempo de resolução, de 1 a 60 segundos",
+    "boardPreview": "Pré-visualização do tabuleiro",
+    "solutionPreview": "Pré-visualização da solução, $1 por $2.",
+    "stChecking": "A procurar tabuleiro…",
+    "lblChecking": "A verificar…",
+    "lblSolve": "Resolver puzzle",
+    "lblSolving": "A resolver…",
+    "lblNothing": "Não é possível resolver",
+    "stWaiting": "Inicie o jogo para o resolver",
+    "lblWaiting": "A aguardar início",
+    "errNoFinish": "Não foi possível concluir. Tente novamente.",
+    "errBusy": "Este tabuleiro já está a ser resolvido.",
+    "errClick": "Um clique não foi registado. Tente novamente.",
+    "errNoPad": "Teclado numérico não encontrado. Inicie primeiro o jogo.",
+    "errDigit": "Um número não foi registado. Tente novamente.",
+    "errPathTime": "Tempo esgotado ao procurar caminho. Recarregue e tente novamente.",
+    "errInternalStep": "Algo correu mal. Tente novamente.",
+    "errPathStopped": "O caminho parou em $1 de $2 células. Tente novamente.",
+    "errMerge": "Uma junção não foi registada. Tente novamente.",
+    "zip_stSolving": "A traçar o caminho…",
+    "queens_stSolving": "A colocar coroas…",
+    "tango_stSolving": "A colocar símbolos…",
+    "sudoku_stSolving": "A colocar números…",
+    "patches_stSolving": "A desenhar retângulos…",
+    "sumbreak_stSolving": "A juntar peças…",
+}
 
-def puzzle_messages(lang):
+
+def puzzle_messages(locale):
+    lang = LOCALES[locale]
     out = {"extName": {"message": PUZZLE_NAME}}
     for source in (PUZZLE, UI, ERRORS, SUMBREAK_ERRORS):
         for key, values in source.items():
@@ -831,6 +1113,13 @@ def puzzle_messages(lang):
                 out[f"{gid}_{key}"] = {"message": by_lang(GAMES[solver]["ui"][key], key)[lang]}
     for key, values in SUMBREAK.items():
         out[f"sumbreak_{key}"] = {"message": by_lang(values, key)[lang]}
+    overrides = {key: by_lang(values, key)[lang] for key, values in PUZZLE_COPY.items()}
+    if locale == "pt_PT":
+        overrides.update(PUZZLE_PT_PT)
+    for key, text in overrides.items():
+        if key not in out:
+            fail(f"Puzzle Solver has no message {key!r} to override")
+        out[key] = {"message": text}
     return out
 
 
@@ -944,6 +1233,15 @@ def main():
     for key, values in {**PUZZLE, **SUMBREAK, **SUMBREAK_ERRORS}.items():
         by_lang(values, key)
         check_placeholders(key, values)
+    for key, values in PUZZLE_COPY.items():
+        by_lang(values, key)
+        check_placeholders(key, values)
+    english = puzzle_messages("en")
+    for key, text in PUZZLE_PT_PT.items():
+        if key not in english:
+            fail(f"PUZZLE_PT_PT: Puzzle Solver has no message {key!r}")
+        if set(re.findall(r"\$\d", text)) != set(re.findall(r"\$\d", english[key]["message"])):
+            fail(f"{key} [pt_PT]: placeholders differ from English")
     for lang, text in by_lang(PUZZLE["extDescription"], "extDescription").items():
         if len(text) > SUMMARY_MAX:
             fail(f"Puzzle Solver summary [{lang}] is {len(text)} characters (max {SUMMARY_MAX})")
@@ -978,10 +1276,10 @@ def main():
     locales_dir = ROOT / PUZZLE_DIR / "_locales"
     if locales_dir.exists():
         shutil.rmtree(locales_dir)
-    for locale, lang in LOCALES.items():
+    for locale in LOCALES:
         d = locales_dir / locale
         d.mkdir(parents=True)
-        text = json.dumps(puzzle_messages(lang), ensure_ascii=False, indent=2)
+        text = json.dumps(puzzle_messages(locale), ensure_ascii=False, indent=2)
         (d / "messages.json").write_text(text + "\n")
 
     out = ROOT / "store_listings"

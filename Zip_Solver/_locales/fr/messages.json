@@ -41,8 +41,8 @@
   "moreSolvers": {
     "message": "Autres solveurs"
   },
-  "unlimitedPuzzles": {
-    "message": "Puzzles illimités"
+  "playRanked": {
+    "message": "Jouer à LinkedIn Ranked"
   },
   "boardPreview": {
     "message": "Aperçu de la grille"
@@ -51,10 +51,10 @@
     "message": "Aperçu de la solution, $1 sur $2."
   },
   "hintAny": {
-    "message": "Puzzles illimités"
+    "message": "Jouer à LinkedIn Ranked"
   },
   "hintSolved": {
-    "message": "Puzzles illimités"
+    "message": "Jouer à LinkedIn Ranked"
   },
   "badgeNew": {
     "message": "Nouveau"

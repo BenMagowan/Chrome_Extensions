@@ -95,7 +95,7 @@ function setState(next, data = {}) {
   statusEl.textContent = resolve(spec.status, data);
   actionLabel.textContent = resolve(spec.label, data);
   hintText.textContent = t(spec.hint);
-  hintLink.href = siteUrl(next, null, game);
+  hintLink.href = siteUrl(next, game);
   actionBtn.disabled = spec.act === null;
   actionBtn.setAttribute("aria-busy", String(next === "solving"));
   // A finished board, whoever finished it, is today's puzzle solved.
@@ -220,7 +220,7 @@ function showGame(g) {
   openedAt = Date.now();
   game = g;
   document.documentElement.dataset.game = g.id;
-  siteLink.href = siteUrl("menu", null, game);
+  siteLink.href = siteUrl("menu", game);
   markGameSeen(game);
   buildSettings();
   buildStrip();
@@ -876,7 +876,7 @@ actionBtn.addEventListener("click", () => {
 async function init() {
   loadBrandIcon();
   loadSettings();
-  siteLink.href = siteUrl("menu", null, game);
+  siteLink.href = siteUrl("menu", game);
 
   // An incognito window's popup reads incognito's own solved days (see games.js).
   try {

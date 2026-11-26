@@ -44,8 +44,8 @@
   "moreSolvers": {
     "message": "Weitere Löser"
   },
-  "unlimitedPuzzles": {
-    "message": "Unbegrenzt Rätsel"
+  "playRanked": {
+    "message": "LinkedIn Ranked spielen"
   },
   "boardPreview": {
     "message": "Vorschau des Spielfelds"
@@ -54,10 +54,10 @@
     "message": "Vorschau der Lösung, $1 mal $2."
   },
   "hintAny": {
-    "message": "Unbegrenzt Rätsel spielen"
+    "message": "LinkedIn Ranked spielen"
   },
   "hintSolved": {
-    "message": "Unbegrenzt Rätsel spielen"
+    "message": "LinkedIn Ranked spielen"
   },
   "badgeNew": {
     "message": "Neu"

@@ -41,8 +41,8 @@
   "moreSolvers": {
     "message": "Mais solucionadores"
   },
-  "unlimitedPuzzles": {
-    "message": "Quebra-cabeças ilimitados"
+  "playRanked": {
+    "message": "Jogar LinkedIn Ranked"
   },
   "boardPreview": {
     "message": "Prévia do tabuleiro"
@@ -51,10 +51,10 @@
     "message": "Prévia da solução, $1 por $2."
   },
   "hintAny": {
-    "message": "Quebra-cabeças ilimitados"
+    "message": "Jogar LinkedIn Ranked"
   },
   "hintSolved": {
-    "message": "Quebra-cabeças ilimitados"
+    "message": "Jogar LinkedIn Ranked"
   },
   "badgeNew": {
     "message": "Novo"
